@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-type Dimension = {
+export type Dimension = {
     currentDimension: {width: number, height: number},
     previousDimension: {width: number, height: number},
 }
