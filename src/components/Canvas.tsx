@@ -3,6 +3,7 @@ import useWindowDimensions from "../customHooks/UseWindowDimensions";
 import {Grid} from "../types/Grid";
 import {Point} from "../types/Point";
 import {Vector} from "../types/Shape";
+import {Coordinate} from "../types/Grid";
 
 const Canvas: FC = (props) => {
 
@@ -30,6 +31,7 @@ const Canvas: FC = (props) => {
 				}
 			})
 		})
+		console.log(grid.findContainingPoints({x: event.clientX, y: event.clientY}))
 	}
 
 	const handleMouseDown = (event: MouseEvent) => {
@@ -45,7 +47,7 @@ const Canvas: FC = (props) => {
 	}
 
 	const handleMouseMove = (event: MouseEvent) => {
-		if (selected.length == 0) {
+		if (selected.length === 0) {
 			return
 		}
 		const vector: Vector = {x: event.clientX - mousePosition.x, y: event.clientY - mousePosition.y}

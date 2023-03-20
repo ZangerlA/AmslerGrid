@@ -2,6 +2,16 @@ import {Point} from "./Point";
 import {Vector} from "./Shape";
 import {Dimension} from "../customHooks/UseWindowDimensions";
 
+export type PointIndex = {
+    i: number,
+    j: number,
+}
+
+export type Coordinate = {
+    x: number,
+    y: number,
+}
+
 export class Grid {
     points: Point[][] = []
     initialCellCount = 5
@@ -21,18 +31,47 @@ export class Grid {
 
     movePoints(points: Point[], vector: Vector, dimension: Dimension, ctx: CanvasRenderingContext2D): void {
         points.forEach((point) => point.move(vector))
+        this.redraw(ctx, dimension)
+    }
+
+    findContainingPoints(mouseClick: Coordinate): PointIndex[] {
+        let result: PointIndex[] = []
+        
+        for (let i = 0; i < this.points.length; i++) {
+            for (let j = 0; j < this.points[i].length; j++) {
+                if (this.points[i][j].wasClicked(mouseClick)) {
+                    result[0] = {i: i, j: j}
+                    return result
+                }
+                if (this.insideMesh(i, j) && this.contains(this.points[i][j], this.points[i+1][j], this.points[i][j+1], mouseClick)) {
+                    result[0] = {i: i, j: j}
+                    result[1] = {i: i+1, j: j}
+                    result[2] = {i: i+1, j: j+1}
+                    result[3] = {i: i, j: j+1}
+                }
+            }
+        }
+        return result
+    }
+    
+    insideMesh(i: number, j: number): boolean {
+        return j+1 < this.points.length && i+1 < this.points[i].length
+    }
+    
+    contains(ul: Point, ur: Point, ll: Point, click: Coordinate): boolean {
+        return ul.x < click.x && ul.y < click.y && ur.x > click.x && ll.y > click.y
+    }
+    
+    redraw(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
         ctx.clearRect(0, 0, dimension.currentDimension.width, dimension.currentDimension.height)
         this.drawGridLines(ctx)
         this.drawHelpPoints(ctx)
         this.drawCenterPoint(ctx, dimension)
     }
 
-    findContainingPoints(mouseClick: Point): Point[] {
-        return []
-    }
-
     drawGridLines(ctx: CanvasRenderingContext2D) {
         ctx.beginPath()
+        ctx.fillStyle = "green";
         for (let i = 0; i < this.points.length; i++) {
             ctx.moveTo(this.points[i][0].x, this.points[i][0].y)
             for (let j = 0; j < this.points[i].length; j++) {
@@ -54,7 +93,7 @@ export class Grid {
                 const coordinate = this.points[i][j]
                 ctx.moveTo(this.points[i][j].x, this.points[i][j].y)
                 ctx.fillStyle = "black";
-                ctx.arc(coordinate.x, coordinate.y, 7, 0, Math.PI*2, false)
+                ctx.arc(coordinate.x, coordinate.y, this.points[i][j].drawRadius, 0, Math.PI*2, false)
                 ctx.fill()
             }
         }

@@ -1,9 +1,10 @@
 import {Vector} from "./Shape";
+import {Coordinate} from "./Grid";
 
 export class Point {
     x: number = 0
     y: number = 0
-    drawRadius: number = 10
+    drawRadius: number = 7
 
     constructor(x:number, y:number) {
         this.x = x
@@ -20,7 +21,7 @@ export class Point {
         this.y = Math.sin(angle) * (this.x - point.x) - Math.cos(angle) * (this.y - point.y) + point.y
     }
 
-    wasClicked(mouseClick: Point): boolean {
+    wasClicked(mouseClick: Coordinate): boolean {
         const distance = Math.sqrt((this.x - mouseClick.x) ** 2 + (this.y - mouseClick.y) ** 2)
         return distance <= this.drawRadius;
     }
