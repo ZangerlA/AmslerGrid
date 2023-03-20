@@ -3,3 +3,4 @@
 * implement selection of multiple points with coloring
 * implement rotation
 * color coding for tiles
+* refactor raycast and findContainingPoints

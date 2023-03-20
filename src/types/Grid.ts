@@ -33,26 +33,53 @@ export class Grid {
         points.forEach((point) => point.move(vector))
         this.redraw(ctx, dimension)
     }
-
+    
     findContainingPoints(mouseClick: Coordinate): PointIndex[] {
         let result: PointIndex[] = []
-        
+    
         for (let i = 0; i < this.points.length; i++) {
             for (let j = 0; j < this.points[i].length; j++) {
                 if (this.points[i][j].wasClicked(mouseClick)) {
                     result[0] = {i: i, j: j}
                     return result
                 }
-                if (this.insideMesh(i, j) && this.contains(this.points[i][j], this.points[i+1][j], this.points[i][j+1], mouseClick)) {
-                    result[0] = {i: i, j: j}
-                    result[1] = {i: i+1, j: j}
-                    result[2] = {i: i+1, j: j+1}
-                    result[3] = {i: i, j: j+1}
+                
+                if (this.insideMesh(i,j)) {
+                    const polygon = [this.points[i][j], this.points[i+1][j], this.points[i+1][j+1], this.points[i][j+1]]
+                    if(this.inside(mouseClick, polygon)) {
+                        result[0] = {i: i, j: j}
+                        result[1] = {i: i+1, j: j}
+                        result[2] = {i: i+1, j: j+1}
+                        result[3] = {i: i, j: j+1}
+                        console.log(i,j)
+                        return result
+                    }
                 }
             }
         }
         return result
     }
+    
+    inside(point: Coordinate, polygon: Point[]): boolean {
+        // ray-casting algorithm based on
+        // https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html
+        // found on
+        // https://stackoverflow.com/questions/22521982/check-if-point-is-inside-a-polygon
+        
+        const x = point.x, y = point.y;
+        
+        let inside = false;
+        
+        for (let k = 0, l = polygon.length - 1; k < polygon.length; l = k++) {
+            
+            const xi = polygon[k].x, yi = polygon[k].y;
+            const xj = polygon[l].x, yj = polygon[l].y;
+            const intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        
+        return inside;
+    };
     
     insideMesh(i: number, j: number): boolean {
         return j+1 < this.points.length && i+1 < this.points[i].length
