@@ -15,12 +15,12 @@ const Canvas: FC = (props) => {
 
 	const [ctx, setCtx] = useState<CanvasRenderingContext2D>()
 	const [ selected, setSelected ] = useState<SelectedPolygons[]>([])
+	const [ point, setPoint ] = useState<SelectedPolygons>([])
 	const [ mousePosition, setMousePosition ] = useState<Coordinate>({x:0,y:0})
+	const [ isDragging, setIsDragging ] = useState<boolean>(false)
+
 	const [ grid ] = useState<Grid>(new Grid())
 
-	const getSelected = (): SelectedPolygons[] => {
-		return selected
-	}
 	const draw = (ctx: CanvasRenderingContext2D) => {
 		grid.redraw(ctx, dimension)
 	}
@@ -32,49 +32,74 @@ const Canvas: FC = (props) => {
 		event.preventDefault()
 		let selectedPoints = grid.findContainingPoints({x: event.clientX, y: event.clientY})
 		if (event.button == 2) {
-
-			if (selected.length == 0) {
-				setSelected([...selected, selectedPoints])
-				return
-			}
+			let found: SelectedPolygons = []
 			selected.forEach((polygon) => {
-				let isAlreadySelected = true
+				let match = true;
 				for (let i = 0; i < polygon.length; i++) {
 					if (!(polygon[i].i == selectedPoints[i].i) || !(polygon[i].j == selectedPoints[i].j)) {
-						isAlreadySelected = false
-						break;
+						match = false;
 					}
 				}
-				if (isAlreadySelected) {
-					const filter = selected.filter((container) => container !== polygon)
-					setSelected(filter)
-				}
-				else {
-					setSelected([...selected, selectedPoints])
+				if (match){
+					found = polygon;
 				}
 			})
+			if (found.length == 0) {
+				setSelected([...selected, selectedPoints])
+			}
+			else {
+				const filter = selected.filter((polygon) => polygon !== found)
+				setSelected(filter)
+			}
 		}
 	}
 
 	const handleMouseDown = (event: MouseEvent) => {
 		event.preventDefault()
-	}
-
-	const handleMouseMove = (event: MouseEvent) => {
-		if (selected.length === 0) {
-			return
+		setIsDragging(true);
+		const container = grid.findContainingPoints({x: event.clientX, y: event.clientY})
+		console.log(container)
+		if (container.length == 1) {
+			setPoint(container)
 		}
-		const vector: Vector = {x: event.clientX - mousePosition.x, y: event.clientY - mousePosition.y}
-		// grid.movePoints(selected, vector, dimension, ctx as CanvasRenderingContext2D)
 		setMousePosition(new Point(event.clientX, event.clientY))
 	}
 
+	const handleMouseMove = (event: MouseEvent) => {
+		event.preventDefault()
+		if (isDragging) {
+			console.log("move")
+			const vector: Vector = {x: event.clientX - mousePosition.x, y: event.clientY - mousePosition.y}
+			const result: PointIndex[] = []
+			selected.forEach((polygon) => {
+				polygon.forEach((point)=> {
+					result.push(point)
+				})
+			})
+			const uniqueArr = result.filter((obj, index, self) =>
+					index === self.findIndex((t) => (
+						t.i === obj.i && t.j === obj.j
+					))
+			);
+
+			if (point.length != 0) {
+				grid.movePoints(point, vector, dimension, ctx as CanvasRenderingContext2D)
+			}
+			else if (selected.some((polygon) => grid.inside({x: event.clientX, y: event.clientY}, grid.getPolygon(polygon[0].i, polygon[0].j)))) {
+				grid.movePoints(uniqueArr, vector, dimension, ctx as CanvasRenderingContext2D)
+			}
+			setMousePosition(new Point(event.clientX, event.clientY))
+		}
+		// grid.movePoints(selected, vector, dimension, ctx as CanvasRenderingContext2D)
+	}
+
 	const handleMouseUp = (event: MouseEvent) => {
-		//setSelected((prev) => [])
+		setIsDragging(false);
+		setPoint([])
 	}
 
 	const handleMouseOut = (event: MouseEvent) => {
-		//handleMouseUp(event);
+		handleMouseUp(event);
 	}
 
 	useEffect(() => {
@@ -84,10 +109,12 @@ const Canvas: FC = (props) => {
 	}, [])
 
 	useEffect(() => {
+		console.log(selected)
+		grid.updateSelected(selected)
 		if(ctx) {
 			draw(ctx)
 		}
-	}, [ctx, grid.points])
+	}, [ctx, grid.gridPoints, selected])
 
 	useEffect(() => {
 		grid.calculateGrid(dimension)
