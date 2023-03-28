@@ -4,6 +4,9 @@ import {Grid} from "../types/Grid";
 import {Point} from "../types/Point";
 import {Vector} from "../types/Shape";
 import {Coordinate} from "../types/Grid";
+import {PointIndex} from "../types/Grid";
+
+export type SelectedPolygons = PointIndex[]
 
 const Canvas: FC = (props) => {
 
@@ -11,39 +14,50 @@ const Canvas: FC = (props) => {
 	const dimension = useWindowDimensions()
 
 	const [ctx, setCtx] = useState<CanvasRenderingContext2D>()
-	const [ selected, setSelected ] = useState<Point[]>([])
-	const [ mousePosition, setMousePosition ] = useState<Point>(new Point(0, 0))
+	const [ selected, setSelected ] = useState<SelectedPolygons[]>([])
+	const [ mousePosition, setMousePosition ] = useState<Coordinate>({x:0,y:0})
 	const [ grid ] = useState<Grid>(new Grid())
 
+	const getSelected = (): SelectedPolygons[] => {
+		return selected
+	}
 	const draw = (ctx: CanvasRenderingContext2D) => {
-		ctx.clearRect(0, 0, dimension.currentDimension.width, dimension.currentDimension.height)
-		grid.drawGridLines(ctx)
-		grid.drawHelpPoints(ctx)
-		grid.drawCenterPoint(ctx, dimension)
+		grid.redraw(ctx, dimension)
 	}
 
 	const handleClick = (event: MouseEvent)=>{
 		event.preventDefault()
-		grid.points.forEach((point) => {
-			point.forEach((point) => {
-				if (point.wasClicked(new Point(event.clientX,event.clientY))) {
+	}
+	const handleContextMenu = (event: MouseEvent) => {
+		event.preventDefault()
+		let selectedPoints = grid.findContainingPoints({x: event.clientX, y: event.clientY})
+		if (event.button == 2) {
 
+			if (selected.length == 0) {
+				setSelected([...selected, selectedPoints])
+				return
+			}
+			selected.forEach((polygon) => {
+				let isAlreadySelected = true
+				for (let i = 0; i < polygon.length; i++) {
+					if (!(polygon[i].i == selectedPoints[i].i) || !(polygon[i].j == selectedPoints[i].j)) {
+						isAlreadySelected = false
+						break;
+					}
+				}
+				if (isAlreadySelected) {
+					const filter = selected.filter((container) => container !== polygon)
+					setSelected(filter)
+				}
+				else {
+					setSelected([...selected, selectedPoints])
 				}
 			})
-		})
-		console.log(grid.findContainingPoints({x: event.clientX, y: event.clientY}))
+		}
 	}
 
 	const handleMouseDown = (event: MouseEvent) => {
 		event.preventDefault()
-		grid.points.forEach((col) => {
-			col.forEach((point) => {
-				if (point.wasClicked(new Point(event.clientX,event.clientY))) {
-					setSelected((prev) => [...prev, point])
-				}
-			})
-		})
-		setMousePosition(new Point(event.clientX, event.clientY))
 	}
 
 	const handleMouseMove = (event: MouseEvent) => {
@@ -51,19 +65,20 @@ const Canvas: FC = (props) => {
 			return
 		}
 		const vector: Vector = {x: event.clientX - mousePosition.x, y: event.clientY - mousePosition.y}
-		grid.movePoints(selected, vector, dimension, ctx as CanvasRenderingContext2D)
+		// grid.movePoints(selected, vector, dimension, ctx as CanvasRenderingContext2D)
 		setMousePosition(new Point(event.clientX, event.clientY))
 	}
 
 	const handleMouseUp = (event: MouseEvent) => {
-		setSelected((prev) => [])
+		//setSelected((prev) => [])
 	}
 
 	const handleMouseOut = (event: MouseEvent) => {
-		handleMouseUp(event);
+		//handleMouseUp(event);
 	}
 
 	useEffect(() => {
+		// Get the canvas context for drawing
 		const canvas = canvasRef.current
 		setCtx((canvas!.getContext('2d'))!)
 	}, [])
@@ -85,6 +100,7 @@ const Canvas: FC = (props) => {
 			onMouseMove={handleMouseMove}
 			onMouseUp={handleMouseUp}
 			onMouseOut={handleMouseOut}
+			onContextMenu={handleContextMenu}
 			ref={canvasRef}
 			width={dimension.currentDimension.width}
 			height={dimension.currentDimension.height}{...props}>
