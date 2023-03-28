@@ -1,6 +1,7 @@
 import {Point} from "./Point";
 import {Vector} from "./Shape";
 import {Dimension} from "../customHooks/UseWindowDimensions";
+import {SelectedPolygons} from "../components/Canvas";
 
 export type PointIndex = {
     i: number,
@@ -13,11 +14,14 @@ export type Coordinate = {
 }
 
 export class Grid {
-    points: Point[][] = []
+    gridPoints: Point[][] = []
     startingGrid: Point[][] = []
     initialCellCount = 5
+    selected: SelectedPolygons[] = []
 
-
+    updateSelected(selected: SelectedPolygons[]): void {
+        this.selected = selected
+    }
 
     calculateGrid(dimension: Dimension): void {
         const cellSizeHorizontal = (dimension.currentDimension.width - 100) / this.initialCellCount
@@ -29,27 +33,30 @@ export class Grid {
                 newPoints[i][j] = new Point((cellSizeHorizontal*i)+50, (cellSizeVertical*j)+50)
             }
         }
-        this.points = newPoints
-        this.startingGrid = newPoints
+        this.gridPoints = newPoints
     }
 
-    movePoints(points: Point[], vector: Vector, dimension: Dimension, ctx: CanvasRenderingContext2D): void {
-        points.forEach((point) => point.move(vector))
+    movePoints(points: PointIndex[], vector: Vector, dimension: Dimension, ctx: CanvasRenderingContext2D): void {
+        points.forEach((pointIndex) => this.gridPoints[pointIndex.i][pointIndex.j].move(vector))
         this.redraw(ctx, dimension)
     }
     
     findContainingPoints(mouseClick: Coordinate): PointIndex[] {
         let result: PointIndex[] = []
-    
-        for (let i = 0; i < this.points.length; i++) {
-            for (let j = 0; j < this.points[i].length; j++) {
-                if (this.points[i][j].wasClicked(mouseClick)) {
+
+        for (let i = 0; i < this.gridPoints.length; i++) {
+            for (let j = 0; j < this.gridPoints[i].length; j++) {
+                if (this.gridPoints[i][j].wasClicked(mouseClick)) {
                     result[0] = {i: i, j: j}
                     return result
                 }
-                
+            }
+        }
+    
+        for (let i = 0; i < this.gridPoints.length; i++) {
+            for (let j = 0; j < this.gridPoints[i].length; j++) {
                 if (this.insideMesh(i,j)) {
-                    const polygon = [this.points[i][j], this.points[i+1][j], this.points[i+1][j+1], this.points[i][j+1]]
+                    const polygon = this.getPolygon(i,j)
                     if(this.inside(mouseClick, polygon)) {
                         result[0] = {i: i, j: j}
                         result[1] = {i: i+1, j: j}
@@ -62,6 +69,10 @@ export class Grid {
             }
         }
         return result
+    }
+
+    getPolygon(i: number, j: number): Point[] {
+        return [this.gridPoints[i][j], this.gridPoints[i+1][j], this.gridPoints[i+1][j+1], this.gridPoints[i][j+1]]
     }
     
     inside(point: Coordinate, polygon: Point[]): boolean {
@@ -83,7 +94,7 @@ export class Grid {
     };
     
     insideMesh(i: number, j: number): boolean {
-        return j+1 < this.points.length && i+1 < this.points[i].length
+        return j+1 < this.gridPoints.length && i+1 < this.gridPoints[i].length
     }
     
     redraw(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
@@ -98,22 +109,38 @@ export class Grid {
 
     }
     drawGridLines(ctx: CanvasRenderingContext2D) {
-        ctx.fillStyle = "rgba(75,139,59,0.5)";
-        for (let i = 0; i < this.points.length; i++) {
-            for (let j = 0; j < this.points[i].length; j++) {
-                const point = this.points[i][j]
+
+        for (let i = 0; i < this.gridPoints.length; i++) {
+            for (let j = 0; j < this.gridPoints[i].length; j++) {
+                const point = this.gridPoints[i][j]
                 ctx.beginPath()
                 ctx.moveTo(point.x, point.y)
-                if (i+1 < this.points.length && j+1 < this.points[i].length){
-                    ctx.lineTo(this.points[i+1][j].x, this.points[i+1][j].y)
-                    ctx.lineTo(this.points[i+1][j+1].x, this.points[i+1][j+1].y)
-                    ctx.lineTo(this.points[i][j+1].x, this.points[i][j+1].y)
-                    ctx.lineTo(this.points[i][j].x, this.points[i][j].y)
+                if (i+1 < this.gridPoints.length && j+1 < this.gridPoints[i].length){
+                    ctx.lineTo(this.gridPoints[i+1][j].x, this.gridPoints[i+1][j].y)
+                    ctx.lineTo(this.gridPoints[i+1][j+1].x, this.gridPoints[i+1][j+1].y)
+                    ctx.lineTo(this.gridPoints[i][j+1].x, this.gridPoints[i][j+1].y)
+                    ctx.lineTo(this.gridPoints[i][j].x, this.gridPoints[i][j].y)
                 }
                 ctx.stroke()
                 ctx.closePath()
-                if ((i+j+2)%2 == 0){
-                    ctx.fill()
+                if (this.selected.length == 0){
+                    if((i+j+2)%2 == 0){
+                        ctx.fillStyle = "rgba(75,139,59,0.5)";
+                        ctx.fill()
+                    }
+                }else{
+                    let selectedPolygon: boolean = false;
+                    for (let polygon of this.selected){
+                        if (polygon[0].i == i && polygon[0].j == j){
+                            selectedPolygon = true
+                            ctx.fillStyle = "rgba(25,25,100,1)";
+                            ctx.fill()
+                        }
+                    }
+                    if (!selectedPolygon && (i+j+2)%2 == 0){
+                        ctx.fillStyle = "rgba(75,139,59,0.5)";
+                        ctx.fill()
+                    }
                 }
             }
         }
@@ -121,12 +148,12 @@ export class Grid {
 
     drawHelpPoints(ctx: CanvasRenderingContext2D) {
         ctx.beginPath()
-        for (let i = 0; i < this.points.length; i++) {
-            for (let j = 0; j < this.points[i].length; j++) {
-                const coordinate = this.points[i][j]
-                ctx.moveTo(this.points[i][j].x, this.points[i][j].y)
+        for (let i = 0; i < this.gridPoints.length; i++) {
+            for (let j = 0; j < this.gridPoints[i].length; j++) {
+                const coordinate = this.gridPoints[i][j]
+                ctx.moveTo(this.gridPoints[i][j].x, this.gridPoints[i][j].y)
                 ctx.fillStyle = "black";
-                ctx.arc(coordinate.x, coordinate.y, this.points[i][j].drawRadius, 0, Math.PI*2, false)
+                ctx.arc(coordinate.x, coordinate.y, this.gridPoints[i][j].drawRadius, 0, Math.PI*2, false)
                 ctx.fill()
             }
         }
