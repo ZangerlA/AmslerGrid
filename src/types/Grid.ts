@@ -14,7 +14,10 @@ export type Coordinate = {
 
 export class Grid {
     points: Point[][] = []
+    startingGrid: Point[][] = []
     initialCellCount = 5
+
+
 
     calculateGrid(dimension: Dimension): void {
         const cellSizeHorizontal = (dimension.currentDimension.width - 100) / this.initialCellCount
@@ -27,6 +30,7 @@ export class Grid {
             }
         }
         this.points = newPoints
+        this.startingGrid = newPoints
     }
 
     movePoints(points: Point[], vector: Vector, dimension: Dimension, ctx: CanvasRenderingContext2D): void {
@@ -62,16 +66,13 @@ export class Grid {
     
     inside(point: Coordinate, polygon: Point[]): boolean {
         // ray-casting algorithm based on
-        // https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html
+        // https://en.wikipedia.org/wiki/Point_in_polygon
         // found on
         // https://stackoverflow.com/questions/22521982/check-if-point-is-inside-a-polygon
-        
         const x = point.x, y = point.y;
-        
         let inside = false;
         
         for (let k = 0, l = polygon.length - 1; k < polygon.length; l = k++) {
-            
             const xi = polygon[k].x, yi = polygon[k].y;
             const xj = polygon[l].x, yj = polygon[l].y;
             const intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
@@ -85,10 +86,6 @@ export class Grid {
         return j+1 < this.points.length && i+1 < this.points[i].length
     }
     
-    contains(ul: Point, ur: Point, ll: Point, click: Coordinate): boolean {
-        return ul.x < click.x && ul.y < click.y && ur.x > click.x && ll.y > click.y
-    }
-    
     redraw(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
         ctx.clearRect(0, 0, dimension.currentDimension.width, dimension.currentDimension.height)
         this.drawGridLines(ctx)
@@ -96,21 +93,30 @@ export class Grid {
         this.drawCenterPoint(ctx, dimension)
     }
 
+    drawClicked(ctx:CanvasRenderingContext2D, points:PointIndex[]): void{
+        ctx.fillStyle = "green"
+
+    }
     drawGridLines(ctx: CanvasRenderingContext2D) {
-        ctx.beginPath()
-        ctx.fillStyle = "green";
+        ctx.fillStyle = "rgba(75,139,59,0.5)";
         for (let i = 0; i < this.points.length; i++) {
-            ctx.moveTo(this.points[i][0].x, this.points[i][0].y)
             for (let j = 0; j < this.points[i].length; j++) {
                 const point = this.points[i][j]
-                ctx.lineTo(point.x, point.y)
-                if (i+1 < this.points.length){
-                    ctx.lineTo(this.points[i+1][j].x, this.points[i+1][j].y)
-                }
+                ctx.beginPath()
                 ctx.moveTo(point.x, point.y)
+                if (i+1 < this.points.length && j+1 < this.points[i].length){
+                    ctx.lineTo(this.points[i+1][j].x, this.points[i+1][j].y)
+                    ctx.lineTo(this.points[i+1][j+1].x, this.points[i+1][j+1].y)
+                    ctx.lineTo(this.points[i][j+1].x, this.points[i][j+1].y)
+                    ctx.lineTo(this.points[i][j].x, this.points[i][j].y)
+                }
+                ctx.stroke()
+                ctx.closePath()
+                if ((i+j+2)%2 == 0){
+                    ctx.fill()
+                }
             }
         }
-        ctx.stroke()
     }
 
     drawHelpPoints(ctx: CanvasRenderingContext2D) {
