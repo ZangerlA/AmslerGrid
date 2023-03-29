@@ -17,8 +17,12 @@ export class Point {
 
     rotateAround(point: Point, degree: number): void {
         const angle = degree * Math.PI / 180.0
-        this.x = Math.cos(angle) * (this.x - point.x) - Math.sin(angle) * (this.y - point.y) + point.x
-        this.y = Math.sin(angle) * (this.x - point.x) - Math.cos(angle) * (this.y - point.y) + point.y
+        const dx = this.x - point.x;
+        const dy = this.y - point.y;
+        const newX = Math.cos(angle) * dx - Math.sin(angle) * dy + point.x;
+        const newY = Math.sin(angle) * dx + Math.cos(angle) * dy + point.y;
+        this.x = newX;
+        this.y = newY;
     }
 
     wasClicked(mouseClick: Coordinate): boolean {
