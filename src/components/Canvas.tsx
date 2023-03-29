@@ -1,4 +1,4 @@
-import {FC, useEffect, useRef, useState, MouseEvent} from "react";
+import React, {FC, useEffect, useRef, useState, MouseEvent} from "react";
 import useWindowDimensions from "../customHooks/UseWindowDimensions";
 import {Grid} from "../types/Grid";
 import {Point} from "../types/Point";
@@ -26,12 +26,20 @@ const Canvas: FC = (props) => {
 	}
 
 	const handleClick = (event: MouseEvent)=>{
+		//console.log("click")
 		event.preventDefault()
+		if (event.ctrlKey) {
+			let selectedPoints = grid.findContainingPoints({x: event.clientX, y: event.clientY})
+
+		}
+
 	}
 	const handleContextMenu = (event: MouseEvent) => {
+		//console.log("contextmenu")
 		event.preventDefault()
-		let selectedPoints = grid.findContainingPoints({x: event.clientX, y: event.clientY})
-		if (event.button == 2) {
+		// if right click
+		if (event.button == 2 && event.clientX > 50 && event.clientY > 50 && event.clientX < dimension.currentDimension.width - 50 && event.clientY < dimension.currentDimension.height - 50) {
+			let selectedPoints = grid.findContainingPoints({x: event.clientX, y: event.clientY})
 			let found: SelectedPolygons = []
 			selected.forEach((polygon) => {
 				let match = true;
@@ -55,37 +63,32 @@ const Canvas: FC = (props) => {
 	}
 
 	const handleMouseDown = (event: MouseEvent) => {
+		//console.log("mousedown")
 		event.preventDefault()
-		setIsDragging(true);
-		const container = grid.findContainingPoints({x: event.clientX, y: event.clientY})
-		console.log(container)
-		if (container.length == 1) {
-			setPoint(container)
+		// if left click
+		if (event.button == 0) {
+			setIsDragging(true);
+			const container = grid.findContainingPoints({x: event.clientX, y: event.clientY})
+			//console.log(container)
+			if (container.length == 1) {
+				setPoint(container)
+			}
+			setMousePosition(new Point(event.clientX, event.clientY))
 		}
-		setMousePosition(new Point(event.clientX, event.clientY))
 	}
 
 	const handleMouseMove = (event: MouseEvent) => {
+		//console.log("mousemove")
 		event.preventDefault()
 		if (isDragging) {
 			console.log("move")
 			const vector: Vector = {x: event.clientX - mousePosition.x, y: event.clientY - mousePosition.y}
-			const result: PointIndex[] = []
-			selected.forEach((polygon) => {
-				polygon.forEach((point)=> {
-					result.push(point)
-				})
-			})
-			const uniqueArr = result.filter((obj, index, self) =>
-					index === self.findIndex((t) => (
-						t.i === obj.i && t.j === obj.j
-					))
-			);
+			const uniqueArr = getUniqueArray();
 
 			if (point.length != 0) {
 				grid.movePoints(point, vector, dimension, ctx as CanvasRenderingContext2D)
 			}
-			else if (selected.some((polygon) => grid.inside({x: event.clientX, y: event.clientY}, grid.getPolygon(polygon[0].i, polygon[0].j)))) {
+			else if (mouseInsideSelected({x: event.clientX, y: event.clientY})) {
 				grid.movePoints(uniqueArr, vector, dimension, ctx as CanvasRenderingContext2D)
 			}
 			setMousePosition(new Point(event.clientX, event.clientY))
@@ -93,13 +96,82 @@ const Canvas: FC = (props) => {
 		// grid.movePoints(selected, vector, dimension, ctx as CanvasRenderingContext2D)
 	}
 
+	const mouseInsideSelected = (mouse: Coordinate): boolean  => {
+		return selected.some((polygon) => grid.inside(mouse, grid.getPolygon(polygon[0].i, polygon[0].j)))
+	}
+
+	const getUniqueArray = () : PointIndex[] => {
+		//console.log(selected)
+		const result: PointIndex[] = []
+		selected.forEach((polygon) => {
+			polygon.forEach((point)=> {
+				result.push(point)
+			})
+		})
+		//console.log(result)
+		const uniqueArr = result.filter((obj, index, self) =>
+				index === self.findIndex((t) => (
+					t.i === obj.i && t.j === obj.j
+				))
+		);
+		//console.log(uniqueArr)
+		return uniqueArr;
+	}
+
+	const findBoundaryPoints = (uniqueArr: PointIndex[]) : PointIndex[] => {
+		return uniqueArr.filter((pointIndex) => {
+			for (let pointIndex2 of uniqueArr) {
+				if (pointIndex.i <= pointIndex2.i || pointIndex.i >= pointIndex2.i) {
+					return true
+				}
+				else if (pointIndex.j <= pointIndex2.j || pointIndex.j >= pointIndex2.j) {
+					return true
+				}
+				else return false
+			}
+		})
+	}
+
+	const findCenterPoint = (cornerPoints: PointIndex[]): Point => {
+		const centerPoint: Point = new Point(0,0)
+		for (let point of cornerPoints) {
+			centerPoint.x += grid.gridPoints[point.i][point.j].x
+			centerPoint.y += grid.gridPoints[point.i][point.j].y
+		}
+		centerPoint.x = centerPoint.x / cornerPoints.length
+		centerPoint.y = centerPoint.y / cornerPoints.length
+		return centerPoint
+	}
+
+
 	const handleMouseUp = (event: MouseEvent) => {
-		setIsDragging(false);
-		setPoint([])
+		// if left click
+		if (event.button == 0) {
+			setIsDragging(false);
+			setPoint([])
+
+		}
+		//console.log("mouseup")
 	}
 
 	const handleMouseOut = (event: MouseEvent) => {
+		//console.log("mouseout")
 		handleMouseUp(event);
+	}
+
+	const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
+		event.preventDefault()
+		if (mouseInsideSelected({x: event.clientX, y: event.clientY})) {
+			console.log(selected)
+			const uniquePoints = getUniqueArray()
+			console.log("uniquepoints",uniquePoints)
+			const points = findBoundaryPoints(uniquePoints)
+			console.log("cornerPoints", points)
+			const centerPoint = findCenterPoint(points)
+			console.log("centerpoint", centerPoint)
+
+			grid.rotatePoints(uniquePoints, centerPoint, event.deltaY*0.007, dimension, ctx as CanvasRenderingContext2D)
+		}
 	}
 
 	useEffect(() => {
@@ -109,7 +181,7 @@ const Canvas: FC = (props) => {
 	}, [])
 
 	useEffect(() => {
-		console.log(selected)
+		console.log("selected", selected)
 		grid.updateSelected(selected)
 		if(ctx) {
 			draw(ctx)
@@ -128,6 +200,7 @@ const Canvas: FC = (props) => {
 			onMouseUp={handleMouseUp}
 			onMouseOut={handleMouseOut}
 			onContextMenu={handleContextMenu}
+			onWheel={handleWheel}
 			ref={canvasRef}
 			width={dimension.currentDimension.width}
 			height={dimension.currentDimension.height}{...props}>

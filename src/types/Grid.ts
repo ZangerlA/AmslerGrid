@@ -16,7 +16,7 @@ export type Coordinate = {
 export class Grid {
     gridPoints: Point[][] = []
     startingGrid: Point[][] = []
-    initialCellCount = 5
+    initialCellCount = 7
     selected: SelectedPolygons[] = []
 
     updateSelected(selected: SelectedPolygons[]): void {
@@ -27,9 +27,9 @@ export class Grid {
         const cellSizeHorizontal = (dimension.currentDimension.width - 100) / this.initialCellCount
         const cellSizeVertical = (dimension.currentDimension.height - 100) / this.initialCellCount
         const newPoints: Point[][] = [];
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < this.initialCellCount + 1; i++) {
             newPoints[i] = []
-            for (let j = 0; j < 6; j++) {
+            for (let j = 0; j < this.initialCellCount + 1; j++) {
                 newPoints[i][j] = new Point((cellSizeHorizontal*i)+50, (cellSizeVertical*j)+50)
             }
         }
@@ -38,6 +38,11 @@ export class Grid {
 
     movePoints(points: PointIndex[], vector: Vector, dimension: Dimension, ctx: CanvasRenderingContext2D): void {
         points.forEach((pointIndex) => this.gridPoints[pointIndex.i][pointIndex.j].move(vector))
+        this.redraw(ctx, dimension)
+    }
+
+    rotatePoints(points: PointIndex[], point: Point, degree: number, dimension: Dimension, ctx: CanvasRenderingContext2D): void {
+        points.forEach((pointIndex) => this.gridPoints[pointIndex.i][pointIndex.j].rotateAround(point, degree))
         this.redraw(ctx, dimension)
     }
     
@@ -62,7 +67,7 @@ export class Grid {
                         result[1] = {i: i+1, j: j}
                         result[2] = {i: i+1, j: j+1}
                         result[3] = {i: i, j: j+1}
-                        console.log(i,j)
+                        //console.log(i,j)
                         return result
                     }
                 }
@@ -133,7 +138,7 @@ export class Grid {
                     for (let polygon of this.selected){
                         if (polygon[0].i == i && polygon[0].j == j){
                             selectedPolygon = true
-                            ctx.fillStyle = "rgba(25,25,100,1)";
+                            ctx.fillStyle = "rgba(40,40,100,0.7)";
                             ctx.fill()
                         }
                     }
