@@ -16,7 +16,8 @@ export type Coordinate = {
 export class Grid {
     gridPoints: Point[][] = []
     startingGrid: Point[][] = []
-    initialCellCount = 7
+    initialCellCount = 5
+    maxGridSize: number = 20
     selected: SelectedPolygons[] = []
 
     updateSelected(selected: SelectedPolygons[]): void {
@@ -24,15 +25,20 @@ export class Grid {
     }
 
     calculateGrid(dimension: Dimension): void {
-        const cellSizeHorizontal = (dimension.currentDimension.width - 100) / this.initialCellCount
-        const cellSizeVertical = (dimension.currentDimension.height - 100) / this.initialCellCount
+        const cellSizeHorizontal = (dimension.currentDimension.width - 100) / this.maxGridSize
+        const cellSizeVertical = (dimension.currentDimension.height - 100) / this.maxGridSize
         const newPoints: Point[][] = [];
-        for (let i = 0; i < this.initialCellCount + 1; i++) {
+        for (let i = 0; i <= this.maxGridSize; i++) {
             newPoints[i] = []
-            for (let j = 0; j < this.initialCellCount + 1; j++) {
+            for (let j = 0; j <= this.maxGridSize; j++) {
                 newPoints[i][j] = new Point((cellSizeHorizontal*i)+50, (cellSizeVertical*j)+50)
+                //console.log(Math.floor(this.maxGridSize/this.initialCellCount))
+                if ((i+Math.floor(this.maxGridSize/this.initialCellCount))%Math.floor(this.maxGridSize/this.initialCellCount) == 0 && (j+Math.floor(this.maxGridSize/this.initialCellCount))%Math.floor(this.maxGridSize/this.initialCellCount) == 0){
+                    newPoints[i][j].shouldDraw = true
+                }
             }
         }
+        console.log(newPoints)
         this.gridPoints = newPoints
     }
 
@@ -45,13 +51,31 @@ export class Grid {
         points.forEach((pointIndex) => this.gridPoints[pointIndex.i][pointIndex.j].rotateAround(point, degree))
         this.redraw(ctx, dimension)
     }
+
+    findNextRow(row: number, col: number): number {
+        for (let i = row + 1; i < this.gridPoints.length; i++) {
+            if (this.gridPoints[i][col].shouldDraw) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    findNextCol(row: number, col: number): number {
+        for (let i = col + 1; i < this.gridPoints.length; i++) {
+            if (this.gridPoints[row][i].shouldDraw) {
+                return i
+            }
+        }
+        return -1
+    }
     
     findContainingPoints(mouseClick: Coordinate): PointIndex[] {
         let result: PointIndex[] = []
 
         for (let i = 0; i < this.gridPoints.length; i++) {
             for (let j = 0; j < this.gridPoints[i].length; j++) {
-                if (this.gridPoints[i][j].wasClicked(mouseClick)) {
+                if (this.gridPoints[i][j].shouldDraw && this.gridPoints[i][j].wasClicked(mouseClick)) {
                     result[0] = {i: i, j: j}
                     return result
                 }
@@ -60,13 +84,13 @@ export class Grid {
     
         for (let i = 0; i < this.gridPoints.length; i++) {
             for (let j = 0; j < this.gridPoints[i].length; j++) {
-                if (this.insideMesh(i,j)) {
+                if (this.insideMesh(i,j) && this.gridPoints[i][j].shouldDraw) {
                     const polygon = this.getPolygon(i,j)
                     if(this.inside(mouseClick, polygon)) {
                         result[0] = {i: i, j: j}
-                        result[1] = {i: i+1, j: j}
-                        result[2] = {i: i+1, j: j+1}
-                        result[3] = {i: i, j: j+1}
+                        result[1] = {i: this.findNextRow(i,j), j: j}
+                        result[2] = {i: this.findNextRow(i,j), j: this.findNextCol(i,j)}
+                        result[3] = {i: i, j: this.findNextCol(i,j)}
                         //console.log(i,j)
                         return result
                     }
@@ -77,7 +101,7 @@ export class Grid {
     }
 
     getPolygon(i: number, j: number): Point[] {
-        return [this.gridPoints[i][j], this.gridPoints[i+1][j], this.gridPoints[i+1][j+1], this.gridPoints[i][j+1]]
+        return [this.gridPoints[i][j], this.gridPoints[this.findNextRow(i,j)][j], this.gridPoints[this.findNextRow(i,j)][this.findNextCol(i,j)], this.gridPoints[i][this.findNextCol(i,j)]]
     }
     
     inside(point: Coordinate, polygon: Point[]): boolean {
@@ -114,40 +138,51 @@ export class Grid {
 
     }
     drawGridLines(ctx: CanvasRenderingContext2D) {
-
+        let counteri:number = 0
+        let counterj:number = 0
+        let next: number = 0
         for (let i = 0; i < this.gridPoints.length; i++) {
+            if (next == i){
+                counteri++
+            }
             for (let j = 0; j < this.gridPoints[i].length; j++) {
-                const point = this.gridPoints[i][j]
-                ctx.beginPath()
-                ctx.moveTo(point.x, point.y)
-                if (i+1 < this.gridPoints.length && j+1 < this.gridPoints[i].length){
-                    ctx.lineTo(this.gridPoints[i+1][j].x, this.gridPoints[i+1][j].y)
-                    ctx.lineTo(this.gridPoints[i+1][j+1].x, this.gridPoints[i+1][j+1].y)
-                    ctx.lineTo(this.gridPoints[i][j+1].x, this.gridPoints[i][j+1].y)
-                    ctx.lineTo(this.gridPoints[i][j].x, this.gridPoints[i][j].y)
-                }
-                ctx.stroke()
-                ctx.closePath()
-                if (this.selected.length == 0){
-                    if((i+j+2)%2 == 0){
-                        ctx.fillStyle = "rgba(75,139,59,0.5)";
-                        ctx.fill()
+                const point= this.gridPoints[i][j]
+                if (point.shouldDraw ){
+                    ctx.beginPath()
+                    ctx.moveTo(point.x, point.y)
+                    if (this.insideMesh(i,j) && this.findNextRow(i,j) != -1 && this.findNextCol(i,j) != -1 && this.gridPoints[this.findNextRow(i,j)][this.findNextCol(i,j)].shouldDraw){
+                        ctx.lineTo(this.gridPoints[this.findNextRow(i,j)][j].x, this.gridPoints[this.findNextRow(i,j)][j].y)
+                        ctx.lineTo(this.gridPoints[this.findNextRow(i,j)][this.findNextCol(i,j)].x, this.gridPoints[this.findNextRow(i,j)][this.findNextCol(i,j)].y)
+                        ctx.lineTo(this.gridPoints[i][this.findNextCol(i,j)].x, this.gridPoints[i][this.findNextCol(i,j)].y)
+                        ctx.lineTo(this.gridPoints[i][j].x, this.gridPoints[i][j].y)
+                        ctx.stroke()
                     }
-                }else{
-                    let selectedPolygon: boolean = false;
-                    for (let polygon of this.selected){
-                        if (polygon[0].i == i && polygon[0].j == j){
-                            selectedPolygon = true
-                            ctx.fillStyle = "rgba(40,40,100,0.7)";
+                    ctx.closePath()
+                    if (this.selected.length == 0){
+                        if((counteri+counterj+2)%2 == 0){
+                            ctx.fillStyle = "rgba(75,139,59,0.5)";
+                            ctx.fill()
+                        }
+                    }else{
+                        let selectedPolygon: boolean = false;
+                        for (let polygon of this.selected){
+                            if (polygon[0].i == i && polygon[0].j == j){
+                                selectedPolygon = true
+                                ctx.fillStyle = "rgba(40,40,100,0.7)";
+                                ctx.fill()
+                            }
+                        }
+                        if (!selectedPolygon && (counteri+counterj+2)%2 == 0){
+                            console.log("also paint")
+                            ctx.fillStyle = "rgba(75,139,59,0.5)";
                             ctx.fill()
                         }
                     }
-                    if (!selectedPolygon && (i+j+2)%2 == 0){
-                        ctx.fillStyle = "rgba(75,139,59,0.5)";
-                        ctx.fill()
-                    }
+                    counterj++
+                    next = this.findNextRow(i,j)
                 }
             }
+
         }
     }
 
@@ -155,11 +190,13 @@ export class Grid {
         ctx.beginPath()
         for (let i = 0; i < this.gridPoints.length; i++) {
             for (let j = 0; j < this.gridPoints[i].length; j++) {
-                const coordinate = this.gridPoints[i][j]
-                ctx.moveTo(this.gridPoints[i][j].x, this.gridPoints[i][j].y)
-                ctx.fillStyle = "black";
-                ctx.arc(coordinate.x, coordinate.y, this.gridPoints[i][j].drawRadius, 0, Math.PI*2, false)
-                ctx.fill()
+                if (this.gridPoints[i][j].shouldDraw) {
+                    const coordinate = this.gridPoints[i][j]
+                    ctx.moveTo(this.gridPoints[i][j].x, this.gridPoints[i][j].y)
+                    ctx.fillStyle = "black";
+                    ctx.arc(coordinate.x, coordinate.y, this.gridPoints[i][j].drawRadius, 0, Math.PI*2, false)
+                    ctx.fill()
+                }
             }
         }
     }

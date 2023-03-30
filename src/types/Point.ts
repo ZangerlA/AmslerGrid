@@ -5,6 +5,7 @@ export class Point {
     x: number = 0
     y: number = 0
     drawRadius: number = 7
+    shouldDraw: boolean = false
 
     constructor(x:number, y:number) {
         this.x = x

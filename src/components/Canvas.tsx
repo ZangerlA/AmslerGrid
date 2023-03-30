@@ -30,9 +30,30 @@ const Canvas: FC = (props) => {
 		event.preventDefault()
 		if (event.ctrlKey) {
 			let selectedPoints = grid.findContainingPoints({x: event.clientX, y: event.clientY})
+			console.log(selectedPoints)
+			grid.gridPoints[selectedPoints[0].i][(selectedPoints[0].j + selectedPoints[3].j)/2].shouldDraw = true
+			grid.gridPoints[(selectedPoints[3].i + selectedPoints[2].i)/2][selectedPoints[3].j].shouldDraw = true
+			grid.gridPoints[selectedPoints[2].i][(selectedPoints[2].j + selectedPoints[1].j)/2].shouldDraw = true
+			grid.gridPoints[(selectedPoints[0].i + selectedPoints[1].i)/2][selectedPoints[0].j].shouldDraw = true
+			grid.gridPoints[(selectedPoints[0].i + selectedPoints[2].i)/2][(selectedPoints[0].j + selectedPoints[2].j)/2].shouldDraw = true
 
+			grid.gridPoints[selectedPoints[0].i][(selectedPoints[0].j + selectedPoints[3].j)/2].x = (grid.gridPoints[selectedPoints[0].i][selectedPoints[0].j].x + grid.gridPoints[selectedPoints[3].i][selectedPoints[3].j].x)/2
+
+			grid.gridPoints[(selectedPoints[3].i + selectedPoints[2].i)/2][selectedPoints[3].j].x = (grid.gridPoints[selectedPoints[3].i][selectedPoints[3].j].x + grid.gridPoints[selectedPoints[2].i][selectedPoints[2].j].x)/2
+			grid.gridPoints[selectedPoints[2].i][(selectedPoints[2].j + selectedPoints[1].j)/2].x = (grid.gridPoints[selectedPoints[2].i][selectedPoints[2].j].x + grid.gridPoints[selectedPoints[1].i][selectedPoints[1].j].x)/2
+			grid.gridPoints[(selectedPoints[0].i + selectedPoints[1].i)/2][selectedPoints[0].j].x = (grid.gridPoints[selectedPoints[1].i][selectedPoints[1].j].x + grid.gridPoints[selectedPoints[0].i][selectedPoints[0].j].x)/2
+			//grid.gridPoints[(selectedPoints[0].i + selectedPoints[2].i)/2][(selectedPoints[0].j + selectedPoints[2].j)/2].x = (grid.gridPoints[selectedPoints[0].i][selectedPoints[0].j].x + grid.gridPoints[selectedPoints[3].i][selectedPoints[3].j].x)/2
+
+			grid.gridPoints[selectedPoints[0].i][(selectedPoints[0].j + selectedPoints[3].j)/2].y = (grid.gridPoints[selectedPoints[0].i][selectedPoints[0].j].y + grid.gridPoints[selectedPoints[3].i][selectedPoints[3].j].y)/2
+
+			grid.gridPoints[(selectedPoints[3].i + selectedPoints[2].i)/2][selectedPoints[3].j].y = (grid.gridPoints[selectedPoints[3].i][selectedPoints[3].j].y + grid.gridPoints[selectedPoints[2].i][selectedPoints[2].j].y)/2
+			grid.gridPoints[selectedPoints[2].i][(selectedPoints[2].j + selectedPoints[1].j)/2].y = (grid.gridPoints[selectedPoints[2].i][selectedPoints[2].j].y + grid.gridPoints[selectedPoints[1].i][selectedPoints[1].j].y)/2
+			grid.gridPoints[(selectedPoints[0].i + selectedPoints[1].i)/2][selectedPoints[0].j].y = (grid.gridPoints[selectedPoints[1].i][selectedPoints[1].j].y + grid.gridPoints[selectedPoints[0].i][selectedPoints[0].j].y)/2
+			//grid.gridPoints[(selectedPoints[0].i + selectedPoints[2].i)/2][(selectedPoints[0].j + selectedPoints[2].j)/2].y
+
+			console.log(grid.gridPoints)
+			grid.redraw(ctx as CanvasRenderingContext2D, dimension)
 		}
-
 	}
 	const handleContextMenu = (event: MouseEvent) => {
 		//console.log("contextmenu")
