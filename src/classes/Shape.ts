@@ -9,41 +9,67 @@ export class Shape {
     shapes: Shape[] = []
     color: string
     shouldDraw: boolean = false
+    childrenAreActive: boolean = false
 
-    constructor(meshIndices: ShapeMeshIndex, shouldDraw: boolean, color: string = "white", shapes?: Shape[]) {
+    constructor(meshIndices: ShapeMeshIndex, shouldDraw: boolean, color: string = "white", shapes?: Shape[], childrenAreActive?: boolean) {
         this.meshIndices = meshIndices
         this.shouldDraw = shouldDraw
         this.color = color
     }
 
-    gatherNodes(nodeIndices: MeshIndex[]): MeshIndex[] {
+    gatherNodes(nodeIndices: MeshIndex[] = []): MeshIndex[] {
         if (this.hasChildren()) {
-            this.shapes.forEach((shape) => {
-                return nodeIndices.push(...shape.gatherNodes(nodeIndices))
-            })
+            this.shapes.forEach((childShape) => {
+                childShape.gatherNodes(nodeIndices);
+            });
+        } else {
+            nodeIndices.push(
+                this.meshIndices.ul,
+                this.meshIndices.ur,
+                this.meshIndices.ll,
+                this.meshIndices.lr
+            );
         }
-        return [
-            this.meshIndices.ul,
-            this.meshIndices.ur,
-            this.meshIndices.ll,
-            this.meshIndices.lr
-        ];
+        return nodeIndices;
     }
 
     contains(mouseClick: Coordinate): boolean {
-        let result: boolean = false
-        this.shapes.forEach((child) => {
-            if (child.shouldDraw) {
-                result = child.contains(mouseClick)
+        return this.inside(mouseClick.x, mouseClick.y, this.getOwnNodes());
+    }
+
+    getContainer(mouseClick: Coordinate): Shape | undefined {
+        console.log(this);
+        if (this.childrenAreActive && this.contains(mouseClick)) {
+            for (const childShape of this.shapes) {
+                let container = childShape.getContainer(mouseClick);
+                if (container !== undefined) {
+                    return container;
+                }
             }
-        })
-        if (!result) {
-            result = this.inside(mouseClick.x, mouseClick.y, this.getOwnNodes())
+        } else if (this.contains(mouseClick)) {
+            return this;
         }
-        return result
+        return undefined;
     }
 
     split(): void {
+        console.log(this.meshIndices)
+        if (!this.hasChildren()) {
+            return
+        }
+        else {
+            Mesh.selectedShapes = Mesh.selectedShapes.filter((s) => s != this)
+            this.shapes.forEach((childShape) => {
+                childShape.shouldDraw = true
+                Mesh.nodes[childShape.meshIndices.ul.row][childShape.meshIndices.ul.col].isActive = true
+                Mesh.nodes[childShape.meshIndices.ur.row][childShape.meshIndices.ur.col].isActive = true
+                Mesh.nodes[childShape.meshIndices.ll.row][childShape.meshIndices.ll.col].isActive = true
+                Mesh.nodes[childShape.meshIndices.lr.row][childShape.meshIndices.lr.col].isActive = true
+            })
+        }
+        this.childrenAreActive = true
+        console.log(this.shapes)
+        /*
         console.log(this.meshIndices)
         const distance: number = (this.meshIndices.ul.col - this.meshIndices.ll.col) / 2
         console.log(distance)
@@ -84,6 +110,8 @@ export class Shape {
             const shape = new Shape(shapeMeshIndices, true)
             this.shapes.push(shape)
         }
+
+         */
     }
 
 

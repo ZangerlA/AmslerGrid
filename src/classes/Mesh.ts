@@ -14,6 +14,7 @@ interface Mesh {
     selectedShapes: Shape[],
     selectedNodes: Node[],
     initializeMesh: (dimension: Dimension) => void,
+    groupShapes: (shapes: Shape[][], limit: number) => Shape[][],
     handleSelect: (coordinate: Coordinate) => void,
     handleSingleNode: (mouseClick: Coordinate) => void,
     handleDrag: (vector: Vector, coordinate: Coordinate) => void,
@@ -44,13 +45,23 @@ export const Mesh: Mesh = {
         const cellSizeHorizontal = (dimension.currentDimension.height - 100) / this.maxMeshSize
         const cellSizeVertical = (dimension.currentDimension.width - 100) / this.maxMeshSize
         const initialCellIndexOffset = Math.floor(this.maxMeshSize/this.initialCellCount)
-        const shapes: Shape[] = []
+        //const shapes: Shape[] = []
+        const shapes: Shape[][] = []
         let colored: boolean = true
         for (let i = 0; i <= this.maxMeshSize; i++) {
             this.nodes[i] = []
+            if(i+1 <= this.maxMeshSize) {
+                shapes[i] = []
+            }
+
             for (let j = 0; j <= this.maxMeshSize; j++) {
                 const coordinate: Coordinate = {x: (cellSizeVertical*j)+50, y: (cellSizeHorizontal*i)+50}
                 this.nodes[i][j] = new Node(coordinate)
+                if (i + 1 <= this.maxMeshSize && j + 1 <= this.maxMeshSize){
+                    const shapeMeshIndex = this.createShapeMeshIndices(i, j, 1)
+                    shapes[i][j] = new Shape(shapeMeshIndex, false, undefined)
+                }
+
                 if ((i + initialCellIndexOffset) % initialCellIndexOffset == 0 && (j + initialCellIndexOffset) % initialCellIndexOffset == 0){
                     this.nodes[i][j].isActive = true
                     if (i + initialCellIndexOffset <= this.maxMeshSize && j + initialCellIndexOffset <= this.maxMeshSize){
@@ -58,16 +69,59 @@ export const Mesh: Mesh = {
                         // console.log(shapeMeshIndices)
                         // const meshIndices: MeshIndex[] =[{row: i, col: j}, {row: i, col: j + initialCellIndexOffset},  {row: i + initialCellIndexOffset, col: j + initialCellIndexOffset}, {row: i + initialCellIndexOffset, col:j}]
                         if (colored){
-                            shapes.push(new Shape( shapeMeshIndices,true, "rgba(75,139,59,0.5)"))
+                            //shapes.push(new Shape( shapeMeshIndices,true, "rgba(75,139,59,0.5)"))
                         }else {
-                            shapes.push(new Shape( shapeMeshIndices,true))
+                            //shapes.push(new Shape( shapeMeshIndices,true))
                         }
                         colored = !colored
                     }
                 }
             }
+
         }
-        this.shapes = shapes
+        // console.log(shapes)
+        // this.shapes = shapes
+        this.shapes = this.groupShapes(shapes, this.initialCellCount).flat()
+        this.shapes.forEach((shape) => shape.shouldDraw = true)
+        console.log(this.shapes)
+    },
+
+    groupShapes(shapes: Shape[][], limit: number): Shape[][] {
+        if (shapes.length <= limit) {
+            return shapes
+        }
+        const mergedShapes: Shape[][] = [];
+        const mergeFactor = 2
+
+        for (let i = 0; i < shapes.length; i += mergeFactor) {
+            const newRow: Shape[] = [];
+
+
+            for (let j = 0; j < shapes[i].length; j += mergeFactor) {
+
+                // Calculate the indices for the parent shape
+                const newMeshIndices: ShapeMeshIndex = {
+                    ul: shapes[i][j].meshIndices.ul,
+                    ur: shapes[i][j + mergeFactor - 1].meshIndices.ur,
+                    ll: shapes[i + mergeFactor - 1][j].meshIndices.ll,
+                    lr: shapes[i + mergeFactor - 1][j + mergeFactor - 1].meshIndices.lr,
+                };
+
+                const newShape = new Shape(newMeshIndices, false);
+
+                // Add children from the merged shapes
+                for (let k = 0; k < mergeFactor; k++) {
+                    for (let l = 0; l < mergeFactor; l++) {
+                        newShape.shapes.push(shapes[i + k][j + l]);
+                    }
+                }
+
+                newRow.push(newShape);
+            }
+
+            mergedShapes.push(newRow);
+        }
+        return this.groupShapes(mergedShapes, limit)
     },
 
     handleSelect(mouseClick: Coordinate): void {
@@ -75,16 +129,32 @@ export const Mesh: Mesh = {
             if (!shape.contains(mouseClick)) {
                 return
             }
-            if (this.selectedShapes.includes(shape)) {
-                this.selectedShapes = this.selectedShapes.filter((s) => s != shape)
+            const containerShape = shape.getContainer(mouseClick)
+            console.log(containerShape)
+            if (containerShape != undefined && this.selectedShapes.includes(containerShape)) {
+                this.selectedShapes = this.selectedShapes.filter((s) => s != containerShape)
             }
-            else {
-                this.selectedShapes.push(shape)
+            else if (containerShape != undefined) {
+                this.selectedShapes.push(containerShape)
             }
         })
+        console.log(this.selectedShapes)
     },
 
     handleSingleNode(mouseClick: Coordinate): void {
+        /*
+        this.shapes.forEach((shape) => {
+            if (this.nodes[shape.meshIndices.ul.row][shape.meshIndices.ul.col].wasClicked(mouseClick) ||
+                this.nodes[shape.meshIndices.ul.row][shape.meshIndices.ul.col].wasClicked(mouseClick) ||
+                this.nodes[shape.meshIndices.ul.row][shape.meshIndices.ul.col].wasClicked(mouseClick) ||
+                this.nodes[shape.meshIndices.ul.row][shape.meshIndices.ul.col].wasClicked(mouseClick)
+            ) {
+
+            }
+        })
+
+         */
+
         this.nodes.forEach((row) => {
             row.forEach((node) => {
                 if (node.isActive && node.wasClicked(mouseClick)) {
@@ -92,6 +162,8 @@ export const Mesh: Mesh = {
                 }
             })
         })
+
+
     },
 
     handleDrag(vector: Vector, mouseClick: Coordinate): void {
@@ -112,6 +184,7 @@ export const Mesh: Mesh = {
             this.selectedShapes.forEach((shape) => {
                 nodeIndices.push(...shape.gatherNodes([]))
             })
+            console.log(nodeIndices)
             this.moveNodes(getUniqueArray(nodeIndices), vector)
         }
     },
@@ -135,11 +208,13 @@ export const Mesh: Mesh = {
     },
 
     handleSplit (mouseClick: Coordinate) {
+        console.log("before", this.shapes)
         this.shapes.forEach((shape) => {
             if (shape.contains(mouseClick)) {
-                shape.split()
+                shape.getContainer(mouseClick)!.split()
             }
         })
+        console.log("after", this.shapes)
     },
 
     moveNodes(nodeIndices: MeshIndex[], vector: Vector): void {
@@ -176,6 +251,7 @@ export const Mesh: Mesh = {
 
         })
         this.selectedShapes.forEach((shape) => {
+            console.log(this.selectedShapes)
             const shapeNodes : Node[] = shape.getOwnNodes()
             ctx.beginPath()
             ctx.moveTo(shapeNodes[0].coordinate.x,shapeNodes[0].coordinate.y)
@@ -198,8 +274,10 @@ export const Mesh: Mesh = {
             ctx.beginPath()
             ctx.moveTo(this.nodes[i][0].coordinate.x,this.nodes[i][0].coordinate.y)
             for (let j = 0; j < this.nodes[i].length; j++) {
+
                 const node = this.nodes[i][j]
                 if (node.isActive){
+                    //console.log(this.nodes[i][j])
                     ctx.lineTo(node.coordinate.x, node.coordinate.y)
                 }
             }
