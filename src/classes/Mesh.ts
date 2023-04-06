@@ -75,11 +75,12 @@ export const Mesh: Mesh = {
             if (!shape.contains(mouseClick)) {
                 return
             }
-            if (this.selectedShapes.includes(shape)) {
-                this.selectedShapes = this.selectedShapes.filter((s) => s != shape)
+            const container = shape.getContainer(mouseClick)
+            if (container != undefined && this.selectedShapes.includes(container)) {
+                this.selectedShapes = this.selectedShapes.filter((s) => s != container)
             }
-            else {
-                this.selectedShapes.push(shape)
+            else if (container != undefined) {
+                this.selectedShapes.push(container)
             }
         })
     },
@@ -137,7 +138,7 @@ export const Mesh: Mesh = {
     handleSplit (mouseClick: Coordinate) {
         this.shapes.forEach((shape) => {
             if (shape.contains(mouseClick)) {
-                shape.split()
+                shape.getContainer(mouseClick)!.split()
             }
         })
     },
