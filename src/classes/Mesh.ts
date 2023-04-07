@@ -197,7 +197,6 @@ export const Mesh: Mesh = {
         //horizontal lines
         for (let i = 0; i < this.nodes.length; i++) {
             ctx.beginPath()
-            ctx.moveTo(this.nodes[i][0].coordinate.x,this.nodes[i][0].coordinate.y)
             for (let j = 0; j < this.nodes[i].length; j++) {
                 const node = this.nodes[i][j]
                 if (node.isActive){
@@ -210,7 +209,6 @@ export const Mesh: Mesh = {
         //vertical lines
         for (let i = 0; i < this.nodes.length; i++) {
             ctx.beginPath()
-            ctx.moveTo(this.nodes[0][i].coordinate.x,this.nodes[0][i].coordinate.y)
             for (let j = 0; j < this.nodes[i].length; j++) {
                 const node = this.nodes[j][i]
                 if (node.isActive){
