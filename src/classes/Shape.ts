@@ -137,11 +137,24 @@ export class Shape {
         };
 
         this.shapes.push(
-            new Shape(shape1Indices, true, "green"),
+            new Shape(shape1Indices, true, "rgba(75,139,59,0.5)"),
             new Shape(shape2Indices, true),
-            new Shape(shape3Indices, true, "green"),
-            new Shape(shape4Indices, true)
+            new Shape(shape3Indices, true),
+            new Shape(shape4Indices, true, "rgba(75,139,59,0.5)")
         );
+        //update neighbor shapes
+        /*this.shapes.forEach((shape) => {
+            shape.gatherNodes().forEach((node) => {
+                Mesh.shapes.forEach((compareShape) => {
+                    compareShape.gatherNodes().forEach((compareNode) => {
+                        if ((node.col == compareNode.col - 4 && node.row == compareNode.row)||(node.col == compareNode.col && node.row == compareNode.row - 4)){
+
+                        }
+                    })
+                })
+            })
+        })*/
+
         /*
         console.log(this.meshIndices)
         const distance: number = (this.meshIndices.ul.col - this.meshIndices.ll.col) / 2
@@ -218,7 +231,7 @@ export class Shape {
         return result
     }
 
-    private hasChildren(): boolean {
+    public hasChildren(): boolean {
         return !(this.shapes.length == 0)
     }
 }
