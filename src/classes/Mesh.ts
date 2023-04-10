@@ -59,7 +59,12 @@ export const Mesh: Mesh = {
                 this.nodes[i][j] = new Node(coordinate)
                 if (i + 1 <= this.maxMeshSize && j + 1 <= this.maxMeshSize){
                     const shapeMeshIndex = this.createShapeMeshIndices(i, j, 1)
-                    shapes[i][j] = new Shape(shapeMeshIndex, false, undefined)
+                    if (colored){
+                        shapes[i][j] = new Shape(shapeMeshIndex, false, undefined)
+                    }else {
+                        shapes[i][j] = new Shape(shapeMeshIndex, false, "rgba(75,139,59,0.5)")
+                    }
+                    colored = !colored
                 }
 
                 if ((i + initialCellIndexOffset) % initialCellIndexOffset == 0 && (j + initialCellIndexOffset) % initialCellIndexOffset == 0){
@@ -107,7 +112,7 @@ export const Mesh: Mesh = {
                     lr: shapes[i + mergeFactor - 1][j + mergeFactor - 1].meshIndices.lr,
                 };
 
-                const newShape = new Shape(newMeshIndices, false);
+                const newShape = new Shape(newMeshIndices, false, "green");
 
                 // Add children from the merged shapes
                 for (let k = 0; k < mergeFactor; k++) {
@@ -239,45 +244,19 @@ export const Mesh: Mesh = {
 
     drawShapeFill(ctx: CanvasRenderingContext2D):void{
         this.shapes.forEach((shape) => {
-            const shapeNodes : Node[] = shape.getOwnNodes()
-            ctx.beginPath()
-            ctx.moveTo(shapeNodes[0].coordinate.x,shapeNodes[0].coordinate.y)
-            shapeNodes.forEach((node) => {
-                ctx.lineTo(node.coordinate.x, node.coordinate.y)
-            })
-            ctx.closePath()
-            ctx.fillStyle = shape.color
-            ctx.fill()
-
-        })
-        this.selectedShapes.forEach((shape) => {
-            console.log(this.selectedShapes)
-            const shapeNodes : Node[] = shape.getOwnNodes()
-            ctx.beginPath()
-            ctx.moveTo(shapeNodes[0].coordinate.x,shapeNodes[0].coordinate.y)
-            shapeNodes.forEach((node) => {
-                ctx.lineTo(node.coordinate.x, node.coordinate.y)
-            })
-            ctx.closePath()
-            if (shape.color === "white"){
-                ctx.fillStyle = "rgba(40,40,100,0.7)"
-            }else {
-                ctx.fillStyle = "grey"
-            }
-            ctx.fill()
+            shape.draw(ctx, shape.color)
         })
     },
 
     drawHelpLines(ctx: CanvasRenderingContext2D) {
+        const initialCellIndexOffset = Math.floor(this.maxMeshSize/this.initialCellCount)
         //horizontal lines
         for (let i = 0; i < this.nodes.length; i++) {
             ctx.beginPath()
-            ctx.moveTo(this.nodes[i][0].coordinate.x,this.nodes[i][0].coordinate.y)
             for (let j = 0; j < this.nodes[i].length; j++) {
-
                 const node = this.nodes[i][j]
                 if (node.isActive){
-                    //console.log(this.nodes[i][j])
+
                     ctx.lineTo(node.coordinate.x, node.coordinate.y)
                 }
             }
@@ -287,7 +266,6 @@ export const Mesh: Mesh = {
         //vertical lines
         for (let i = 0; i < this.nodes.length; i++) {
             ctx.beginPath()
-            ctx.moveTo(this.nodes[0][i].coordinate.x,this.nodes[0][i].coordinate.y)
             for (let j = 0; j < this.nodes[i].length; j++) {
                 const node = this.nodes[j][i]
                 if (node.isActive){
