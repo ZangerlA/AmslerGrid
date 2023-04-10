@@ -9,8 +9,8 @@ import {getUniqueArray} from "../helperMethods/Array";
 interface Mesh {
     nodes: Node[][], 
     shapes: Shape[],
-    initialCellCount: number, 
-    maxMeshSize: number, 
+    initialCellCount: number,
+    maxMeshSize: number,
     selectedShapes: Shape[],
     selectedNodes: Node[],
     initializeMesh: (dimension: Dimension) => void,
@@ -27,6 +27,7 @@ interface Mesh {
     drawCenterPoint: (ctx: CanvasRenderingContext2D, dimension: Dimension) => void,
     drawPoint: (ctx: CanvasRenderingContext2D, coordinate: Coordinate, radius: number, color: string) => void,
     drawShapeFill: (ctx: CanvasRenderingContext2D) => void,
+    colorShape: (ctx:CanvasRenderingContext2D, shape:Shape) => void,
     findBoundaryNodes: (nodeIndices: MeshIndex[]) => MeshIndex[],
     calculateCenterOfNodes: (nodeIndices: MeshIndex[]) => Coordinate,
     createShapeMeshIndices: (i: number, j: number, offset: number) => ShapeMeshIndex,
@@ -165,7 +166,7 @@ export const Mesh: Mesh = {
 
     drawShapeFill(ctx: CanvasRenderingContext2D):void{
         this.shapes.forEach((shape) => {
-            const shapeNodes : Node[] = shape.getOwnNodes()
+            /*const shapeNodes : Node[] = shape.getOwnNodes()
             ctx.beginPath()
             ctx.moveTo(shapeNodes[0].coordinate.x,shapeNodes[0].coordinate.y)
             shapeNodes.forEach((node) => {
@@ -173,8 +174,8 @@ export const Mesh: Mesh = {
             })
             ctx.closePath()
             ctx.fillStyle = shape.color
-            ctx.fill()
-
+            ctx.fill()*/
+            this.colorShape(ctx, shape)
         })
         this.selectedShapes.forEach((shape) => {
             const shapeNodes : Node[] = shape.getOwnNodes()
@@ -193,14 +194,38 @@ export const Mesh: Mesh = {
         })
     },
 
+    colorShape(ctx: CanvasRenderingContext2D, shape: Shape): void {
+        if (shape.hasChildren()){
+            shape.shapes.forEach((shape)=>{
+                this.colorShape(ctx, shape)
+            })
+        }else{
+            const shapeNodes : Node[] = shape.getOwnNodes()
+            ctx.beginPath()
+            ctx.moveTo(shapeNodes[0].coordinate.x,shapeNodes[0].coordinate.y)
+            shapeNodes.forEach((node) => {
+                ctx.lineTo(node.coordinate.x, node.coordinate.y)
+            })
+            ctx.closePath()
+            ctx.fillStyle = shape.color
+            ctx.fill()
+        }
+    },
+
+
     drawHelpLines(ctx: CanvasRenderingContext2D) {
+        const initialCellIndexOffset = Math.floor(this.maxMeshSize/this.initialCellCount)
+        let lastactiverow = 0
+        let lastactivecol = 0
         //horizontal lines
         for (let i = 0; i < this.nodes.length; i++) {
             ctx.beginPath()
             for (let j = 0; j < this.nodes[i].length; j++) {
                 const node = this.nodes[i][j]
-                if (node.isActive){
+                if (node.isActive ){
                     ctx.lineTo(node.coordinate.x, node.coordinate.y)
+                    lastactiverow = i
+                    lastactivecol = j
                 }
             }
             ctx.stroke()
@@ -277,5 +302,5 @@ export const Mesh: Mesh = {
             ll: {row: i + offset, col:j},
             lr: {row: i + offset, col: j + offset}
         }
-    },
+    }
 }
