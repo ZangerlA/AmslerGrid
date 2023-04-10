@@ -30,15 +30,17 @@ export class Shape {
                 })
             }
         }
-        const shapeNodes = this.getOwnNodes()
-        ctx.beginPath()
-        ctx.moveTo(shapeNodes[0].coordinate.x,shapeNodes[0].coordinate.y)
-        shapeNodes.forEach((node) => {
-            ctx.lineTo(node.coordinate.x, node.coordinate.y)
-        })
-        ctx.closePath()
-        ctx.fillStyle = color
-        ctx.fill()
+        else {
+            const shapeNodes = this.getOwnNodes()
+            ctx.beginPath()
+            ctx.moveTo(shapeNodes[0].coordinate.x,shapeNodes[0].coordinate.y)
+            shapeNodes.forEach((node) => {
+                ctx.lineTo(node.coordinate.x, node.coordinate.y)
+            })
+            ctx.closePath()
+            ctx.fillStyle = color
+            ctx.fill()
+        }
     }
 
     gatherNodes(nodeIndices: MeshIndex[] = []): MeshIndex[] {
