@@ -56,13 +56,17 @@ export const Mesh: Mesh = {
                     this.nodes[i][j].isActive = true
                     if (i + initialCellIndexOffset <= this.maxMeshSize && j + initialCellIndexOffset <= this.maxMeshSize){
                         const shapeMeshIndices = this.createShapeMeshIndices(i, j, initialCellIndexOffset)
+                        const shape = new Shape(shapeMeshIndices, true)
+                        //shape.addMeshIndex({row: i,col: j})
+                        //shape.addMeshIndex({row: i + initialCellIndexOffset,col: j})
+                        //shape.addMeshIndex({row: i + initialCellIndexOffset,col: j + initialCellIndexOffset})
+                        //shape.addMeshIndex({row: i,col: j + initialCellIndexOffset})
                         // console.log(shapeMeshIndices)
                         // const meshIndices: MeshIndex[] =[{row: i, col: j}, {row: i, col: j + initialCellIndexOffset},  {row: i + initialCellIndexOffset, col: j + initialCellIndexOffset}, {row: i + initialCellIndexOffset, col:j}]
-                        if (colored){
-                            shapes.push(new Shape( shapeMeshIndices,true, "rgba(75,139,59,0.5)"))
-                        }else {
-                            shapes.push(new Shape( shapeMeshIndices,true))
+                        if (colored) {
+                            shape.color = "rgba(75,139,59,0.5)"
                         }
+                        shapes.push(shape)
                         colored = !colored
                     }
                 }
@@ -97,6 +101,7 @@ export const Mesh: Mesh = {
     },
 
     handleDrag(vector: Vector, mouseClick: Coordinate): void {
+        // if there are selected nodes move all of them
         if (this.selectedNodes.length != 0) {
             this.selectedNodes.forEach((node) => {
                 node.move(vector)
@@ -175,7 +180,7 @@ export const Mesh: Mesh = {
             ctx.closePath()
             ctx.fillStyle = shape.color
             ctx.fill()*/
-            this.colorShape(ctx, shape)
+            shape.draw(ctx)
         })
         this.selectedShapes.forEach((shape) => {
             const shapeNodes : Node[] = shape.getOwnNodes()
@@ -214,9 +219,6 @@ export const Mesh: Mesh = {
 
 
     drawHelpLines(ctx: CanvasRenderingContext2D) {
-        const initialCellIndexOffset = Math.floor(this.maxMeshSize/this.initialCellCount)
-        let lastactiverow = 0
-        let lastactivecol = 0
         //horizontal lines
         for (let i = 0; i < this.nodes.length; i++) {
             ctx.beginPath()
@@ -224,8 +226,6 @@ export const Mesh: Mesh = {
                 const node = this.nodes[i][j]
                 if (node.isActive ){
                     ctx.lineTo(node.coordinate.x, node.coordinate.y)
-                    lastactiverow = i
-                    lastactivecol = j
                 }
             }
             ctx.stroke()
@@ -242,6 +242,13 @@ export const Mesh: Mesh = {
             }
             ctx.stroke()
             ctx.closePath()
+        }
+        let lastActiveHorizontalNodeIndex = 0;
+        let lastActiveVerticalNodeIndex = 0;
+        for (let i = 0; i < this.nodes.length; i++) {
+            for (let j = 0; j < this.nodes[i].length; j++) {
+
+            }
         }
     },
 
