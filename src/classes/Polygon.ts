@@ -1,18 +1,18 @@
 import {Node} from "./Node";
 import {MeshIndex, ShapeMeshIndex} from "../types/MeshIndex";
 import {Vector} from "../types/Vector";
-import {Mesh} from "./Mesh";
+import {Mesh, MeshInstance} from "./Mesh";
 import {Coordinate} from "../types/Coordinate";
 import {getUniqueArray} from "../helperMethods/Array";
 
-export class Shape {
+export class Polygon {
     cornerIndices: ShapeMeshIndex
     meshIndices: MeshIndex[] = []
-    shapes: Shape[] = []
+    shapes: Polygon[] = []
     color: string
     shouldDraw: boolean = false
 
-    constructor(cornerIndices: ShapeMeshIndex, shouldDraw: boolean, color: string = "white", shapes?: Shape[]) {
+    constructor(cornerIndices: ShapeMeshIndex, shouldDraw: boolean, color: string = "white", shapes?: Polygon[]) {
         this.cornerIndices = cornerIndices
         this.shouldDraw = shouldDraw
         this.color = color
@@ -70,11 +70,11 @@ export class Shape {
         return nodeIndices;
     }
 
-    contains(mouseClick: Coordinate): boolean {
+    hasInside(mouseClick: Coordinate): boolean {
         let result: boolean = false
         this.shapes.forEach((child) => {
             if (child.shouldDraw) {
-                result = child.contains(mouseClick)
+                result = child.hasInside(mouseClick)
             }
         })
         if (!result) {
@@ -83,16 +83,16 @@ export class Shape {
         return result
     }
 
-    getContainer(mouseClick: Coordinate): Shape | undefined {
+    getContainer(mouseClick: Coordinate): Polygon | undefined {
         console.log(this);
-        if (this.hasChildren() && this.contains(mouseClick)) {
+        if (this.hasChildren() && this.hasInside(mouseClick)) {
             for (const childShape of this.shapes) {
                 let container = childShape.getContainer(mouseClick);
                 if (container !== undefined) {
                     return container;
                 }
             }
-        } else if (this.contains(mouseClick)) {
+        } else if (this.hasInside(mouseClick)) {
             return this;
         }
         return undefined;
@@ -112,39 +112,39 @@ export class Shape {
         const center = { row: midLeft.row, col: midTop.col };
 
         // Get all the midpoint nodes and set isActive to true
-        const midTopNode = Mesh.nodes[midTop.row][midTop.col];
-        const midRightNode = Mesh.nodes[midRight.row][midRight.col];
-        const midBottomNode = Mesh.nodes[midBottom.row][midBottom.col];
-        const midLeftNode = Mesh.nodes[midLeft.row][midLeft.col];
-        const centerNode = Mesh.nodes[center.row][center.col];
+        const midTopNode = MeshInstance.nodes[midTop.row][midTop.col];
+        const midRightNode = MeshInstance.nodes[midRight.row][midRight.col];
+        const midBottomNode = MeshInstance.nodes[midBottom.row][midBottom.col];
+        const midLeftNode = MeshInstance.nodes[midLeft.row][midLeft.col];
+        const centerNode = MeshInstance.nodes[center.row][center.col];
 
         if (!midTopNode.isActive) {
             midTopNode.isActive = true;
             midTopNode.coordinate = this.calculateMidpointCoordinate(
-                Mesh.nodes[this.cornerIndices.ul.row][this.cornerIndices.ul.col].coordinate,
-                Mesh.nodes[this.cornerIndices.ur.row][this.cornerIndices.ur.col].coordinate
+                MeshInstance.nodes[this.cornerIndices.ul.row][this.cornerIndices.ul.col].coordinate,
+                MeshInstance.nodes[this.cornerIndices.ur.row][this.cornerIndices.ur.col].coordinate
             );
         }
         // Update coordinates of the midpoint nodes
         if (!midRightNode.isActive) {
             midRightNode.isActive = true;
             midRightNode.coordinate = this.calculateMidpointCoordinate(
-                Mesh.nodes[this.cornerIndices.ur.row][this.cornerIndices.ur.col].coordinate,
-                Mesh.nodes[this.cornerIndices.lr.row][this.cornerIndices.lr.col].coordinate
+                MeshInstance.nodes[this.cornerIndices.ur.row][this.cornerIndices.ur.col].coordinate,
+                MeshInstance.nodes[this.cornerIndices.lr.row][this.cornerIndices.lr.col].coordinate
             );
         }
         if (!midBottomNode.isActive) {
             midBottomNode.isActive = true;
             midBottomNode.coordinate = this.calculateMidpointCoordinate(
-                Mesh.nodes[this.cornerIndices.ll.row][this.cornerIndices.ll.col].coordinate,
-                Mesh.nodes[this.cornerIndices.lr.row][this.cornerIndices.lr.col].coordinate
+                MeshInstance.nodes[this.cornerIndices.ll.row][this.cornerIndices.ll.col].coordinate,
+                MeshInstance.nodes[this.cornerIndices.lr.row][this.cornerIndices.lr.col].coordinate
             );
         }
         if (!midLeftNode.isActive) {
             midLeftNode.isActive = true;
             midLeftNode.coordinate = this.calculateMidpointCoordinate(
-                Mesh.nodes[this.cornerIndices.ul.row][this.cornerIndices.ul.col].coordinate,
-                Mesh.nodes[this.cornerIndices.ll.row][this.cornerIndices.ll.col].coordinate
+                MeshInstance.nodes[this.cornerIndices.ul.row][this.cornerIndices.ul.col].coordinate,
+                MeshInstance.nodes[this.cornerIndices.ll.row][this.cornerIndices.ll.col].coordinate
             );
         }
         if (!centerNode.isActive){
@@ -184,10 +184,10 @@ export class Shape {
         };
 
         this.shapes.push(
-            new Shape(shape1Indices, true, "rgba(75,139,59,0.5)"),
-            new Shape(shape2Indices, true),
-            new Shape(shape3Indices, true),
-            new Shape(shape4Indices, true, "rgba(75,139,59,0.5)")
+            new Polygon(shape1Indices, true, "rgba(75,139,59,0.5)"),
+            new Polygon(shape2Indices, true),
+            new Polygon(shape3Indices, true),
+            new Polygon(shape4Indices, true, "rgba(75,139,59,0.5)")
         );
 
         console.log(this.getOwnNodes())
@@ -257,16 +257,10 @@ export class Shape {
     }
 
     getOwnNodes(): Node[] {
-        //TODO replace with meshIndices
-
         let nodes: Node[] = []
         this.meshIndices.forEach((index) => {
-            nodes.push(Mesh.nodes[index.row][index.col])
+            nodes.push(MeshInstance.nodes[index.row][index.col])
         })
-        //nodes.push(Mesh.nodes[this.cornerIndices.ur.row][this.cornerIndices.ur.col])
-        //nodes.push(Mesh.nodes[this.cornerIndices.ul.row][this.cornerIndices.ul.col])
-        //nodes.push(Mesh.nodes[this.cornerIndices.ll.row][this.cornerIndices.ll.col])
-        //nodes.push(Mesh.nodes[this.cornerIndices.lr.row][this.cornerIndices.lr.col])
         return nodes
     }
 
@@ -286,6 +280,6 @@ export class Shape {
     }
 
     public hasChildren(): boolean {
-        return !(this.shapes.length == 0)
+        return !(this.shapes.length === 0)
     }
 }

@@ -1,94 +1,92 @@
 import {Node} from "./Node";
-import {Shape} from "./Shape";
+import {Polygon} from "./Polygon";
 import {Dimension} from "../customHooks/UseWindowDimensions";
 import {Coordinate} from "../types/Coordinate";
 import {MeshIndex, ShapeMeshIndex} from "../types/MeshIndex";
 import {Vector} from "../types/Vector";
 import {getUniqueArray} from "../helperMethods/Array";
+import {InitialMeshConfig} from "../types/InitialMeshConfig";
 
-interface Mesh {
-    nodes: Node[][], 
-    shapes: Shape[],
-    initialCellCount: number,
-    maxMeshSize: number,
-    selectedShapes: Shape[],
-    selectedNodes: Node[],
-    initializeMesh: (dimension: Dimension) => void,
-    handleSelect: (coordinate: Coordinate) => void,
-    handleSingleNode: (mouseClick: Coordinate) => void,
-    handleDrag: (vector: Vector, coordinate: Coordinate) => void,
-    handleRotate: (degree: number, mouseClick: Coordinate) => void,
-    handleSplit: (mouseClick: Coordinate) => void,
-    moveNodes: (nodeIndices: MeshIndex[], vector: Vector) => void,
-    rotateNodes: (nodeIndices: MeshIndex[], point: Coordinate, degree: number) => void,
-    draw: (ctx: CanvasRenderingContext2D, dimension: Dimension) => void,
-    drawHelpLines: (ctx: CanvasRenderingContext2D) => void,
-    drawHelpPoints: (ctx: CanvasRenderingContext2D) => void,
-    drawCenterPoint: (ctx: CanvasRenderingContext2D, dimension: Dimension) => void,
-    drawPoint: (ctx: CanvasRenderingContext2D, coordinate: Coordinate, radius: number, color: string) => void,
-    drawShapeFill: (ctx: CanvasRenderingContext2D) => void,
-    colorShape: (ctx:CanvasRenderingContext2D, shape:Shape) => void,
-    findBoundaryNodes: (nodeIndices: MeshIndex[]) => MeshIndex[],
-    calculateCenterOfNodes: (nodeIndices: MeshIndex[]) => Coordinate,
-    createShapeMeshIndices: (i: number, j: number, offset: number) => ShapeMeshIndex,
-}
-
-export const Mesh: Mesh = {
-    nodes: [],
-    shapes: [],
-    initialCellCount: 5,
-    maxMeshSize: 40,
-    selectedShapes: [],
-    selectedNodes: [],
+export class Mesh {
+    nodes: Node[][] = []
+    private selectedNodes: Node[] = []
+    private polygons: Polygon[] = []
+    private selectedPolygons: Polygon[] = []
 
     initializeMesh(dimension: Dimension): void {
-        const cellSizeHorizontal = (dimension.currentDimension.height - 100) / this.maxMeshSize
-        const cellSizeVertical = (dimension.currentDimension.width - 100) / this.maxMeshSize
-        const initialCellIndexOffset = Math.floor(this.maxMeshSize/this.initialCellCount)
-        const shapes: Shape[] = []
-        let colored: boolean = true
-        for (let i = 0; i <= this.maxMeshSize; i++) {
-            this.nodes[i] = []
-            for (let j = 0; j <= this.maxMeshSize; j++) {
-                const coordinate: Coordinate = {x: (cellSizeVertical*j)+50, y: (cellSizeHorizontal*i)+50}
-                this.nodes[i][j] = new Node(coordinate)
-                if ((i + initialCellIndexOffset) % initialCellIndexOffset == 0 && (j + initialCellIndexOffset) % initialCellIndexOffset == 0){
-                    this.nodes[i][j].isActive = true
-                    if (i + initialCellIndexOffset <= this.maxMeshSize && j + initialCellIndexOffset <= this.maxMeshSize){
-                        const shapeMeshIndices = this.createShapeMeshIndices(i, j, initialCellIndexOffset)
-                        const shape = new Shape(shapeMeshIndices, true)
-                        //shape.addMeshIndex({row: i,col: j})
-                        //shape.addMeshIndex({row: i + initialCellIndexOffset,col: j})
-                        //shape.addMeshIndex({row: i + initialCellIndexOffset,col: j + initialCellIndexOffset})
-                        //shape.addMeshIndex({row: i,col: j + initialCellIndexOffset})
-                        // console.log(shapeMeshIndices)
-                        // const meshIndices: MeshIndex[] =[{row: i, col: j}, {row: i, col: j + initialCellIndexOffset},  {row: i + initialCellIndexOffset, col: j + initialCellIndexOffset}, {row: i + initialCellIndexOffset, col:j}]
-                        if (colored) {
-                            shape.color = "rgba(75,139,59,0.5)"
-                        }
-                        shapes.push(shape)
-                        colored = !colored
-                    }
-                }
+        const cellCount = 5
+        const maxMeshSize = 40
+        const config: InitialMeshConfig = {
+            cellCount: cellCount,
+            maxMeshSize: maxMeshSize,
+            cellSizeVertical: (dimension.currentDimension.width - 100) / maxMeshSize,
+            cellSizeHorizontal: (dimension.currentDimension.height - 100) / maxMeshSize,
+            cellIndexOffset: Math.floor(maxMeshSize / cellCount),
+        }
+        
+        this.nodes = this.createNodes(config)
+        this.polygons = this.createPolygons(config)
+    }
+    
+    private createNodes(config: InitialMeshConfig): Node[][] {
+        const nodes: Node[][] = []
+        for (let i = 0; i <= config.maxMeshSize; i++) {
+            nodes[i] = []
+            for (let j = 0; j <= config.maxMeshSize; j++) {
+                nodes[i][j] = this.createNode(i, j, config)
             }
         }
-        this.shapes = shapes
-    },
+        return nodes
+    }
+    
+    private createNode(i: number, j: number, config: InitialMeshConfig): Node {
+        const coordinate: Coordinate = {
+            x: (config.cellSizeVertical * j) + 50,
+            y: (config.cellSizeHorizontal * i) + 50
+        }
+        const node = new Node(coordinate)
+        if (i % config.cellIndexOffset === 0 && j % config.cellIndexOffset === 0){
+            node.isActive = true
+        }
+        return node
+    }
+    
+    private createPolygons(config: InitialMeshConfig): Polygon[] {
+        const polygons: Polygon[] = []
+        for (let i = 0; i < config.cellCount; i ++) {
+            for (let j = 0; j < config.cellCount; j++) {
+                polygons.push(this.createPolygon(i, j, config))
+            }
+        }
+        return polygons
+    }
+    
+    private createPolygon(i: number, j: number, config: InitialMeshConfig): Polygon {
+        const shapeMeshIndices = this.createShapeMeshIndices(i * config.cellIndexOffset, j * config.cellIndexOffset, config.cellIndexOffset)
+        const polygon = new Polygon(shapeMeshIndices, true)
+        const isGreen = ((i ^ j) & 1) === 0 // Chess pattern
+        polygon.color = isGreen ? "rgba(75,139,59,0.5)" : "white"
+        return polygon
+    }
 
     handleSelect(mouseClick: Coordinate): void {
-        this.shapes.forEach((shape) => {
-            if (!shape.contains(mouseClick)) {
+        this.polygons.forEach((polygon) => {
+            const container = polygon.getContainer(mouseClick)
+            if (container === undefined) {
                 return
             }
-            const container = shape.getContainer(mouseClick)
-            if (container != undefined && this.selectedShapes.includes(container)) {
-                this.selectedShapes = this.selectedShapes.filter((s) => s != container)
+            if (this.selectedPolygons.includes(container)) {
+                this.removePolygonFromSelected(container)
             }
-            else if (container != undefined) {
-                this.selectedShapes.push(container)
+            else {
+                this.selectedPolygons.push(container)
             }
         })
-    },
+    }
+    
+    private removePolygonFromSelected(polygon: Polygon): void {
+        this.selectedPolygons = this.selectedPolygons.filter((polygon2) => polygon2 !== polygon)
+    }
 
     handleSingleNode(mouseClick: Coordinate): void {
         this.nodes.forEach((row) => {
@@ -98,91 +96,82 @@ export const Mesh: Mesh = {
                 }
             })
         })
-    },
+    }
 
-    handleDrag(vector: Vector, mouseClick: Coordinate): void {
-        // if there are selected nodes move all of them
-        if (this.selectedNodes.length != 0) {
-            this.selectedNodes.forEach((node) => {
-                node.move(vector)
-            })
+    handleDrag(vector: Vector): void {
+        if (this.dragSelectedNodes(vector)) {
             return
         }
-        let shouldDrag = false
+        else this.dragSelectedPolygons(vector)
+    }
+    
+    private dragSelectedNodes(vector: Vector): boolean {
+        this.selectedNodes.forEach((node) => {
+            node.move(vector)
+            return true
+        })
+        return false
+    }
+    
+    private dragSelectedPolygons(vector: Vector) {
         let nodeIndices: MeshIndex[] = []
-        this.selectedShapes.forEach((shape) => {
-            if (shape.contains(mouseClick)) {
-                shouldDrag = true
-            }
+        this.selectedPolygons.forEach((shape) => {
+            nodeIndices.push(...shape.gatherNodes([]))
         })
-        if (shouldDrag) {
-            this.selectedShapes.forEach((shape) => {
-                nodeIndices.push(...shape.gatherNodes([]))
-            })
-            this.moveNodes(getUniqueArray(nodeIndices), vector)
-        }
-    },
-
-    handleRotate(degree: number, mousePosition: Coordinate): void {
-        let shouldRotate = false
-        let nodeIndices: MeshIndex[] = []
-        this.selectedShapes.forEach((shape) => {
-            if (shape.contains(mousePosition)) {
-                shouldRotate = true
-            }
-        })
-        if (shouldRotate) {
-            this.selectedShapes.forEach((shape) => {
-                nodeIndices.push(...shape.gatherNodes([]))
-            })
-            const uniqueNodes = getUniqueArray(nodeIndices)
-            const centerPoint = this.calculateCenterOfNodes(this.findBoundaryNodes(uniqueNodes))
-            this.rotateNodes(uniqueNodes, centerPoint, degree)
-        }
-    },
-
-    handleSplit (mouseClick: Coordinate) {
-        this.shapes.forEach((shape) => {
-            if (shape.contains(mouseClick)) {
-                shape.getContainer(mouseClick)!.split()
-            }
-        })
-    },
-
-    moveNodes(nodeIndices: MeshIndex[], vector: Vector): void {
+        this.moveNodes(getUniqueArray(nodeIndices), vector)
+    }
+    
+    private moveNodes(nodeIndices: MeshIndex[], vector: Vector): void {
         nodeIndices.forEach((index) => {
             this.nodes[index.row][index.col].move(vector)
         })
-    },
+    }
+    
+    handleRelease(): void {
+        this.selectedNodes = []
+    }
 
-    rotateNodes(nodeIndices: MeshIndex[], point: Coordinate, degree: number): void {
+    handleRotate(degree: number): void {
+        this.rotateSelectedPolygons(degree)
+    }
+    
+    private rotateSelectedPolygons(degree: number) {
+        let nodeIndices: MeshIndex[] = []
+        this.selectedPolygons.forEach((shape) => {
+            nodeIndices.push(...shape.gatherNodes([]))
+        })
+        const uniqueNodes = getUniqueArray(nodeIndices)
+        const centerPoint = this.calculateCenterOfNodes(this.findBoundaryNodes(uniqueNodes))
+        this.rotateNodes(uniqueNodes, centerPoint, degree)
+    }
+    
+    private rotateNodes(nodeIndices: MeshIndex[], point: Coordinate, degree: number): void {
         nodeIndices.forEach((index) => {
             this.nodes[index.row][index.col].rotateAround(point, degree)
         })
-    },
+    }
 
+    handleSplit (mouseClick: Coordinate) {
+        this.polygons.forEach((shape) => {
+            if (shape.hasInside(mouseClick)) {
+                shape.getContainer(mouseClick)!.split()
+            }
+        })
+    }
+    
     draw(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
         ctx.clearRect(0, 0, dimension.currentDimension.width, dimension.currentDimension.height)
         this.drawShapeFill(ctx)
         this.drawHelpLines(ctx)
         this.drawHelpPoints(ctx)
         this.drawCenterPoint(ctx, dimension)
-    },
+    }
 
     drawShapeFill(ctx: CanvasRenderingContext2D):void{
-        this.shapes.forEach((shape) => {
-            /*const shapeNodes : Node[] = shape.getOwnNodes()
-            ctx.beginPath()
-            ctx.moveTo(shapeNodes[0].coordinate.x,shapeNodes[0].coordinate.y)
-            shapeNodes.forEach((node) => {
-                ctx.lineTo(node.coordinate.x, node.coordinate.y)
-            })
-            ctx.closePath()
-            ctx.fillStyle = shape.color
-            ctx.fill()*/
+        this.polygons.forEach((shape) => {
             shape.draw(ctx)
         })
-        this.selectedShapes.forEach((shape) => {
+        this.selectedPolygons.forEach((shape) => {
             const shapeNodes : Node[] = shape.getOwnNodes()
             ctx.beginPath()
             ctx.moveTo(shapeNodes[0].coordinate.x,shapeNodes[0].coordinate.y)
@@ -197,9 +186,9 @@ export const Mesh: Mesh = {
             }
             ctx.fill()
         })
-    },
+    }
 
-    colorShape(ctx: CanvasRenderingContext2D, shape: Shape): void {
+    colorShape(ctx: CanvasRenderingContext2D, shape: Polygon): void {
         if (shape.hasChildren()){
             shape.shapes.forEach((shape)=>{
                 this.colorShape(ctx, shape)
@@ -215,8 +204,7 @@ export const Mesh: Mesh = {
             ctx.fillStyle = shape.color
             ctx.fill()
         }
-    },
-
+    }
 
     drawHelpLines(ctx: CanvasRenderingContext2D) {
         //horizontal lines
@@ -250,7 +238,7 @@ export const Mesh: Mesh = {
 
             }
         }
-    },
+    }
 
     drawHelpPoints(ctx: CanvasRenderingContext2D) {
         for (let i = 0; i < this.nodes.length; i++) {
@@ -261,12 +249,12 @@ export const Mesh: Mesh = {
                 }
             }
         }
-    },
+    }
 
     drawCenterPoint(ctx: CanvasRenderingContext2D, dimension: Dimension) {
         const coordinate: Coordinate = {x: dimension.currentDimension.width/2, y: dimension.currentDimension.height/2}
         this.drawPoint(ctx, coordinate, 10, "red")
-    },
+    }
 
     drawPoint(ctx: CanvasRenderingContext2D, coordinate: Coordinate, radius: number, color: string) {
         ctx.beginPath()
@@ -274,9 +262,10 @@ export const Mesh: Mesh = {
         ctx.fillStyle = color
         ctx.arc(coordinate.x, coordinate.y, radius, 0, Math.PI*2, false)
         ctx.fill()
-    },
+    }
 
     findBoundaryNodes(meshIndices: MeshIndex[]) : MeshIndex[] {
+        // TODO fix and use for corner nodes in polygon
         return meshIndices.filter((meshIndex) => {
             for (let nodeIndex of meshIndices) {
                 if (meshIndex.row <= nodeIndex.row || meshIndex.row >= nodeIndex.row) {
@@ -288,7 +277,7 @@ export const Mesh: Mesh = {
                 else return false
             }
         })
-    },
+    }
 
     calculateCenterOfNodes(meshIndices: MeshIndex[]): Coordinate {
         const centerPoint: Coordinate = {x: 0, y: 0}
@@ -300,7 +289,7 @@ export const Mesh: Mesh = {
         centerPoint.x = centerPoint.x / meshIndices.length
         centerPoint.y = centerPoint.y / meshIndices.length
         return centerPoint
-    },
+    }
 
     createShapeMeshIndices(i: number, j: number, offset: number): ShapeMeshIndex {
         return  {
@@ -311,3 +300,5 @@ export const Mesh: Mesh = {
         }
     }
 }
+
+export const MeshInstance = new Mesh()
