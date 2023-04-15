@@ -3,5 +3,5 @@ export type InitialMeshConfig = {
 	maxMeshSize: number,
 	cellSizeVertical: number,
 	cellSizeHorizontal: number,
-	cellIndexOffset: number,
+	cellSizeOffset: number,
 }

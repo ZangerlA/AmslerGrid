@@ -2,7 +2,7 @@ import {Node} from "./Node";
 import {Polygon} from "./Polygon";
 import {Dimension} from "../customHooks/UseWindowDimensions";
 import {Coordinate} from "../types/Coordinate";
-import {MeshIndex, ShapeMeshIndex} from "../types/MeshIndex";
+import {MeshIndex} from "../types/MeshIndex";
 import {Vector} from "../types/Vector";
 import {getUniqueArray} from "../helperMethods/Array";
 import {InitialMeshConfig} from "../types/InitialMeshConfig";
@@ -21,7 +21,7 @@ export class Mesh {
             maxMeshSize: maxMeshSize,
             cellSizeVertical: (dimension.currentDimension.width - 100) / maxMeshSize,
             cellSizeHorizontal: (dimension.currentDimension.height - 100) / maxMeshSize,
-            cellIndexOffset: Math.floor(maxMeshSize / cellCount),
+            cellSizeOffset: Math.floor(maxMeshSize / cellCount),
         }
         
         this.nodes = this.createNodes(config)
@@ -45,7 +45,7 @@ export class Mesh {
             y: (config.cellSizeHorizontal * i) + 50
         }
         const node = new Node(coordinate)
-        if (i % config.cellIndexOffset === 0 && j % config.cellIndexOffset === 0){
+        if (i % config.cellSizeOffset === 0 && j % config.cellSizeOffset === 0){
             node.isActive = true
         }
         return node
@@ -62,11 +62,9 @@ export class Mesh {
     }
     
     private createPolygon(i: number, j: number, config: InitialMeshConfig): Polygon {
-        const shapeMeshIndices = this.createShapeMeshIndices(i * config.cellIndexOffset, j * config.cellIndexOffset, config.cellIndexOffset)
-        const polygon = new Polygon(shapeMeshIndices, true)
         const isGreen = ((i ^ j) & 1) === 0 // Chess pattern
-        polygon.color = isGreen ? "rgba(75,139,59,0.5)" : "white"
-        return polygon
+        const color = isGreen ? "rgba(75,139,59,0.5)" : "white"
+        return new Polygon({row: i * config.cellSizeOffset, col: j * config.cellSizeOffset}, config.cellSizeOffset, true, color)
     }
 
     handleSelect(mouseClick: Coordinate): void {
@@ -100,17 +98,19 @@ export class Mesh {
 
     handleDrag(vector: Vector): void {
         if (this.dragSelectedNodes(vector)) {
+            console.log("hi")
             return
         }
         else this.dragSelectedPolygons(vector)
     }
     
     private dragSelectedNodes(vector: Vector): boolean {
+        let wasMoved = false;
         this.selectedNodes.forEach((node) => {
             node.move(vector)
-            return true
+            wasMoved = true
         })
-        return false
+        return wasMoved
     }
     
     private dragSelectedPolygons(vector: Vector) {
@@ -141,7 +141,7 @@ export class Mesh {
             nodeIndices.push(...shape.gatherNodes([]))
         })
         const uniqueNodes = getUniqueArray(nodeIndices)
-        const centerPoint = this.calculateCenterOfNodes(this.findBoundaryNodes(uniqueNodes))
+        const centerPoint = this.calculateCenterOfNodes(uniqueNodes)
         this.rotateNodes(uniqueNodes, centerPoint, degree)
     }
     
@@ -190,7 +190,7 @@ export class Mesh {
 
     colorShape(ctx: CanvasRenderingContext2D, shape: Polygon): void {
         if (shape.hasChildren()){
-            shape.shapes.forEach((shape)=>{
+            shape.children.forEach((shape)=>{
                 this.colorShape(ctx, shape)
             })
         }else{
@@ -264,21 +264,6 @@ export class Mesh {
         ctx.fill()
     }
 
-    findBoundaryNodes(meshIndices: MeshIndex[]) : MeshIndex[] {
-        // TODO fix and use for corner nodes in polygon
-        return meshIndices.filter((meshIndex) => {
-            for (let nodeIndex of meshIndices) {
-                if (meshIndex.row <= nodeIndex.row || meshIndex.row >= nodeIndex.row) {
-                    return true
-                }
-                else if (meshIndex.col <= nodeIndex.col || meshIndex.col >= nodeIndex.col) {
-                    return true
-                }
-                else return false
-            }
-        })
-    }
-
     calculateCenterOfNodes(meshIndices: MeshIndex[]): Coordinate {
         const centerPoint: Coordinate = {x: 0, y: 0}
         for (let meshIndex of meshIndices) {
@@ -289,15 +274,6 @@ export class Mesh {
         centerPoint.x = centerPoint.x / meshIndices.length
         centerPoint.y = centerPoint.y / meshIndices.length
         return centerPoint
-    }
-
-    createShapeMeshIndices(i: number, j: number, offset: number): ShapeMeshIndex {
-        return  {
-            ul: {row: i, col: j},
-            ur: {row: i, col: j + offset},
-            ll: {row: i + offset, col:j},
-            lr: {row: i + offset, col: j + offset}
-        }
     }
 }
 

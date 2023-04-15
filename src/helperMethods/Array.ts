@@ -1,4 +1,4 @@
-import {MeshIndex, ShapeMeshIndex} from "../types/MeshIndex";
+import {MeshIndex} from "../types/MeshIndex";
 
 export const getUniqueArray = (nodeArray: MeshIndex[]) : MeshIndex[] => {
     return nodeArray.filter((obj, index, self) =>
