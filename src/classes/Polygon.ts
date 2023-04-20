@@ -1,52 +1,35 @@
 import {Node} from "./Node";
 import {MeshIndex} from "../types/MeshIndex";
-import {Vector} from "../types/Vector";
-import {Mesh, MeshInstance} from "./Mesh";
+import {MeshInstance} from "./Mesh";
 import {Coordinate} from "../types/Coordinate";
-import {getUniqueArray} from "../helperMethods/Array";
+import {calculateCenter} from "../helperMethods/calculateCenter";
 
-type ShapeMeshIndex = {
-    ul: MeshIndex,
-    ur: MeshIndex,
-    ll: MeshIndex,
-    lr: MeshIndex,
-}
 export class Polygon {
-    boundaryIndices: ShapeMeshIndex
     nodes: MeshIndex[] = []
     children: Polygon[] = []
+    edgeLength: number
     color: string
     shouldDraw: boolean = false
     
-    constructor(meshIndex: MeshIndex, size: number, shouldDraw: boolean, color: string) {
-        this.boundaryIndices = this.setPolygonBoundaries(meshIndex.row, meshIndex.col, size)
-        console.log(this.boundaryIndices)
+    constructor(meshIndex: MeshIndex, edgeLength: number, shouldDraw: boolean, color: string) {
         this.shouldDraw = shouldDraw
         this.color = color
-        this.setPolygonNodes()
-    }
-    
-    private setPolygonBoundaries(i: number, j: number, offset: number): ShapeMeshIndex {
-        return  {
-            ul: {row: i, col: j},
-            ur: {row: i, col: j + offset},
-            ll: {row: i + offset, col:j},
-            lr: {row: i + offset, col: j + offset}
-        }
+        this.edgeLength = edgeLength
+        this.setPolygonNodes(meshIndex.row, meshIndex.col)
     }
 
-    private setPolygonNodes() {
-        for (let i = this.boundaryIndices.ul.col; i <= this.boundaryIndices.ur.col; i++) {
-            this.nodes.push({row: this.boundaryIndices.ul.row, col: i})
+    private setPolygonNodes(row: number, col: number) {
+        for (let i = col; i <= col + this.edgeLength; i++) {
+            this.nodes.push({row: row, col: i})
         }
-        for (let i = this.boundaryIndices.ur.row + 1; i <= this.boundaryIndices.lr.row; i++) {
-            this.nodes.push({row: i, col: this.boundaryIndices.ur.col})
+        for (let i = row + 1; i <= row + this.edgeLength; i++) {
+            this.nodes.push({row: i, col: col + this.edgeLength})
         }
-        for (let i = this.boundaryIndices.lr.col - 1; i >= this.boundaryIndices.ll.col; i--) {
-            this.nodes.push({row: this.boundaryIndices.lr.row, col: i})
+        for (let i = col + this.edgeLength - 1; i >= col; i--) {
+            this.nodes.push({row: row + this.edgeLength, col: i})
         }
-        for (let i = this.boundaryIndices.ll.row - 1; i >= this.boundaryIndices.ul.row; i--) {
-            this.nodes.push({row: i, col: this.boundaryIndices.ll.col})
+        for (let i = row + this.edgeLength - 1; i >= row; i--) {
+            this.nodes.push({row: i, col: col})
         }
     }
     
@@ -63,12 +46,13 @@ export class Polygon {
                 if (node.isActive) {
                     ctx.lineTo(node.coordinate.x, node.coordinate.y)
                 }
-                
             })
-            ctx.lineTo(shapeNodes[0].coordinate.x,shapeNodes[0].coordinate.y)
-            //ctx.closePath()
             ctx.fillStyle = this.color
             ctx.fill()
+            if (MeshInstance.selectedPolygons.has(this)){
+                ctx.fillStyle = "rgba(33,33,114,0.5)"
+                ctx.fill()
+            }
         }
     }
 
@@ -97,119 +81,74 @@ export class Polygon {
     }
 
     getContainer(mouseClick: Coordinate): Polygon | undefined {
-        if (this.hasChildren() && this.hasInside(mouseClick)) {
-            for (const childShape of this.children) {
-                let container = childShape.getContainer(mouseClick);
-                if (container !== undefined) {
-                    return container;
+        if (!this.hasInside(mouseClick)) {
+            return undefined
+        }
+        if (this.hasChildren()) {
+            for (let child of this.children) {
+                const container = child.getContainer(mouseClick)
+                if (container) {
+                    return container
                 }
             }
-        } else if (this.hasInside(mouseClick)) {
-            return this;
         }
-        return undefined;
+        else return this
     }
 
     split(): void {
-        // Calculate row and col differences
-        const rowDiff = this.boundaryIndices.ll.row - this.boundaryIndices.ul.row;
-        const colDiff = this.boundaryIndices.ur.col - this.boundaryIndices.ul.col;
+        MeshInstance.selectedPolygons.delete(this)
 
-        // Calculate midpoints indices
-        const midTop = { row: this.boundaryIndices.ul.row, col: this.boundaryIndices.ul.col + colDiff / 2 };
-        const midRight = { row: this.boundaryIndices.ur.row + rowDiff / 2, col: this.boundaryIndices.ur.col };
-        const midBottom = { row: this.boundaryIndices.ll.row, col: this.boundaryIndices.ll.col + colDiff / 2 };
-        const midLeft = { row: this.boundaryIndices.ul.row + rowDiff / 2, col: this.boundaryIndices.ul.col };
-        const center = { row: midLeft.row, col: midTop.col };
+        const childEdgeLength = this.edgeLength / 2
 
-        // Get all the midpoint nodes and set isActive to true
-        const midTopNode = MeshInstance.nodes[midTop.row][midTop.col];
-        const midRightNode = MeshInstance.nodes[midRight.row][midRight.col];
-        const midBottomNode = MeshInstance.nodes[midBottom.row][midBottom.col];
-        const midLeftNode = MeshInstance.nodes[midLeft.row][midLeft.col];
-        const centerNode = MeshInstance.nodes[center.row][center.col];
+        for (let i = 0; i < this.nodes.length; i+= childEdgeLength) {
+            const node = MeshInstance.nodes[this.nodes[i].row][this.nodes[i].col]
+            if (!node.isActive) {
+                node.isActive = true
 
-        if (!midTopNode.isActive) {
-            midTopNode.isActive = true;
-            midTopNode.coordinate = this.calculateMidpointCoordinate(
-                MeshInstance.nodes[this.boundaryIndices.ul.row][this.boundaryIndices.ul.col].coordinate,
-                MeshInstance.nodes[this.boundaryIndices.ur.row][this.boundaryIndices.ur.col].coordinate
-            );
-        }
-        // Update coordinates of the midpoint nodes
-        if (!midRightNode.isActive) {
-            midRightNode.isActive = true;
-            midRightNode.coordinate = this.calculateMidpointCoordinate(
-                MeshInstance.nodes[this.boundaryIndices.ur.row][this.boundaryIndices.ur.col].coordinate,
-                MeshInstance.nodes[this.boundaryIndices.lr.row][this.boundaryIndices.lr.col].coordinate
-            );
-        }
-        if (!midBottomNode.isActive) {
-            midBottomNode.isActive = true;
-            midBottomNode.coordinate = this.calculateMidpointCoordinate(
-                MeshInstance.nodes[this.boundaryIndices.ll.row][this.boundaryIndices.ll.col].coordinate,
-                MeshInstance.nodes[this.boundaryIndices.lr.row][this.boundaryIndices.lr.col].coordinate
-            );
-        }
-        if (!midLeftNode.isActive) {
-            midLeftNode.isActive = true;
-            midLeftNode.coordinate = this.calculateMidpointCoordinate(
-                MeshInstance.nodes[this.boundaryIndices.ul.row][this.boundaryIndices.ul.col].coordinate,
-                MeshInstance.nodes[this.boundaryIndices.ll.row][this.boundaryIndices.ll.col].coordinate
-            );
-        }
-        if (!centerNode.isActive){
-            centerNode.isActive = true;
-            centerNode.coordinate = this.calculateMidpointCoordinate(
-                midTopNode.coordinate,
-                midBottomNode.coordinate
-            );
+                const prevPointIndex = this.nodes[i - childEdgeLength]
+                const nextPointIndex = this.nodes[i + childEdgeLength]
+                node.coordinate = calculateCenter([prevPointIndex, nextPointIndex])
+            }
         }
 
-        const shape1Indices: ShapeMeshIndex = {
-            ul: this.boundaryIndices.ul,
-            ur: midTop,
-            ll: midLeft,
-            lr: center,
-        };
+        const centerNodeRow = this.nodes[0].row + childEdgeLength;
+        const centerNodeCol = this.nodes[0].col + childEdgeLength;
+        const centerNode = MeshInstance.nodes[centerNodeRow][centerNodeCol];
+        if (!centerNode.isActive) {
+            centerNode.isActive = true
 
-        const shape2Indices: ShapeMeshIndex = {
-            ul: midTop,
-            ur: this.boundaryIndices.ur,
-            ll: center,
-            lr: midRight,
-        };
+            const ul = this.nodes[0]
+            const ur = this.nodes[this.edgeLength]
+            const lr = this.nodes[this.edgeLength*2]
+            const ll = this.nodes[this.edgeLength*3]
 
-        const shape3Indices: ShapeMeshIndex = {
-            ul: midLeft,
-            ur: center,
-            ll: this.boundaryIndices.ll,
-            lr: midBottom,
-        };
+            centerNode.coordinate = calculateCenter([ul, ur, lr, ll])
+        }
 
-        const shape4Indices: ShapeMeshIndex = {
-            ul: center,
-            ur: midRight,
-            ll: midBottom,
-            lr: this.boundaryIndices.lr,
-        };
-        
         this.children.push(
-            new Polygon(shape1Indices.ul, rowDiff / 2, true, "rgba(75,139,59,0.5)"),
-            new Polygon(shape2Indices.ul, rowDiff / 2, true, this.color),
-            new Polygon(shape3Indices.ul, rowDiff / 2, true, this.color),
-            new Polygon(shape4Indices.ul, rowDiff / 2, true, "rgba(75,139,59,0.5)")
+            new Polygon({row: this.nodes[0].row, col: this.nodes[0].col}, childEdgeLength, true, "rgba(75,139,59,0.5)"),
+            new Polygon({row: this.nodes[childEdgeLength].row, col: this.nodes[childEdgeLength].col}, childEdgeLength, true,"white"),
+            new Polygon({row: centerNodeRow, col: centerNodeCol}, childEdgeLength, true, "rgba(75,139,59,0.5)"),
+            new Polygon({row: this.nodes[this.nodes.length - childEdgeLength - 1].row, col: this.nodes[this.nodes.length - childEdgeLength - 1].col}, childEdgeLength, true, "white"),
         );
+
+        this.removeOwnEdges()
+        this.children.forEach((childPolygon) => childPolygon.addOwnEdges())
     }
 
-    private calculateMidpointCoordinate(coord1: Coordinate, coord2: Coordinate): Coordinate {
-        return {
-            x: (coord1.x + coord2.x) / 2,
-            y: (coord1.y + coord2.y) / 2,
-        };
+    private addOwnEdges(): void {
+        for (let i = 0; i < 4; i++) {
+            MeshInstance.edges.add({a: this.nodes[this.edgeLength*i], b: this.nodes[this.edgeLength*(i+1)]})
+        }
     }
 
-    getOwnNodes(): Node[] {
+    private removeOwnEdges(): void {
+        for (let i = 0; i < 4; i++) {
+            MeshInstance.edges.delete({a: this.nodes[this.edgeLength*i], b: this.nodes[this.edgeLength*(i+1)]})
+        }
+    }
+
+    private getOwnNodes(): Node[] {
         let nodes: Node[] = []
         this.nodes.forEach((index) => {
             nodes.push(MeshInstance.nodes[index.row][index.col])
@@ -217,7 +156,7 @@ export class Polygon {
         return nodes
     }
 
-    private inside(x: number, y: number, nodes: Node[]) {
+    private inside(x: number, y: number, nodes: Node[]): boolean {
         // ray-casting algorithm based on
         // https://en.wikipedia.org/wiki/Point_in_polygon
         // found on
