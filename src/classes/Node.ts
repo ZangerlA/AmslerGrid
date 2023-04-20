@@ -4,8 +4,10 @@ import {Coordinate} from "../types/Coordinate";
 
 export class Node {
     coordinate: Coordinate = {x: 0, y: 0}
-    drawRadius: number = 7
+    drawRadius: number = 6
+    color: string = "black"
     isActive: boolean = false
+    dragging: boolean = false
 
     constructor(coordinate: Coordinate) {
         this.coordinate.x = coordinate.x
