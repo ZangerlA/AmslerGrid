@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/amslergrid/static/css/main.85d2e35a.css",
+    "main.js": "/amslergrid/static/js/main.8bd430f5.js",
+    "static/js/787.bc9a193f.chunk.js": "/amslergrid/static/js/787.bc9a193f.chunk.js",
+    "index.html": "/amslergrid/index.html",
+    "main.85d2e35a.css.map": "/amslergrid/static/css/main.85d2e35a.css.map",
+    "main.8bd430f5.js.map": "/amslergrid/static/js/main.8bd430f5.js.map",
+    "787.bc9a193f.chunk.js.map": "/amslergrid/static/js/787.bc9a193f.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.85d2e35a.css",
+    "static/js/main.8bd430f5.js"
+  ]
+}
