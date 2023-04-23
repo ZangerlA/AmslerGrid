@@ -29,7 +29,38 @@ export class Mesh {
 
 		this.nodes = this.createNodes(config)
 		this.edges = this.createEdges(config)
-		this.polygons = this.createPolygons(config)
+		this.polygons = this.groupShapes(this.createPolygons(config), config.cellCount)
+		console.log(this.polygons)
+	}
+
+	private groupShapes(polygons: Polygon[][], limit: number): Set<Polygon> {
+		if (polygons.length <= limit) {
+			const result = new Set<Polygon>()
+			polygons.forEach((row) => {
+				row.forEach((polygon) => {
+					polygon.shouldDraw = true
+					result.add(polygon)
+				})
+			})
+			return result
+		}
+		const mergedShapes: Polygon[][] = [];
+		const mergeFactor = 2
+
+		for (let i = 0; i < polygons.length; i += mergeFactor) {
+			const newRow: Polygon[] = [];
+			for (let j = 0; j < polygons[i].length; j += mergeFactor) {
+				const newPolygon = this.createPolygon(polygons[i][j].nodes[0].row, polygons[i][j].nodes[0].col, 1, polygons[i][j].edgeLength * 2, false)
+				for (let k = 0; k < mergeFactor; k++) {
+					for (let l = 0; l < mergeFactor; l++) {
+						newPolygon.children.push(polygons[i + k][j + l]);
+					}
+				}
+				newRow.push(newPolygon);
+			}
+			mergedShapes.push(newRow);
+		}
+		return this.groupShapes(mergedShapes, limit)
 	}
 
 	private createNodes(config: InitialMeshConfig): Node[][] {
@@ -55,20 +86,21 @@ export class Mesh {
 		return node
 	}
 
-	private createPolygons(config: InitialMeshConfig): Set<Polygon> {
-		const polygons: Set<Polygon> = new Set<Polygon>()
-		for (let i = 0; i < config.cellCount; i++) {
-			for (let j = 0; j < config.cellCount; j++) {
-				polygons.add(this.createPolygon(i, j, config.cellSizeOffset, config.cellSizeOffset))
+	private createPolygons(config: InitialMeshConfig): Polygon[][] {
+		const polygons: Polygon[][] = []
+		for (let i = 0; i < config.maxMeshSize ; i++) {
+			polygons[i] = []
+			for (let j = 0; j < config.maxMeshSize ; j++) {
+				polygons[i][j] = (this.createPolygon(i, j, 1, 1, false))
 			}
 		}
 		return polygons
 	}
 
-	createPolygon(i: number, j: number, offset: number, size: number): Polygon {
+	createPolygon(i: number, j: number, offset: number, size: number, shouldDraw: boolean): Polygon {
 		const isGreen = ((i ^ j) & 1) === 0
 		const color = isGreen ? "rgba(75,139,59,0.5)" : "white"
-		return new Polygon({row: i * offset, col: j * offset}, size, true, color)
+		return new Polygon({row: i * offset, col: j * offset}, size, shouldDraw, color)
 	}
 
 	private createEdges(config: InitialMeshConfig): ValueSet<Edge> {

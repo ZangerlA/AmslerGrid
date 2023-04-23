@@ -34,7 +34,7 @@ export class Polygon {
     }
     
     draw(ctx: CanvasRenderingContext2D): void {
-        if (this.hasChildren()){
+        if (this.hasActiveChildren()){
             this.children.forEach((childShape)=>{
                 childShape.draw(ctx)
             })
@@ -57,7 +57,7 @@ export class Polygon {
     }
 
     gatherNodes(nodeIndices: MeshIndex[] = []): MeshIndex[] {
-        if (this.hasChildren()) {
+        if (this.hasActiveChildren()) {
             this.children.forEach((childShape) => {
                 childShape.gatherNodes(nodeIndices);
             });
@@ -69,13 +69,22 @@ export class Polygon {
 
     hasInside(mouseClick: Coordinate): boolean {
         let result: boolean = false
-        this.children.forEach((child) => {
-            if (child.shouldDraw) {
-                result = child.hasInside(mouseClick)
-            }
-        })
+        console.log(this.hasActiveChildren())
+        if (this.hasActiveChildren()) {
+            console.log(this, this.hasActiveChildren())
+            this.children.forEach((child) => {
+
+                    result = child.hasInside(mouseClick)
+
+            })
+        }
         if (!result) {
             result = this.inside(mouseClick.x, mouseClick.y, this.getOwnActiveNodes())
+            if (result) {
+                console.log(this.children)
+                console.log(this)
+
+            }
         }
         return result
     }
@@ -84,7 +93,7 @@ export class Polygon {
         if (!this.hasInside(mouseClick)) {
             return undefined
         }
-        else if (this.hasChildren()) {
+        else if (this.hasActiveChildren()) {
             for (let child of this.children) {
                 const container = child.getContainer(mouseClick)
                 if (container) {
@@ -127,7 +136,7 @@ export class Polygon {
 
             centerNode.coordinate = calculateCenter([ul, ur, lr, ll])
         }
-
+        /*
         this.children.push(
             new Polygon({row: this.nodes[0].row, col: this.nodes[0].col}, childEdgeLength, true, "rgba(75,139,59,0.5)"),
             new Polygon({row: this.nodes[childEdgeLength].row, col: this.nodes[childEdgeLength].col}, childEdgeLength, true,"white"),
@@ -135,8 +144,14 @@ export class Polygon {
             new Polygon({row: this.nodes[this.nodes.length - childEdgeLength - 1].row, col: this.nodes[this.nodes.length - childEdgeLength - 1].col}, childEdgeLength, true, "white"),
         );
 
+         */
+
         this.removeOwnEdges()
-        this.children.forEach((childPolygon) => childPolygon.addOwnEdges())
+        this.children.forEach((childPolygon) => {
+            childPolygon.shouldDraw = true
+            childPolygon.addOwnEdges()
+        })
+        console.log(this)
     }
 
     private addOwnEdges(): void {
@@ -182,7 +197,12 @@ export class Polygon {
         return result
     }
 
-    public hasChildren(): boolean {
-        return !(this.children.length === 0)
+    public hasActiveChildren(): boolean {
+        this.children.forEach((child) => {
+            if (child.shouldDraw){
+                return true
+            }
+        })
+        return false
     }
 }
