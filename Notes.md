@@ -20,4 +20,8 @@
 * make a history for ctrl z, maybe with localstorage
 * implement save feature to allow the user to save the current grid and download the config
 * distort image from vectors
-* print vectors and lines to pdf
+* print vectors and lines to 
+
+
+* (?) polygons shouldn´t be able to overlap
+* (?) scaling/rotation only for one polygon or for multiple (problem neighbor/ not neighbor)
