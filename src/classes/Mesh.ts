@@ -51,7 +51,6 @@ export class Mesh {
 		const node = new Node(coordinate)
 		if (i % config.cellSizeOffset === 0 && j % config.cellSizeOffset === 0) {
 			node.isActive = true
-
 		}
 		return node
 	}
@@ -242,7 +241,7 @@ export class Mesh {
 			x: dimension.currentDimension.width / 2,
 			y: dimension.currentDimension.height / 2
 		}
-		this.drawPoint(ctx, coordinate, 10, "red")
+		this.drawPoint(ctx, coordinate, 10, "rgba(215,0,25,1)")
 	}
 
 	drawPoint(ctx: CanvasRenderingContext2D, coordinate: Coordinate, radius: number, color: string) {

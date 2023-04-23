@@ -39,7 +39,7 @@ export class Polygon {
                 childShape.draw(ctx)
             })
         }else{
-            const shapeNodes : Node[] = this.getOwnNodes()
+            const shapeNodes : Node[] = this.getOwnActiveNodes()
             ctx.beginPath()
             ctx.moveTo(shapeNodes[0].coordinate.x, shapeNodes[0].coordinate.y)
             shapeNodes.forEach((node) => {
@@ -75,7 +75,7 @@ export class Polygon {
             }
         })
         if (!result) {
-            result = this.inside(mouseClick.x, mouseClick.y, this.getOwnNodes())
+            result = this.inside(mouseClick.x, mouseClick.y, this.getOwnActiveNodes())
         }
         return result
     }
@@ -84,7 +84,7 @@ export class Polygon {
         if (!this.hasInside(mouseClick)) {
             return undefined
         }
-        if (this.hasChildren()) {
+        else if (this.hasChildren()) {
             for (let child of this.children) {
                 const container = child.getContainer(mouseClick)
                 if (container) {
@@ -96,6 +96,9 @@ export class Polygon {
     }
 
     split(): void {
+        if (this.edgeLength === 1) {
+            return
+        }
         MeshInstance.selectedPolygons.delete(this)
 
         const childEdgeLength = this.edgeLength / 2
@@ -138,7 +141,11 @@ export class Polygon {
 
     private addOwnEdges(): void {
         for (let i = 0; i < 4; i++) {
-            MeshInstance.edges.add({a: this.nodes[this.edgeLength*i], b: this.nodes[this.edgeLength*(i+1)]})
+            const edge = {a: this.nodes[this.edgeLength*i], b: this.nodes[this.edgeLength*(i+1)]}
+            const halfEdge = {a: this.nodes[this.edgeLength*i], b: this.nodes[this.edgeLength*(i+1) - this.edgeLength/2]}
+            if (this.edgeLength === 1 || !MeshInstance.edges.has(halfEdge)){
+                MeshInstance.edges.add(edge)
+            }
         }
     }
 
@@ -148,11 +155,15 @@ export class Polygon {
         }
     }
 
-    private getOwnNodes(): Node[] {
+    private getOwnActiveNodes(): Node[] {
         let nodes: Node[] = []
         this.nodes.forEach((index) => {
-            nodes.push(MeshInstance.nodes[index.row][index.col])
+            const node = MeshInstance.nodes[index.row][index.col]
+            if((node.isActive)){
+                nodes.push(node)
+            }
         })
+        nodes.pop()
         return nodes
     }
 
