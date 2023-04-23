@@ -54,10 +54,20 @@ const Canvas: FC = (props) => {
 
 	const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
 		const degree = event.deltaY * 0.007
-		MeshInstance.handleRotate(degree)
+		let scaleFactor = getScaleFactor(event.deltaY)
+		if (event.shiftKey){
+			MeshInstance.handleScale(scaleFactor)
+		} else {
+			MeshInstance.handleRotate(degree)
+		}
 		MeshInstance.draw(ctx as CanvasRenderingContext2D, dimension)
 	}
 
+	function getScaleFactor(deltaY: number): number {
+		if (deltaY < 0){
+			return 0.995
+		}else return 1.0051
+	}
 	const handleMouseUp = (event: MouseEvent) => {
 		if (event.button === MouseButton.Left) {
 			MeshInstance.handleRelease()

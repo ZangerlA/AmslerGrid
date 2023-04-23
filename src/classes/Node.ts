@@ -32,4 +32,23 @@ export class Node {
         const distance = Math.sqrt((this.coordinate.x - mouseClick.x) ** 2 + (this.coordinate.y - mouseClick.y) ** 2)
         return distance <= this.drawRadius;
     }
+
+    scale(scalingFactor: number, centerPoint: Coordinate) {
+        const displacementVector = {
+            x: this.coordinate.x - centerPoint.x,
+            y: this.coordinate.y - centerPoint.y,
+        }
+
+        const scaledDisplacementVector = {
+            x: displacementVector.x * scalingFactor,
+            y: displacementVector.y * scalingFactor,
+        }
+
+        const newCoordinate: Coordinate = {
+            x: centerPoint.x + scaledDisplacementVector.x,
+            y: centerPoint.y + scaledDisplacementVector.y,
+        }
+
+        this.coordinate = newCoordinate;
+    }
 }

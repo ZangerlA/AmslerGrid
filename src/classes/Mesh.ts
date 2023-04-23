@@ -140,11 +140,7 @@ export class Mesh {
 	}
 
 	private dragSelectedPolygons(vector: Vector) {
-		let nodeIndices: MeshIndex[] = []
-		this.selectedPolygons.forEach((polygon) => {
-			nodeIndices.push(...polygon.gatherNodes([]))
-		})
-		this.moveNodes(getUniqueArray(nodeIndices), vector)
+		this.moveNodes(this.getUniqueSelectedNodes(), vector)
 	}
 
 	private moveNodes(nodeIndices: MeshIndex[], vector: Vector): void {
@@ -168,11 +164,7 @@ export class Mesh {
 	}
 
 	private rotateSelectedPolygons(degree: number) {
-		let nodeIndices: MeshIndex[] = []
-		this.selectedPolygons.forEach((polygon) => {
-			nodeIndices.push(...polygon.gatherNodes([]))
-		})
-		const uniqueNodes = getUniqueArray(nodeIndices)
+		const uniqueNodes = this.getUniqueSelectedNodes()
 		const centerPoint = calculateCenter(uniqueNodes)
 		this.rotateNodes(uniqueNodes, centerPoint, degree)
 	}
@@ -181,6 +173,26 @@ export class Mesh {
 		nodeIndices.forEach((index) => {
 			this.nodes[index.row][index.col].rotateAround(point, degree)
 		})
+	}
+
+	handleScale(scaleFactor: number) {
+		const uniqueNodes = this.getUniqueSelectedNodes()
+		const centerPoint = calculateCenter(uniqueNodes)
+		this.scaleNodes(uniqueNodes,centerPoint,scaleFactor)
+	}
+
+	private scaleNodes(nodeIndices: MeshIndex[], centerPoint: Coordinate, scalingFactor: number) {
+		nodeIndices.forEach((index) => {
+			this.nodes[index.row][index.col].scale(scalingFactor, centerPoint)
+		})
+	}
+
+	private getUniqueSelectedNodes(): MeshIndex[]{
+		let nodeIndices: MeshIndex[] = []
+		this.selectedPolygons.forEach((polygon) => {
+			nodeIndices.push(...polygon.gatherNodes([]))
+		})
+		return getUniqueArray(nodeIndices)
 	}
 
 	handleSplit(mouseClick: Coordinate) {
