@@ -135,6 +135,10 @@ export class Polygon {
             new Polygon({row: this.nodes[this.nodes.length - childEdgeLength - 1].row, col: this.nodes[this.nodes.length - childEdgeLength - 1].col}, childEdgeLength, true, "white"),
         );
 
+        this.children.forEach((child)=>{
+            MeshInstance.selectedPolygons.add(child)
+        })
+        
         this.removeOwnEdges()
         this.children.forEach((childPolygon) => childPolygon.addOwnEdges())
     }
