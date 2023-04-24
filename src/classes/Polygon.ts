@@ -99,7 +99,7 @@ export class Polygon {
         if (this.edgeLength === 1) {
             return
         }
-        MeshInstance.selectedPolygons.delete(this)
+        let wasDeleted = MeshInstance.selectedPolygons.delete(this)
 
         const childEdgeLength = this.edgeLength / 2
 
@@ -135,10 +135,12 @@ export class Polygon {
             new Polygon({row: this.nodes[this.nodes.length - childEdgeLength - 1].row, col: this.nodes[this.nodes.length - childEdgeLength - 1].col}, childEdgeLength, true, "white"),
         );
 
-        this.children.forEach((child)=>{
-            MeshInstance.selectedPolygons.add(child)
-        })
-        
+        if (wasDeleted){
+            this.children.forEach((child)=>{
+                MeshInstance.selectedPolygons.add(child)
+            })
+        }
+
         this.removeOwnEdges()
         this.children.forEach((childPolygon) => childPolygon.addOwnEdges())
     }
