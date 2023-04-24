@@ -251,6 +251,10 @@ export class Mesh {
 		ctx.arc(coordinate.x, coordinate.y, radius, 0, Math.PI * 2, false)
 		ctx.fill()
 	}
+
+	clearSelected() {
+		this.selectedPolygons.clear()
+	}
 }
 
 export const MeshInstance = new Mesh()

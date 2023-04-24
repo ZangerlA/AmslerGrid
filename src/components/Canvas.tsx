@@ -75,14 +75,24 @@ const Canvas: FC = (props) => {
 		}
 	}
 
+	const handleKeyboardPress = (event: React.KeyboardEvent<HTMLCanvasElement>) => {
+		if (event.key === "Escape"){
+			MeshInstance.clearSelected()
+			MeshInstance.draw(ctx as CanvasRenderingContext2D, dimension)
+		}
+	}
+
 	const handleMouseOut = (event: MouseEvent) => {
 		handleMouseUp(event);
 	}
 
 	useEffect(() => {
 		const canvas = canvasRef.current
-		setCtx((canvas!.getContext('2d'))!)
-		MeshInstance.initializeMesh(dimension)
+		if (canvas){
+			canvas.focus()
+			setCtx((canvas!.getContext('2d'))!)
+			MeshInstance.initializeMesh(dimension)
+		}
 	}, [])
 
 	useEffect(() => {
@@ -90,20 +100,22 @@ const Canvas: FC = (props) => {
 			MeshInstance.draw(ctx, dimension)
 		}
 	}, [ctx])
-	
+
+
 	return (
 		<canvas
-			onClick={handleClick}
-			onMouseDown={handleMouseDown}
-			onMouseMove={handleMouseMove}
-			onMouseUp={handleMouseUp}
-			onMouseOut={handleMouseOut}
-			onWheel={handleWheel}
-			onContextMenu={handleContextMenu}
-			ref={canvasRef}
-			width={dimension.currentDimension.width}
-			height={dimension.currentDimension.height}{...props}>
-		</canvas>
+	onClick={handleClick}
+	onMouseDown={handleMouseDown}
+	onMouseMove={handleMouseMove}
+	onMouseUp={handleMouseUp}
+	onMouseOut={handleMouseOut}
+	onWheel={handleWheel}
+	onContextMenu={handleContextMenu}
+	onKeyDown={handleKeyboardPress}
+	tabIndex={0}
+	ref={canvasRef}
+	width={dimension.currentDimension.width}
+	height={dimension.currentDimension.height}{...props}/>
 	)
 }
 
