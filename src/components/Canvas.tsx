@@ -4,6 +4,7 @@ import {Vector} from "../types/Vector";
 import {Coordinate} from "../types/Coordinate";
 import {MeshInstance} from "../classes/Mesh";
 import {MouseButton} from "../types/MouseButton";
+import {Key} from "../types/Key";
 
 const Canvas: FC = (props) => {
 
@@ -76,7 +77,7 @@ const Canvas: FC = (props) => {
 	}
 
 	const handleKeyboardPress = (event: React.KeyboardEvent<HTMLCanvasElement>) => {
-		if (event.key === "Escape"){
+		if (event.key === Key.Escape){
 			MeshInstance.clearSelected()
 			MeshInstance.draw(ctx as CanvasRenderingContext2D, dimension)
 		}
