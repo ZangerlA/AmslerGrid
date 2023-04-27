@@ -9,12 +9,14 @@ import {InitialMeshConfig} from "../types/InitialMeshConfig";
 import {Edge} from "../types/Edge";
 import {undirectedGraphHash, ValueSet} from "../helperMethods/ValueSet";
 import {calculateCenter} from "../helperMethods/calculateCenter";
+import {ImageWarper} from "./ImageWarper";
 
 export class Mesh {
 	nodes: Node[][] = []
 	private polygons: Set<Polygon> = new Set<Polygon>()
 	selectedPolygons: Set<Polygon> = new Set<Polygon>()
 	edges: ValueSet<Edge> = new ValueSet<Edge>()
+	private warper?: ImageWarper
 
 	initializeMesh(dimension: Dimension): void {
 		const cellCount = 5
@@ -30,7 +32,8 @@ export class Mesh {
 		this.nodes = this.createNodes(config)
 		this.edges = this.createEdges(config)
 		this.polygons = this.groupPolygons(this.createPolygons(config), config.cellCount)
-		console.log(this.polygons)
+		this.colorPolygons()
+		this.warper = new ImageWarper(this.nodes, this.polygons)
 	}
 
 	private createNodes(config: InitialMeshConfig): Node[][] {
@@ -69,38 +72,50 @@ export class Mesh {
 
 	createPolygon(i: number, j: number, offset: number, size: number, shouldDraw: boolean): Polygon {
 		const isGreen = ((i ^ j) & 1) === 0
-		const color = isGreen ? "rgba(75,139,59,0.5)" : "white"
+		let color = isGreen ? "rgba(75,139,59,0.5)" : "white"
 		return new Polygon({row: i * offset, col: j * offset}, size, shouldDraw, color)
 	}
 
 	private groupPolygons(polygons: Polygon[][], limit: number): Set<Polygon> {
 		if (polygons.length <= limit) {
 			const result = new Set<Polygon>()
-			polygons.forEach((row) => {
-				row.forEach((polygon) => {
+			for (let row of polygons) {
+				for (let polygon of row) {
 					polygon.shouldDraw = true
 					result.add(polygon)
-				})
-			})
+				}
+			}
 			return result
 		}
-		const mergedShapes: Polygon[][] = [];
-		const mergeFactor = 2
+		const mergedPolygons: Polygon[][] = [];
 
-		for (let i = 0; i < polygons.length; i += mergeFactor) {
+		for (let i = 0; i < polygons.length; i += 2) {
 			const newRow: Polygon[] = [];
-			for (let j = 0; j < polygons[i].length; j += mergeFactor) {
-				const newPolygon = this.createPolygon(polygons[i][j].nodes[0].row, polygons[i][j].nodes[0].col, 1, polygons[i][j].edgeLength * 2, false)
-				for (let k = 0; k < mergeFactor; k++) {
-					for (let l = 0; l < mergeFactor; l++) {
-						newPolygon.children.push(polygons[i + k][j + l]);
-					}
-				}
-				newRow.push(newPolygon);
+			for (let j = 0; j < polygons[i].length; j += 2) {
+				newRow.push(this.createParentPolygon(i, j, polygons));
 			}
-			mergedShapes.push(newRow);
+			mergedPolygons.push(newRow);
 		}
-		return this.groupPolygons(mergedShapes, limit)
+		return this.groupPolygons(mergedPolygons, limit)
+	}
+
+	private createParentPolygon(i: number, j: number, polygons: Polygon[][]): Polygon {
+		const parentPolygon = this.createPolygon(polygons[i][j].nodes[0].row, polygons[i][j].nodes[0].col, 1, polygons[i][j].edgeLength * 2, false)
+		for (let k = 0; k < 2; k++) {
+			for (let l = 0; l < 2; l++) {
+				parentPolygon.children.push(polygons[i + k][j + l]);
+			}
+		}
+		return parentPolygon
+	}
+
+	private colorPolygons():void{
+		let colored = true
+		this.polygons.forEach((polygon)=>{
+			polygon.setColor(colored)
+			colored = !colored
+			polygon.colorChildren()
+		})
 	}
 
 	private createEdges(config: InitialMeshConfig): ValueSet<Edge> {
@@ -282,6 +297,10 @@ export class Mesh {
 		ctx.fillStyle = color
 		ctx.arc(coordinate.x, coordinate.y, radius, 0, Math.PI * 2, false)
 		ctx.fill()
+	}
+
+	getNodeFor(index: MeshIndex) {
+		return this.nodes[index.row][index.col]
 	}
 }
 

@@ -95,7 +95,8 @@ export class Polygon {
         if (this.edgeLength === 1) {
             return
         }
-        MeshInstance.selectedPolygons.delete(this)
+
+        let wasDeleted = MeshInstance.selectedPolygons.delete(this)
 
         const childEdgeLength = this.edgeLength / 2
 
@@ -125,6 +126,9 @@ export class Polygon {
         }
         this.removeOwnEdges()
         this.children.forEach((childPolygon) => {
+            if (wasDeleted){
+                MeshInstance.selectedPolygons.add(childPolygon)
+            }
             childPolygon.shouldDraw = true
             childPolygon.addOwnEdges()
         })
@@ -175,5 +179,27 @@ export class Polygon {
 
     public hasActiveChildren(): boolean {
         return this.children.some((child) => child.shouldDraw)
+    }
+
+    public colorChildren() {
+        this.children[0].color = "rgba(75,139,59,0.5)"
+        this.children[1].color = "white"
+        this.children[2].color = "white"
+        this.children[3].color = "rgba(75,139,59,0.5)"
+
+        for (let i = 0; i < this.children.length; i++) {
+            let polygon = this.children[i]
+            if (polygon.children.length !== 0){
+                polygon.colorChildren()
+            }
+        }
+    }
+
+    public setColor(colored: boolean){
+        if (colored){
+            this.color = "rgba(75,139,59,0.5)"
+        }else{
+            this.color = "white"
+        }
     }
 }
