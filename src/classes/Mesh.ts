@@ -33,7 +33,7 @@ export class Mesh {
 		this.edges = this.createEdges(config)
 		this.polygons = this.groupPolygons(this.createPolygons(config), config.cellCount)
 		this.colorPolygons()
-		this.warper = new ImageWarper(this.nodes, this.polygons)
+		//this.warper = new ImageWarper(this.nodes, this.polygons)
 	}
 
 	private createNodes(config: InitialMeshConfig): Node[][] {

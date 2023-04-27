@@ -3,20 +3,54 @@ import {Node} from "./Node";
 import {Coordinate} from "../types/Coordinate";
 import {MeshInstance} from "./Mesh";
 
+type PixelValue = {
+	r: number,
+	g: number,
+	b: number,
+	a: number,
+}
 export class ImageWarper {
 	private originalMesh: Node[][]
 	private originalPolygon: Set<Polygon>
+	private originalImage: HTMLImageElement
+	private canvas: HTMLCanvasElement
+	private ctx: CanvasRenderingContext2D
 
-	constructor(originalMesh: Node[][], originalPolygons: Set<Polygon>) {
+	constructor(image: HTMLImageElement, originalMesh: Node[][], originalPolygons: Set<Polygon>) {
 		this.originalMesh = originalMesh
 		this.originalPolygon = originalPolygons
+		this.originalImage = image;
+		this.canvas = document.createElement('canvas');
+		this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
+		this.canvas.width = image.width;
+		this.canvas.height = image.height;
+		this.ctx.drawImage(image, 0, 0, image.width, image.height);
 	}
-
-	warp(distortedMesh: Node[][], distortedPolygons: Set<Polygon>): void {
-		// warp warp warp
-		// brum brum
-		// zauber zauber
-		// return tadaaaaaaaa
+	
+	applyDistortion(distortedMesh: Node[][], distortedPolygons: Set<Polygon>) {
+		const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+		const originalImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+		const pixels = imageData.data;
+		const originalPixels = originalImageData.data;
+		
+		for (let y = 0; y < this.canvas.height; y++) {
+			for (let x = 0; x < this.canvas.width; x++) {
+				const index = (y * this.canvas.width + x) * 4;
+				/*
+				const relPos = this.getRelativePosition({x, y},);
+				const originalPos = interpolateOriginalPosition(relPos);
+				
+				const origIndex = (Math.floor(originalPos.y) * this.canvas.width + Math.floor(originalPos.x)) * 4;
+				
+				pixels[index] = originalPixels[origIndex];
+				pixels[index + 1] = originalPixels[origIndex + 1];
+				pixels[index + 2] = originalPixels[origIndex + 2];
+				pixels[index + 3] = originalPixels[origIndex + 3];
+				 */
+			}
+		}
+		
+		this.ctx.putImageData(imageData, 0, 0);
 	}
 
 	private interpolate(pixel: Coordinate, polygon: Polygon): Coordinate {
