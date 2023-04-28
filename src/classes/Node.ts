@@ -8,17 +8,20 @@ export class Node {
     color: string = "black"
     isActive: boolean = false
     dragging: boolean = false
+    wasMoved: boolean = false
 
     constructor(coordinate: Coordinate) {
         this.coordinate.x = coordinate.x
         this.coordinate.y = coordinate.y
     }
     move(vector: Vector): void {
+        this.wasMoved = true
         this.coordinate.x += vector.x
         this.coordinate.y += vector.y
     }
 
     rotateAround(point: Coordinate, degree: number): void {
+        this.wasMoved = true
         const angle = degree * Math.PI / 180.0
         const dx = this.coordinate.x - point.x;
         const dy = this.coordinate.y - point.y;
@@ -34,6 +37,7 @@ export class Node {
     }
 
     scale(scalingFactor: number, centerPoint: Coordinate) {
+        this.wasMoved = true
         const displacementVector = {
             x: this.coordinate.x - centerPoint.x,
             y: this.coordinate.y - centerPoint.y,

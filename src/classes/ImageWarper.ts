@@ -30,43 +30,33 @@ export class ImageWarper {
 	}
 	
 	applyDistortion(distortedMesh: Node[][], distortedPolygons: Set<Polygon>) {
-		console.log(distortedMesh)
-		console.log(this.originalMesh)
-		console.log("distortion")
-		
 		const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
 		const originalImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
 		const pixels = imageData.data;
 		const originalPixels = originalImageData.data;
+		this.ctx.putImageData(originalImageData, 0, 0)
 		
 		const distortedPolygonsArray = Array.from(distortedPolygons);
-		const originalPolygonsArray = Array.from(this.originalPolygon);
 		
+		//TODO this for loop should only go over the moved polygons
 		for (let y = 0; y < this.canvas.height; y++) {
 			for (let x = 0; x < this.canvas.width; x++) {
 				for (let i = 0; i < distortedPolygonsArray.length; i++) {
 					const polygon = distortedPolygonsArray[i];
 					const container = polygon.getContainer({x, y});
-					
-					if (container === undefined) {
-						continue;
+					if (container !== undefined && container.moved()) {
+						const index = (y * this.canvas.width + x) * 4;
+						const relPos = this.getRelativePosition(distortedMesh, {x, y}, container);
+						const originalPos = this.interpolate(this.originalMesh, relPos, container);
+						const origIndex = (Math.floor(originalPos.y) * this.canvas.width + Math.floor(originalPos.x)) * 4;
+						
+						pixels[index] = originalPixels[origIndex];
+						pixels[index + 1] = originalPixels[origIndex + 1];
+						pixels[index + 2] = originalPixels[origIndex + 2];
+						pixels[index + 3] = originalPixels[origIndex + 3];
+						
+						break;
 					}
-					
-					const originalPolygon = originalPolygonsArray[i];
-					
-					const index = (y * this.canvas.width + x) * 4;
-					const relPos = this.getRelativePosition(distortedMesh, {x, y}, container);
-					const originalPos = this.interpolate(this.originalMesh, relPos, originalPolygon);
-					console.log('relPos:', relPos)
-					console.log('originalPos:', originalPos);
-					const origIndex = (Math.floor(originalPos.y) * this.canvas.width + Math.floor(originalPos.x)) * 4;
-					
-					pixels[index] = originalPixels[origIndex];
-					pixels[index + 1] = originalPixels[origIndex + 1];
-					pixels[index + 2] = originalPixels[origIndex + 2];
-					pixels[index + 3] = originalPixels[origIndex + 3];
-					
-					break;
 				}
 			}
 		}

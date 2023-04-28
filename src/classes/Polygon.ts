@@ -202,4 +202,8 @@ export class Polygon {
             this.color = "white"
         }
     }
+    
+    moved(): boolean {
+        return this.nodes.some((nodeIndex) => MeshInstance.nodes[nodeIndex.row][nodeIndex.col].isActive && MeshInstance.nodes[nodeIndex.row][nodeIndex.col].wasMoved)
+    }
 }
