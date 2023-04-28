@@ -10,13 +10,15 @@ import {Edge} from "../types/Edge";
 import {undirectedGraphHash, ValueSet} from "../helperMethods/ValueSet";
 import {calculateCenter} from "../helperMethods/calculateCenter";
 import {ImageWarper} from "./ImageWarper";
+import testImage from "../testimage.jpg"
 
 export class Mesh {
 	nodes: Node[][] = []
-	private polygons: Set<Polygon> = new Set<Polygon>()
+	polygons: Set<Polygon> = new Set<Polygon>()
 	selectedPolygons: Set<Polygon> = new Set<Polygon>()
 	edges: ValueSet<Edge> = new ValueSet<Edge>()
-	private warper?: ImageWarper
+	warper?: ImageWarper
+	image: HTMLImageElement = new Image()
 
 	initializeMesh(dimension: Dimension): void {
 		const cellCount = 5
@@ -33,7 +35,9 @@ export class Mesh {
 		this.edges = this.createEdges(config)
 		this.polygons = this.groupPolygons(this.createPolygons(config), config.cellCount)
 		this.colorPolygons()
-		//this.warper = new ImageWarper(this.nodes, this.polygons)
+		this.image = new Image()
+		this.image.src = testImage
+		this.warper = new ImageWarper(this.image, this.createNodes(config), this.polygons)
 	}
 
 	private createNodes(config: InitialMeshConfig): Node[][] {
@@ -251,10 +255,16 @@ export class Mesh {
 
 	draw(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
 		ctx.clearRect(0, 0, dimension.currentDimension.width, dimension.currentDimension.height)
+		/*
+		this.image.addEventListener('load', (e) => {
+			ctx.drawImage(this.image, 0, 0, 1920, 1080)
+		});
+		 */
 		this.drawShapeFill(ctx)
 		this.drawHelpLines(ctx)
 		this.drawHelpPoints(ctx)
 		this.drawCenterPoint(ctx, dimension)
+		
 	}
 
 	drawShapeFill(ctx: CanvasRenderingContext2D): void {

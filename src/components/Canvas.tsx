@@ -2,7 +2,7 @@ import React, {FC, MouseEvent, useEffect, useRef, useState} from "react";
 import useWindowDimensions from "../customHooks/UseWindowDimensions";
 import {Vector} from "../types/Vector";
 import {Coordinate} from "../types/Coordinate";
-import {MeshInstance} from "../classes/Mesh";
+import {Mesh, MeshInstance} from "../classes/Mesh";
 import {MouseButton} from "../types/MouseButton";
 
 const Canvas: FC = (props) => {
@@ -16,7 +16,14 @@ const Canvas: FC = (props) => {
 
 	const handleClick = (event: MouseEvent)=> {
 		event.preventDefault()
-
+		if (event.shiftKey && event.button === MouseButton.Left) {
+			console.log("shift")
+			
+				console.log("event")
+				MeshInstance.warper?.applyDistortion(MeshInstance.nodes, MeshInstance.polygons)
+				MeshInstance.warper?.download("distorted")
+			
+		}
 		if (event.ctrlKey && event.button === MouseButton.Left) {
 			MeshInstance.handleSplit({x: event.clientX, y: event.clientY})
 			MeshInstance.draw(ctx as CanvasRenderingContext2D, dimension)
