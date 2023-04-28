@@ -38,6 +38,70 @@ export class ImageWarper {
 		
 		const distortedPolygonsArray = Array.from(distortedPolygons);
 		
+		// Loop over the distorted polygons
+		for (let i = 0; i < distortedPolygonsArray.length; i++) {
+			const polygon = distortedPolygonsArray[i];
+			
+			// Check if the polygon has moved
+			if (polygon.moved()) {
+				// Get the bounding box of the polygon
+				const bbox = this.getBoundingBox(distortedMesh, polygon);
+				
+				// Iterate over the pixels within the bounding box
+				for (let y = bbox.minY; y <= bbox.maxY; y++) {
+					for (let x = bbox.minX; x <= bbox.maxX; x++) {
+						const container = polygon.getContainer({ x, y });
+						if (container !== undefined) {
+							const index = (y * this.canvas.width + x) * 4;
+							const relPos = this.getRelativePosition(distortedMesh, { x, y }, container);
+							const originalPos = this.interpolate(this.originalMesh, relPos, container);
+							const origIndex = (Math.floor(originalPos.y) * this.canvas.width + Math.floor(originalPos.x)) * 4;
+							
+							pixels[index] = originalPixels[origIndex];
+							pixels[index + 1] = originalPixels[origIndex + 1];
+							pixels[index + 2] = originalPixels[origIndex + 2];
+							pixels[index + 3] = originalPixels[origIndex + 3];
+						}
+					}
+				}
+			}
+		}
+		
+		this.ctx.putImageData(imageData, 0, 0);
+	}
+	
+	getBoundingBox(mesh: Node[][], polygon: Polygon) {
+		let minX = Infinity;
+		let minY = Infinity;
+		let maxX = -Infinity;
+		let maxY = -Infinity;
+		
+		for (let i = 0; i < polygon.nodes.length; i++) {
+			const vertex = mesh[polygon.nodes[i].row][polygon.nodes[i].col].coordinate;
+			minX = Math.min(minX, vertex.x);
+			minY = Math.min(minY, vertex.y);
+			maxX = Math.max(maxX, vertex.x);
+			maxY = Math.max(maxY, vertex.y);
+		}
+		
+		return {
+			minX: Math.max(0, Math.floor(minX)),
+			minY: Math.max(0, Math.floor(minY)),
+			maxX: Math.min(this.canvas.width - 1, Math.ceil(maxX)),
+			maxY: Math.min(this.canvas.height - 1, Math.ceil(maxY)),
+		};
+	}
+	
+	/*
+	applyDistortion(distortedMesh: Node[][], distortedPolygons: Set<Polygon>) {
+		const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+		const originalImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+		const pixels = imageData.data;
+		const originalPixels = originalImageData.data;
+		this.ctx.putImageData(originalImageData, 0, 0)
+		
+		const distortedPolygonsArray = Array.from(distortedPolygons);
+		
 		//TODO this for loop should only go over the moved polygons
 		for (let y = 0; y < this.canvas.height; y++) {
 			for (let x = 0; x < this.canvas.width; x++) {
@@ -66,6 +130,8 @@ export class ImageWarper {
 		
 	}
 
+
+	 */
 	private interpolate(originalMesh: Node[][],pixel: Coordinate, polygon: Polygon): Coordinate {
 		const [ul, ur, lr, ll] = this.getOriginalBoundaries(originalMesh, polygon)
 
