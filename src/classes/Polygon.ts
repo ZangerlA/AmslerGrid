@@ -1,11 +1,11 @@
-import {Node} from "./Node";
+import {Vertex} from "./Vertex";
 import {MeshIndex} from "../types/MeshIndex";
 import {MeshInstance} from "./Mesh";
 import {Coordinate} from "../types/Coordinate";
 import {calculateCenter} from "../helperMethods/calculateCenter";
 
 export class Polygon {
-    nodes: MeshIndex[] = []
+    vertices: MeshIndex[] = []
     children: Polygon[] = []
     edgeLength: number
     color: string
@@ -15,21 +15,21 @@ export class Polygon {
         this.shouldDraw = shouldDraw
         this.color = color
         this.edgeLength = edgeLength
-        this.setPolygonNodes(meshIndex.row, meshIndex.col)
+        this.setPolygonVertices(meshIndex.row, meshIndex.col)
     }
 
-    private setPolygonNodes(row: number, col: number) {
+    private setPolygonVertices(row: number, col: number) {
         for (let i = col; i <= col + this.edgeLength; i++) {
-            this.nodes.push({row: row, col: i})
+            this.vertices.push({row: row, col: i})
         }
         for (let i = row + 1; i <= row + this.edgeLength; i++) {
-            this.nodes.push({row: i, col: col + this.edgeLength})
+            this.vertices.push({row: i, col: col + this.edgeLength})
         }
         for (let i = col + this.edgeLength - 1; i >= col; i--) {
-            this.nodes.push({row: row + this.edgeLength, col: i})
+            this.vertices.push({row: row + this.edgeLength, col: i})
         }
         for (let i = row + this.edgeLength - 1; i >= row; i--) {
-            this.nodes.push({row: i, col: col})
+            this.vertices.push({row: i, col: col})
         }
     }
     
@@ -39,12 +39,12 @@ export class Polygon {
                 childShape.draw(ctx)
             })
         }else{
-            const shapeNodes : Node[] = this.getOwnActiveNodes()
+            const shapeVertices : Vertex[] = this.getOwnActiveVertices()
             ctx.beginPath()
-            ctx.moveTo(shapeNodes[0].coordinate.x, shapeNodes[0].coordinate.y)
-            shapeNodes.forEach((node) => {
-                if (node.isActive) {
-                    ctx.lineTo(node.coordinate.x, node.coordinate.y)
+            ctx.moveTo(shapeVertices[0].coordinate.x, shapeVertices[0].coordinate.y)
+            shapeVertices.forEach((vertex) => {
+                if (vertex.isActive) {
+                    ctx.lineTo(vertex.coordinate.x, vertex.coordinate.y)
                 }
             })
             ctx.fillStyle = this.color
@@ -56,15 +56,15 @@ export class Polygon {
         }
     }
 
-    gatherNodes(nodeIndices: MeshIndex[] = []): MeshIndex[] {
+    gatherVertices(vertexIndices: MeshIndex[] = []): MeshIndex[] {
         if (this.hasActiveChildren()) {
             this.children.forEach((childShape) => {
-                childShape.gatherNodes(nodeIndices);
+                childShape.gatherVertices(vertexIndices);
             });
         } else {
-            nodeIndices.push(...this.nodes);
+            vertexIndices.push(...this.vertices);
         }
-        return nodeIndices;
+        return vertexIndices;
     }
 
     hasInside(mouseClick: Coordinate): boolean {
@@ -73,7 +73,7 @@ export class Polygon {
                 return true;
             }
         }
-        return this.inside(mouseClick.x, mouseClick.y, this.getOwnActiveNodes());
+        return this.inside(mouseClick.x, mouseClick.y, this.getOwnActiveVertices());
     }
 
     getContainer(mouseClick: Coordinate): Polygon | undefined {
@@ -100,29 +100,29 @@ export class Polygon {
 
         const childEdgeLength = this.edgeLength / 2
 
-        for (let i = 0; i < this.nodes.length; i+= childEdgeLength) {
-            const node = MeshInstance.nodes[this.nodes[i].row][this.nodes[i].col]
-            if (!node.isActive) {
-                node.isActive = true
+        for (let i = 0; i < this.vertices.length; i+= childEdgeLength) {
+            const vertex = MeshInstance.vertices[this.vertices[i].row][this.vertices[i].col]
+            if (!vertex.isActive) {
+                vertex.isActive = true
 
-                const prevPointIndex = this.nodes[i - childEdgeLength]
-                const nextPointIndex = this.nodes[i + childEdgeLength]
-                node.coordinate = calculateCenter([prevPointIndex, nextPointIndex])
+                const prevPointIndex = this.vertices[i - childEdgeLength]
+                const nextPointIndex = this.vertices[i + childEdgeLength]
+                vertex.coordinate = calculateCenter([prevPointIndex, nextPointIndex])
             }
         }
 
-        const centerNodeRow = this.nodes[0].row + childEdgeLength;
-        const centerNodeCol = this.nodes[0].col + childEdgeLength;
-        const centerNode = MeshInstance.nodes[centerNodeRow][centerNodeCol];
-        if (!centerNode.isActive) {
-            centerNode.isActive = true
+        const centerVertexRow = this.vertices[0].row + childEdgeLength;
+        const centerVertexCol = this.vertices[0].col + childEdgeLength;
+        const centerVertex = MeshInstance.vertices[centerVertexRow][centerVertexCol];
+        if (!centerVertex.isActive) {
+            centerVertex.isActive = true
 
-            const ul = this.nodes[0]
-            const ur = this.nodes[this.edgeLength]
-            const lr = this.nodes[this.edgeLength*2]
-            const ll = this.nodes[this.edgeLength*3]
+            const ul = this.vertices[0]
+            const ur = this.vertices[this.edgeLength]
+            const lr = this.vertices[this.edgeLength*2]
+            const ll = this.vertices[this.edgeLength*3]
 
-            centerNode.coordinate = calculateCenter([ul, ur, lr, ll])
+            centerVertex.coordinate = calculateCenter([ul, ur, lr, ll])
         }
         this.removeOwnEdges()
         this.children.forEach((childPolygon) => {
@@ -136,8 +136,8 @@ export class Polygon {
 
     private addOwnEdges(): void {
         for (let i = 0; i < 4; i++) {
-            const edge = {a: this.nodes[this.edgeLength*i], b: this.nodes[this.edgeLength*(i+1)]}
-            const halfEdge = {a: this.nodes[this.edgeLength*i], b: this.nodes[this.edgeLength*(i+1) - this.edgeLength/2]}
+            const edge = {a: this.vertices[this.edgeLength*i], b: this.vertices[this.edgeLength*(i+1)]}
+            const halfEdge = {a: this.vertices[this.edgeLength*i], b: this.vertices[this.edgeLength*(i+1) - this.edgeLength/2]}
             if (this.edgeLength === 1 || !MeshInstance.edges.has(halfEdge)){
                 MeshInstance.edges.add(edge)
             }
@@ -146,31 +146,31 @@ export class Polygon {
 
     private removeOwnEdges(): void {
         for (let i = 0; i < 4; i++) {
-            MeshInstance.edges.delete({a: this.nodes[this.edgeLength*i], b: this.nodes[this.edgeLength*(i+1)]})
+            MeshInstance.edges.delete({a: this.vertices[this.edgeLength*i], b: this.vertices[this.edgeLength*(i+1)]})
         }
     }
 
-    private getOwnActiveNodes(): Node[] {
-        let nodes: Node[] = []
-        this.nodes.forEach((index) => {
-            const node = MeshInstance.nodes[index.row][index.col]
-            if((node.isActive)){
-                nodes.push(node)
+    private getOwnActiveVertices(): Vertex[] {
+        let vertices: Vertex[] = []
+        this.vertices.forEach((index) => {
+            const vertex = MeshInstance.vertices[index.row][index.col]
+            if((vertex.isActive)){
+                vertices.push(vertex)
             }
         })
-        nodes.pop()
-        return nodes
+        vertices.pop()
+        return vertices
     }
 
-    private inside(x: number, y: number, nodes: Node[]): boolean {
+    private inside(x: number, y: number, vertices: Vertex[]): boolean {
         // ray-casting algorithm based on
         // https://en.wikipedia.org/wiki/Point_in_polygon
         // found on
         // https://stackoverflow.com/questions/22521982/check-if-point-is-inside-a-polygon
         let result = false
-        for (let k = 0, l = nodes.length - 1; k < nodes.length; l = k++) {
-            const xi = nodes[k].coordinate.x, yi = nodes[k].coordinate.y
-            const xj = nodes[l].coordinate.x, yj = nodes[l].coordinate.y
+        for (let k = 0, l = vertices.length - 1; k < vertices.length; l = k++) {
+            const xi = vertices[k].coordinate.x, yi = vertices[k].coordinate.y
+            const xj = vertices[l].coordinate.x, yj = vertices[l].coordinate.y
             const intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
             if (intersect) result = !result
         }
@@ -204,6 +204,6 @@ export class Polygon {
     }
     
     moved(): boolean {
-        return this.nodes.some((nodeIndex) => MeshInstance.nodes[nodeIndex.row][nodeIndex.col].isActive && MeshInstance.nodes[nodeIndex.row][nodeIndex.col].wasMoved)
+        return this.vertices.some((vertexIndex) => MeshInstance.vertices[vertexIndex.row][vertexIndex.col].isActive && MeshInstance.vertices[vertexIndex.row][vertexIndex.col].wasMoved)
     }
 }

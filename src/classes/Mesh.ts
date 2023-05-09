@@ -1,4 +1,4 @@
-import {Node} from "./Node";
+import {Vertex} from "./Vertex";
 import {Polygon} from "./Polygon";
 import {Dimension} from "../customHooks/UseWindowDimensions";
 import {Coordinate} from "../types/Coordinate";
@@ -13,7 +13,7 @@ import {ImageWarper} from "./ImageWarper";
 import testImage from "../testimage.jpg"
 
 export class Mesh {
-	nodes: Node[][] = []
+	vertices: Vertex[][] = []
 	polygons: Set<Polygon> = new Set<Polygon>()
 	selectedPolygons: Set<Polygon> = new Set<Polygon>()
 	edges: ValueSet<Edge> = new ValueSet<Edge>()
@@ -26,41 +26,41 @@ export class Mesh {
 		const config: InitialMeshConfig = {
 			cellCount: cellCount,
 			maxMeshSize: maxMeshSize,
-			cellSizeVertical: (dimension.currentDimension.width - 100) / maxMeshSize,
-			cellSizeHorizontal: (dimension.currentDimension.height - 100) / maxMeshSize,
+			cellSizeVertical: (dimension.width - 100) / maxMeshSize,
+			cellSizeHorizontal: (dimension.height - 100) / maxMeshSize,
 			cellSizeOffset: Math.floor(maxMeshSize / cellCount),
 		}
 
-		this.nodes = this.createNodes(config)
+		this.vertices = this.createVertices(config)
 		this.edges = this.createEdges(config)
 		this.polygons = this.groupPolygons(this.createPolygons(config), config.cellCount)
 		this.colorPolygons()
 		this.image = new Image()
 		this.image.src = testImage
-		this.warper = new ImageWarper(this.image, this.createNodes(config), this.polygons)
+		this.warper = new ImageWarper(this.image, this.createVertices(config), this.polygons)
 	}
 
-	private createNodes(config: InitialMeshConfig): Node[][] {
-		const nodes: Node[][] = []
+	private createVertices(config: InitialMeshConfig): Vertex[][] {
+		const vertices: Vertex[][] = []
 		for (let i = 0; i <= config.maxMeshSize; i++) {
-			nodes[i] = []
+			vertices[i] = []
 			for (let j = 0; j <= config.maxMeshSize; j++) {
-				nodes[i][j] = this.createNode(i, j, config)
+				vertices[i][j] = this.createVertex(i, j, config)
 			}
 		}
-		return nodes
+		return vertices
 	}
 
-	private createNode(i: number, j: number, config: InitialMeshConfig): Node {
+	private createVertex(i: number, j: number, config: InitialMeshConfig): Vertex {
 		const coordinate: Coordinate = {
 			x: (config.cellSizeVertical * j) + 50,
 			y: (config.cellSizeHorizontal * i) + 50
 		}
-		const node = new Node(coordinate)
+		const vertex = new Vertex(coordinate)
 		if (i % config.cellSizeOffset === 0 && j % config.cellSizeOffset === 0) {
-			node.isActive = true
+			vertex.isActive = true
 		}
-		return node
+		return vertex
 	}
 
 	private createPolygons(config: InitialMeshConfig): Polygon[][] {
@@ -104,7 +104,7 @@ export class Mesh {
 	}
 
 	private createParentPolygon(i: number, j: number, polygons: Polygon[][]): Polygon {
-		const parentPolygon = this.createPolygon(polygons[i][j].nodes[0].row, polygons[i][j].nodes[0].col, 1, polygons[i][j].edgeLength * 2, false)
+		const parentPolygon = this.createPolygon(polygons[i][j].vertices[0].row, polygons[i][j].vertices[0].col, 1, polygons[i][j].edgeLength * 2, false)
 		for (let k = 0; k < 2; k++) {
 			for (let l = 0; l < 2; l++) {
 				parentPolygon.children.push(polygons[i + k][j + l]);
@@ -160,28 +160,28 @@ export class Mesh {
 		})
 	}
 
-	handleSingleNode(mouseClick: Coordinate): void {
-		this.nodes.forEach((row) => {
-			row.forEach((node) => {
-				if (node.isActive && node.wasClicked(mouseClick)) {
-					node.dragging = true
+	handleSingleVertex(mouseClick: Coordinate): void {
+		this.vertices.forEach((row) => {
+			row.forEach((vertex) => {
+				if (vertex.isActive && vertex.wasClicked(mouseClick)) {
+					vertex.dragging = true
 				}
 			})
 		})
 	}
 
 	handleDrag(vector: Vector): void {
-		if (this.dragSelectedNodes(vector)) {
+		if (this.dragSelectedVertices(vector)) {
 			return
 		} else this.dragSelectedPolygons(vector)
 	}
 
-	private dragSelectedNodes(vector: Vector): boolean {
+	private dragSelectedVertices(vector: Vector): boolean {
 		let moved = false
-		this.nodes.forEach((row) => {
-			row.forEach((node) => {
-				if (node.dragging) {
-					node.move(vector)
+		this.vertices.forEach((row) => {
+			row.forEach((vertex) => {
+				if (vertex.dragging) {
+					vertex.move(vector)
 					moved = true
 				}
 			})
@@ -189,21 +189,21 @@ export class Mesh {
 		return moved
 	}
 
-	private dragSelectedPolygons(vector: Vector) {
-		this.moveNodes(this.getUniqueSelectedNodes(), vector)
+	private dragSelectedPolygons(vector: Vector): void {
+		this.moveVertices(this.getUniqueSelectedVertices(), vector)
 	}
 
-	private moveNodes(nodeIndices: MeshIndex[], vector: Vector): void {
-		nodeIndices.forEach((index) => {
-			this.nodes[index.row][index.col].move(vector)
+	private moveVertices(vertexIndices: MeshIndex[], vector: Vector): void {
+		vertexIndices.forEach((index) => {
+			this.vertices[index.row][index.col].move(vector)
 		})
 	}
 
 	handleRelease(): void {
-		this.nodes.forEach((row) => {
-			row.forEach((node) => {
-				if (node.dragging) {
-					node.dragging = false
+		this.vertices.forEach((row) => {
+			row.forEach((vertex) => {
+				if (vertex.dragging) {
+					vertex.dragging = false
 				}
 			})
 		})
@@ -213,39 +213,39 @@ export class Mesh {
 		this.rotateSelectedPolygons(degree)
 	}
 
-	private rotateSelectedPolygons(degree: number) {
-		const uniqueNodes = this.getUniqueSelectedNodes()
-		const centerPoint = calculateCenter(uniqueNodes)
-		this.rotateNodes(uniqueNodes, centerPoint, degree)
+	private rotateSelectedPolygons(degree: number): void {
+		const uniqueVertices = this.getUniqueSelectedVertices()
+		const centerPoint = calculateCenter(uniqueVertices)
+		this.rotateVertices(uniqueVertices, centerPoint, degree)
 	}
 
-	private rotateNodes(nodeIndices: MeshIndex[], point: Coordinate, degree: number): void {
-		nodeIndices.forEach((index) => {
-			this.nodes[index.row][index.col].rotateAround(point, degree)
+	private rotateVertices(vertexIndices: MeshIndex[], point: Coordinate, degree: number): void {
+		vertexIndices.forEach((index) => {
+			this.vertices[index.row][index.col].rotateAround(point, degree)
 		})
 	}
 
-	handleScale(scaleFactor: number) {
-		const uniqueNodes = this.getUniqueSelectedNodes()
-		const centerPoint = calculateCenter(uniqueNodes)
-		this.scaleNodes(uniqueNodes,centerPoint,scaleFactor)
+	handleScale(scaleFactor: number): void {
+		const uniqueVertices = this.getUniqueSelectedVertices()
+		const centerPoint = calculateCenter(uniqueVertices)
+		this.scaleVertices(uniqueVertices,centerPoint,scaleFactor)
 	}
 
-	private scaleNodes(nodeIndices: MeshIndex[], centerPoint: Coordinate, scalingFactor: number) {
-		nodeIndices.forEach((index) => {
-			this.nodes[index.row][index.col].scale(scalingFactor, centerPoint)
+	private scaleVertices(vertexIndices: MeshIndex[], centerPoint: Coordinate, scalingFactor: number): void {
+		vertexIndices.forEach((index) => {
+			this.vertices[index.row][index.col].scale(scalingFactor, centerPoint)
 		})
 	}
 
-	private getUniqueSelectedNodes(): MeshIndex[]{
-		let nodeIndices: MeshIndex[] = []
+	private getUniqueSelectedVertices(): MeshIndex[]{
+		let vertexIndices: MeshIndex[] = []
 		this.selectedPolygons.forEach((polygon) => {
-			nodeIndices.push(...polygon.gatherNodes([]))
+			vertexIndices.push(...polygon.gatherVertices([]))
 		})
-		return getUniqueArray(nodeIndices)
+		return getUniqueArray(vertexIndices)
 	}
 
-	handleSplit(mouseClick: Coordinate) {
+	handleSplit(mouseClick: Coordinate): void {
 		this.polygons.forEach((shape) => {
 			if (shape.hasInside(mouseClick)) {
 				shape.getContainer(mouseClick)!.split()
@@ -254,17 +254,12 @@ export class Mesh {
 	}
 
 	draw(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
-		ctx.clearRect(0, 0, dimension.currentDimension.width, dimension.currentDimension.height)
-		/*
-		this.image.addEventListener('load', (e) => {
-			ctx.drawImage(this.image, 0, 0, 1920, 1080)
-		});
-		 */
+		ctx.clearRect(0, 0, dimension.width, dimension.height)
 		this.drawShapeFill(ctx)
+		this.drawImage(ctx, dimension)
 		this.drawHelpLines(ctx)
 		this.drawHelpPoints(ctx)
 		this.drawCenterPoint(ctx, dimension)
-		
 	}
 
 	drawShapeFill(ctx: CanvasRenderingContext2D): void {
@@ -273,35 +268,35 @@ export class Mesh {
 		})
 	}
 
-	drawHelpLines(ctx: CanvasRenderingContext2D) {
+	drawHelpLines(ctx: CanvasRenderingContext2D): void {
 		this.edges.forEach((edge) => {
 			ctx.beginPath()
-			ctx.moveTo(this.nodes[edge.a.row][edge.a.col].coordinate.x, this.nodes[edge.a.row][edge.a.col].coordinate.y)
-			ctx.lineTo(this.nodes[edge.b.row][edge.b.col].coordinate.x, this.nodes[edge.b.row][edge.b.col].coordinate.y)
+			ctx.moveTo(this.vertices[edge.a.row][edge.a.col].coordinate.x, this.vertices[edge.a.row][edge.a.col].coordinate.y)
+			ctx.lineTo(this.vertices[edge.b.row][edge.b.col].coordinate.x, this.vertices[edge.b.row][edge.b.col].coordinate.y)
 			ctx.stroke()
 		})
 	}
 
-	drawHelpPoints(ctx: CanvasRenderingContext2D) {
-		for (let i = 0; i < this.nodes.length; i++) {
-			for (let j = 0; j < this.nodes[i].length; j++) {
-				const node = this.nodes[i][j]
-				if (this.nodes[i][j].isActive) {
-					this.drawPoint(ctx, node.coordinate, node.drawRadius, node.color)
+	drawHelpPoints(ctx: CanvasRenderingContext2D): void {
+		for (let i = 0; i < this.vertices.length; i++) {
+			for (let j = 0; j < this.vertices[i].length; j++) {
+				const vertex = this.vertices[i][j]
+				if (this.vertices[i][j].isActive) {
+					this.drawPoint(ctx, vertex.coordinate, vertex.drawRadius, vertex.color)
 				}
 			}
 		}
 	}
 
-	drawCenterPoint(ctx: CanvasRenderingContext2D, dimension: Dimension) {
+	drawCenterPoint(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
 		const coordinate: Coordinate = {
-			x: dimension.currentDimension.width / 2,
-			y: dimension.currentDimension.height / 2
+			x: dimension.width / 2,
+			y: dimension.height / 2
 		}
 		this.drawPoint(ctx, coordinate, 10, "rgba(215,0,25,1)")
 	}
 
-	drawPoint(ctx: CanvasRenderingContext2D, coordinate: Coordinate, radius: number, color: string) {
+	drawPoint(ctx: CanvasRenderingContext2D, coordinate: Coordinate, radius: number, color: string): void {
 		ctx.beginPath()
 		ctx.moveTo(coordinate.x, coordinate.y)
 		ctx.fillStyle = color
@@ -309,8 +304,23 @@ export class Mesh {
 		ctx.fill()
 	}
 
-	getNodeFor(index: MeshIndex) {
-		return this.nodes[index.row][index.col]
+	drawImage(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
+		let scaleFactorWidth = 1
+		let scaleFactorHeight = 1
+		if (dimension.width - 100 < this.image.width) {
+			scaleFactorWidth = (dimension.width - 100) / this.image.width
+		}
+		if (dimension.height - 100 < this.image.height) {
+			scaleFactorHeight = (dimension.height - 100) / this.image.height
+		}
+		const scaleFactor = scaleFactorWidth >= scaleFactorHeight ? scaleFactorHeight : scaleFactorWidth
+		const scaledWidth = this.image.width * scaleFactor
+		const scaledHeight = this.image.height * scaleFactor
+		ctx.drawImage(this.image,(dimension.width/2) - (scaledWidth/2),(dimension.height/2) - (scaledHeight/2), scaledWidth, scaledHeight)
+	}
+
+	setImage(image: HTMLImageElement): void {
+		this.image = image
 	}
 }
 
