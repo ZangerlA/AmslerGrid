@@ -1,5 +1,5 @@
 import {Polygon} from "./Polygon";
-import {Node} from "./Node";
+import {Vertex} from "./Vertex";
 import {Coordinate} from "../types/Coordinate";
 import {MeshInstance} from "./Mesh";
 
@@ -10,13 +10,13 @@ type PixelValue = {
 	a: number,
 }
 export class ImageWarper {
-	private originalMesh: Node[][]
+	private originalMesh: Vertex[][]
 	private originalPolygon: Set<Polygon>
 	private originalImage: HTMLImageElement
 	private canvas: HTMLCanvasElement
 	private ctx: CanvasRenderingContext2D
 
-	constructor(image: HTMLImageElement, originalMesh: Node[][], originalPolygons: Set<Polygon>) {
+	constructor(image: HTMLImageElement, originalMesh: Vertex[][], originalPolygons: Set<Polygon>) {
 		this.originalMesh = originalMesh
 		this.originalPolygon = originalPolygons
 		this.originalImage = image;
@@ -29,7 +29,7 @@ export class ImageWarper {
 		});
 	}
 	
-	applyDistortion(distortedMesh: Node[][], distortedPolygons: Set<Polygon>) {
+	applyDistortion(distortedMesh: Vertex[][], distortedPolygons: Set<Polygon>) {
 		const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
 		const originalImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
 		const pixels = imageData.data;
@@ -70,14 +70,14 @@ export class ImageWarper {
 		this.ctx.putImageData(imageData, 0, 0);
 	}
 	
-	getBoundingBox(mesh: Node[][], polygon: Polygon) {
+	getBoundingBox(mesh: Vertex[][], polygon: Polygon) {
 		let minX = Infinity;
 		let minY = Infinity;
 		let maxX = -Infinity;
 		let maxY = -Infinity;
 		
-		for (let i = 0; i < polygon.nodes.length; i++) {
-			const vertex = mesh[polygon.nodes[i].row][polygon.nodes[i].col].coordinate;
+		for (let i = 0; i < polygon.vertices.length; i++) {
+			const vertex = mesh[polygon.vertices[i].row][polygon.vertices[i].col].coordinate;
 			minX = Math.min(minX, vertex.x);
 			minY = Math.min(minY, vertex.y);
 			maxX = Math.max(maxX, vertex.x);
@@ -132,7 +132,7 @@ export class ImageWarper {
 
 
 	 */
-	private interpolate(originalMesh: Node[][],pixel: Coordinate, polygon: Polygon): Coordinate {
+	private interpolate(originalMesh: Vertex[][], pixel: Coordinate, polygon: Polygon): Coordinate {
 		const [ul, ur, lr, ll] = this.getOriginalBoundaries(originalMesh, polygon)
 
 		const x = ul.x * (1 - pixel.x) * (1 - pixel.y) +
@@ -148,7 +148,7 @@ export class ImageWarper {
 		return { x, y };
 	}
 
-	private getRelativePosition(distortedMesh: Node[][], pixel: Coordinate, polygon: Polygon): Coordinate {
+	private getRelativePosition(distortedMesh: Vertex[][], pixel: Coordinate, polygon: Polygon): Coordinate {
 		const [P1, P2, P3, P4] = this.getDistortedBoundaries(distortedMesh, polygon)
 		const P5 = pixel;
 		
@@ -207,21 +207,21 @@ export class ImageWarper {
 		}
 	}
 
-	private getDistortedBoundaries(distortedMesh: Node[][],polygon: Polygon): Coordinate[] {
+	private getDistortedBoundaries(distortedMesh: Vertex[][], polygon: Polygon): Coordinate[] {
 		const result = []
-		result.push(distortedMesh[polygon.nodes[0].row][polygon.nodes[0].col].coordinate)
-		result.push(distortedMesh[polygon.nodes[polygon.edgeLength].row][polygon.nodes[polygon.edgeLength].col].coordinate)
-		result.push(distortedMesh[polygon.nodes[2 * polygon.edgeLength].row][polygon.nodes[2 * polygon.edgeLength].col].coordinate)
-		result.push(distortedMesh[polygon.nodes[3 * polygon.edgeLength].row][polygon.nodes[3 * polygon.edgeLength].col].coordinate)
+		result.push(distortedMesh[polygon.vertices[0].row][polygon.vertices[0].col].coordinate)
+		result.push(distortedMesh[polygon.vertices[polygon.edgeLength].row][polygon.vertices[polygon.edgeLength].col].coordinate)
+		result.push(distortedMesh[polygon.vertices[2 * polygon.edgeLength].row][polygon.vertices[2 * polygon.edgeLength].col].coordinate)
+		result.push(distortedMesh[polygon.vertices[3 * polygon.edgeLength].row][polygon.vertices[3 * polygon.edgeLength].col].coordinate)
 		return result
 	}
 	
-	private getOriginalBoundaries(originalMesh: Node[][], polygon: Polygon): Coordinate[] {
+	private getOriginalBoundaries(originalMesh: Vertex[][], polygon: Polygon): Coordinate[] {
 		const result = []
-		result.push(originalMesh[polygon.nodes[0].row][polygon.nodes[0].col].coordinate)
-		result.push(originalMesh[polygon.nodes[polygon.edgeLength].row][polygon.nodes[polygon.edgeLength].col].coordinate)
-		result.push(originalMesh[polygon.nodes[2 * polygon.edgeLength].row][polygon.nodes[2 * polygon.edgeLength].col].coordinate)
-		result.push(originalMesh[polygon.nodes[3 * polygon.edgeLength].row][polygon.nodes[3 * polygon.edgeLength].col].coordinate)
+		result.push(originalMesh[polygon.vertices[0].row][polygon.vertices[0].col].coordinate)
+		result.push(originalMesh[polygon.vertices[polygon.edgeLength].row][polygon.vertices[polygon.edgeLength].col].coordinate)
+		result.push(originalMesh[polygon.vertices[2 * polygon.edgeLength].row][polygon.vertices[2 * polygon.edgeLength].col].coordinate)
+		result.push(originalMesh[polygon.vertices[3 * polygon.edgeLength].row][polygon.vertices[3 * polygon.edgeLength].col].coordinate)
 		return result
 	}
 	

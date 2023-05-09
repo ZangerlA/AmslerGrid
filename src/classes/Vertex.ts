@@ -2,7 +2,7 @@ import {Vector} from "../types/Vector";
 import {Coordinate} from "../types/Coordinate";
 
 
-export class Node {
+export class Vertex {
     coordinate: Coordinate = {x: 0, y: 0}
     drawRadius: number = 6
     color: string = "black"

@@ -1,5 +1,5 @@
 import React, {FC, MouseEvent, useEffect, useRef, useState} from "react";
-import useWindowDimensions from "../customHooks/UseWindowDimensions";
+import useWindowDimensions, {Dimension} from "../customHooks/UseWindowDimensions";
 import {Vector} from "../types/Vector";
 import {Coordinate} from "../types/Coordinate";
 import {Mesh, MeshInstance} from "../classes/Mesh";
@@ -8,58 +8,55 @@ import {MouseButton} from "../types/MouseButton";
 const Canvas: FC = (props) => {
 
 	const canvasRef = useRef<HTMLCanvasElement>(null)
-	const dimension = useWindowDimensions()
-
+	const windowDimension = useWindowDimensions()
+	const [ canvasDimension, setCanvasDimension ] = useState<Dimension>({width: 0, height: 0})
 	const [ctx, setCtx] = useState<CanvasRenderingContext2D>()
 	const [ mousePosition, setMousePosition ] = useState<Coordinate>({x:0,y:0})
+	const [ canvasBounds, setCanvasBounds ] = useState<DOMRect>()
 	const [ isDragging, setIsDragging ] = useState<boolean>(false)
 
-	const handleClick = (event: MouseEvent)=> {
+	const handleClick = (event: MouseEvent): void => {
 		event.preventDefault()
-		if (event.shiftKey && event.button === MouseButton.Left) {
-			console.log("shift")
-			
-				console.log("event")
-				MeshInstance.warper?.applyDistortion(MeshInstance.nodes, MeshInstance.polygons)
-				MeshInstance.warper?.download("distorted")
-			
-		}
+
 		if (event.ctrlKey && event.button === MouseButton.Left) {
-			MeshInstance.handleSplit({x: event.clientX, y: event.clientY})
-			MeshInstance.draw(ctx as CanvasRenderingContext2D, dimension)
+			MeshInstance.handleSplit(toCanvasCoord(event.clientX, event.clientY))
+			MeshInstance.draw(ctx as CanvasRenderingContext2D, canvasDimension)
 		}
 	}
 
-	const handleContextMenu = (event: MouseEvent) => {
+	const handleContextMenu = (event: MouseEvent): void => {
 		event.preventDefault()
 
 		if(event.button === MouseButton.Right) {
-			const coordinate: Coordinate = {x: event.clientX, y: event.clientY}
+			const coordinate: Coordinate = toCanvasCoord(event.clientX, event.clientY)
 			MeshInstance.handleSelect(coordinate)
-			MeshInstance.draw(ctx as CanvasRenderingContext2D, dimension)
+			MeshInstance.draw(ctx as CanvasRenderingContext2D, canvasDimension)
 		}
 	}
 
-	const handleMouseDown = (event: MouseEvent) => {
+	const handleMouseDown = (event: MouseEvent): void => {
 		event.preventDefault()
+
 		if (event.button === MouseButton.Left) {
 			setIsDragging(true)
-			MeshInstance.handleSingleNode({x:event.clientX, y:event.clientY})
+			MeshInstance.handleSingleVertex(toCanvasCoord(event.clientX, event.clientY))
 		}
-		setMousePosition({x:event.clientX, y:event.clientY})
+		setMousePosition(toCanvasCoord(event.clientX, event.clientY))
 	}
 
-	const handleMouseMove = (event: MouseEvent) => {
+	const handleMouseMove = (event: MouseEvent): void => {
 		event.preventDefault()
+
 		if (event.button === MouseButton.Left && isDragging) {
-			const vector: Vector = {x: event.clientX - mousePosition.x, y: event.clientY - mousePosition.y}
+			const coord = toCanvasCoord(event.clientX, event.clientY)
+			const vector: Vector = {x: coord.x - mousePosition.x, y: coord.y - mousePosition.y}
 			MeshInstance.handleDrag(vector)
-			MeshInstance.draw(ctx as CanvasRenderingContext2D, dimension)
-			setMousePosition({x:event.clientX, y:event.clientY})
+			MeshInstance.draw(ctx as CanvasRenderingContext2D, canvasDimension)
+			setMousePosition(toCanvasCoord(event.clientX, event.clientY))
 		}
 	}
 
-	const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
+	const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>): void => {
 		const degree = event.deltaY * 0.007
 		let scaleFactor = getScaleFactor(event.deltaY)
 		if (event.shiftKey){
@@ -67,34 +64,41 @@ const Canvas: FC = (props) => {
 		} else {
 			MeshInstance.handleRotate(degree)
 		}
-		MeshInstance.draw(ctx as CanvasRenderingContext2D, dimension)
+		MeshInstance.draw(ctx as CanvasRenderingContext2D, canvasDimension)
 	}
 
-	function getScaleFactor(deltaY: number): number {
+	const getScaleFactor = (deltaY: number): number => {
 		if (deltaY < 0){
 			return 0.995
 		}else return 1.0051
 	}
-	const handleMouseUp = (event: MouseEvent) => {
+
+	const handleMouseUp = (event: MouseEvent): void => {
 		if (event.button === MouseButton.Left) {
 			MeshInstance.handleRelease()
 			setIsDragging(false);
 		}
 	}
 
-	const handleMouseOut = (event: MouseEvent) => {
+	const handleMouseOut = (event: MouseEvent): void => {
 		handleMouseUp(event);
+	}
+
+	const toCanvasCoord = (clientX: number, clientY: number): Coordinate => {
+		return {x: clientX - canvasBounds!.left, y: clientY - canvasBounds!.top}
 	}
 
 	useEffect(() => {
 		const canvas = canvasRef.current
 		setCtx((canvas!.getContext('2d'))!)
-		MeshInstance.initializeMesh(dimension)
+		setCanvasBounds(canvas!.getBoundingClientRect())
+		setCanvasDimension({width: canvas!.width, height: canvas!.height})
+		MeshInstance.initializeMesh({width: canvas!.width, height: canvas!.height})
 	}, [])
 
 	useEffect(() => {
 		if(ctx) {
-			MeshInstance.draw(ctx, dimension)
+			MeshInstance.draw(ctx, canvasDimension)
 		}
 	}, [ctx])
 	
@@ -108,8 +112,11 @@ const Canvas: FC = (props) => {
 			onWheel={handleWheel}
 			onContextMenu={handleContextMenu}
 			ref={canvasRef}
-			width={dimension.currentDimension.width}
-			height={dimension.currentDimension.height}{...props}>
+			width={windowDimension[0].width - 60}
+			height={windowDimension[0].height}
+			style={{marginLeft: 60}}
+			{...props}
+		>
 		</canvas>
 	)
 }

@@ -1,8 +1,8 @@
 import {useEffect, useState} from 'react';
 
 export type Dimension = {
-    currentDimension: {width: number, height: number},
-    previousDimension: {width: number, height: number},
+    width: number,
+    height: number,
 }
 
 function getWindowDimensions() {
@@ -13,7 +13,7 @@ function getWindowDimensions() {
     };
 }
 
-export default function useWindowDimensions(): Dimension {
+export default function useWindowDimensions(): Dimension[] {
     const [windowDimensions, setWindowDimensions] = useState(getWindowDimensions());
     const [ previousWindowDimensions, setPreviousWindowDimensions ] = useState(getWindowDimensions())
 
@@ -27,5 +27,5 @@ export default function useWindowDimensions(): Dimension {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    return {currentDimension: windowDimensions, previousDimension: previousWindowDimensions};
+    return [windowDimensions, previousWindowDimensions];
 }
