@@ -1,139 +1,88 @@
-import {Polygon} from "./Polygon";
 import {Vertex} from "./Vertex";
-import {Coordinate} from "../types/Coordinate";
+import {Polygon} from "./Polygon";
 import {MeshInstance} from "./Mesh";
+import {Coordinate} from "../types/Coordinate";
+import {Dimension} from "../customHooks/UseWindowDimensions";
 
-type PixelValue = {
-	r: number,
-	g: number,
-	b: number,
-	a: number,
-}
 export class ImageWarper {
+	private originalImage?: HTMLImageElement
 	private originalMesh: Vertex[][]
-	private originalPolygon: Set<Polygon>
-	private originalImage: HTMLImageElement
-	private canvas: HTMLCanvasElement
-	private ctx: CanvasRenderingContext2D
+	private canvas?: HTMLCanvasElement
+	private ctx?: CanvasRenderingContext2D
 
-	constructor(image: HTMLImageElement, originalMesh: Vertex[][], originalPolygons: Set<Polygon>) {
+	constructor(originalMesh: Vertex[][], image?: HTMLImageElement) {
 		this.originalMesh = originalMesh
-		this.originalPolygon = originalPolygons
-		this.originalImage = image;
-		this.canvas = document.createElement('canvas');
-		this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
-		this.canvas.width = image.width;
-		this.canvas.height = image.height;
-		MeshInstance.image.addEventListener('load', (e) => {
-			this.ctx.drawImage(image, 0, 0, image.width, image.height);
-		});
+		if (image) {
+			this.setImage(image)
+		}
 	}
-	
-	applyDistortion(distortedMesh: Vertex[][], distortedPolygons: Set<Polygon>) {
-		const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-		const originalImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+
+	warp(distortedMesh: Vertex[][], polygons: Set<Polygon>, dimension: Dimension): HTMLImageElement {
+		this.ctx!.drawImage(this.originalImage!, 0, 0)
+		const offsetX = (dimension.width - this.originalImage!.width) / 2
+		const offsetY = (dimension.height - this.originalImage!.height) / 2
+		const imageData = this.ctx!.getImageData(0, 0, this.canvas!.width, this.canvas!.height)
+		const originalImageData = this.ctx!.getImageData(0, 0, this.canvas!.width, this.canvas!.height)
 		const pixels = imageData.data;
 		const originalPixels = originalImageData.data;
-		this.ctx.putImageData(originalImageData, 0, 0)
-		
-		const distortedPolygonsArray = Array.from(distortedPolygons);
-		
-		// Loop over the distorted polygons
-		for (let i = 0; i < distortedPolygonsArray.length; i++) {
-			const polygon = distortedPolygonsArray[i];
-			
-			// Check if the polygon has moved
-			if (polygon.moved()) {
-				// Get the bounding box of the polygon
-				const bbox = this.getBoundingBox(distortedMesh, polygon);
-				
-				// Iterate over the pixels within the bounding box
-				for (let y = bbox.minY; y <= bbox.maxY; y++) {
-					for (let x = bbox.minX; x <= bbox.maxX; x++) {
-						const container = polygon.getContainer({ x, y });
-						if (container !== undefined) {
-							const index = (y * this.canvas.width + x) * 4;
-							const relPos = this.getRelativePosition(distortedMesh, { x, y }, container);
-							const originalPos = this.interpolate(this.originalMesh, relPos, container);
-							const origIndex = (Math.floor(originalPos.y) * this.canvas.width + Math.floor(originalPos.x)) * 4;
-							
-							pixels[index] = originalPixels[origIndex];
-							pixels[index + 1] = originalPixels[origIndex + 1];
-							pixels[index + 2] = originalPixels[origIndex + 2];
-							pixels[index + 3] = originalPixels[origIndex + 3];
-						}
-					}
-				}
-			}
-		}
-		
-		this.ctx.putImageData(imageData, 0, 0);
-	}
-	
-	getBoundingBox(mesh: Vertex[][], polygon: Polygon) {
-		let minX = Infinity;
-		let minY = Infinity;
-		let maxX = -Infinity;
-		let maxY = -Infinity;
-		
-		for (let i = 0; i < polygon.vertices.length; i++) {
-			const vertex = mesh[polygon.vertices[i].row][polygon.vertices[i].col].coordinate;
-			minX = Math.min(minX, vertex.x);
-			minY = Math.min(minY, vertex.y);
-			maxX = Math.max(maxX, vertex.x);
-			maxY = Math.max(maxY, vertex.y);
-		}
-		
-		return {
-			minX: Math.max(0, Math.floor(minX)),
-			minY: Math.max(0, Math.floor(minY)),
-			maxX: Math.min(this.canvas.width - 1, Math.ceil(maxX)),
-			maxY: Math.min(this.canvas.height - 1, Math.ceil(maxY)),
-		};
-	}
-	
-	/*
-	applyDistortion(distortedMesh: Node[][], distortedPolygons: Set<Polygon>) {
-		const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-		const originalImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-		const pixels = imageData.data;
-		const originalPixels = originalImageData.data;
-		this.ctx.putImageData(originalImageData, 0, 0)
-		
-		const distortedPolygonsArray = Array.from(distortedPolygons);
-		
-		//TODO this for loop should only go over the moved polygons
-		for (let y = 0; y < this.canvas.height; y++) {
-			for (let x = 0; x < this.canvas.width; x++) {
-				for (let i = 0; i < distortedPolygonsArray.length; i++) {
-					const polygon = distortedPolygonsArray[i];
-					const container = polygon.getContainer({x, y});
-					if (container !== undefined && container.moved()) {
-						const index = (y * this.canvas.width + x) * 4;
-						const relPos = this.getRelativePosition(distortedMesh, {x, y}, container);
-						const originalPos = this.interpolate(this.originalMesh, relPos, container);
-						const origIndex = (Math.floor(originalPos.y) * this.canvas.width + Math.floor(originalPos.x)) * 4;
-						
+		let activePolygons: Polygon[] = []
+		polygons.forEach((polygon) => {
+			activePolygons.push(...polygon.gatherActiveChildren([]))
+		})
+		const movedPolygons = activePolygons.filter((polygon) => polygon.moved())
+
+		for (let i = 0; i < movedPolygons.length; i++) {
+			const polygon = movedPolygons[i];
+
+			const bbox = this.getBoundingBox(distortedMesh, polygon);
+			for (let y = bbox.minY; y <= bbox.maxY; y++) {
+				for (let x = bbox.minX; x <= bbox.maxX; x++) {
+					// {x: (x - offsetX), y: (y - offsetY)}
+					if (y > offsetY && x > offsetX && polygon.hasInside({x, y})) {
+						const index = ((y - offsetY) * this.canvas!.width + (x - offsetX)) * 4;
+						const relPos = this.getRelativePosition(distortedMesh, { x, y }, polygon);
+						const originalPos = this.interpolate(this.originalMesh, relPos, polygon);
+						const origIndex = ((Math.floor(originalPos.y) - offsetY) * this.canvas!.width + (Math.floor(originalPos.x) - offsetX)) * 4;
 						pixels[index] = originalPixels[origIndex];
 						pixels[index + 1] = originalPixels[origIndex + 1];
 						pixels[index + 2] = originalPixels[origIndex + 2];
 						pixels[index + 3] = originalPixels[origIndex + 3];
-						
-						break;
 					}
 				}
 			}
 		}
-		
-		this.ctx.putImageData(imageData, 0, 0);
-		
-		
+		this.ctx!.putImageData(imageData, 0, 0);
+		const image = new Image()
+		image.src = this.canvas!.toDataURL("image/png")
+		return image
 	}
 
+	private getBoundingBox(mesh: Vertex[][], polygon: Polygon) {
+		let minX = Infinity;
+		let minY = Infinity;
+		let maxX = -Infinity;
+		let maxY = -Infinity;
 
-	 */
+		for (let i = 0; i < polygon.vertices.length; i++) {
+			const vertex = mesh[polygon.vertices[i].row][polygon.vertices[i].col];
+			if(vertex.isActive) {
+				minX = Math.min(minX, vertex.coordinate.x);
+				minY = Math.min(minY, vertex.coordinate.y);
+				maxX = Math.max(maxX, vertex.coordinate.x);
+				maxY = Math.max(maxY, vertex.coordinate.y);
+			}
+		}
+
+		return {
+			minX: Math.max(0, Math.floor(minX)),
+			minY: Math.max(0, Math.floor(minY)),
+			maxX: Math.min(this.canvas!.width - 1, Math.ceil(maxX)),
+			maxY: Math.min(this.canvas!.height - 1, Math.ceil(maxY)),
+		};
+	}
+
 	private interpolate(originalMesh: Vertex[][], pixel: Coordinate, polygon: Polygon): Coordinate {
-		const [ul, ur, lr, ll] = this.getOriginalBoundaries(originalMesh, polygon)
+		const [ul, ur, lr, ll] = this.getPolygonBoundaries(originalMesh, polygon)
 
 		const x = ul.x * (1 - pixel.x) * (1 - pixel.y) +
 			ur.x * pixel.x * (1 - pixel.y) +
@@ -149,41 +98,41 @@ export class ImageWarper {
 	}
 
 	private getRelativePosition(distortedMesh: Vertex[][], pixel: Coordinate, polygon: Polygon): Coordinate {
-		const [P1, P2, P3, P4] = this.getDistortedBoundaries(distortedMesh, polygon)
+		const [P1, P2, P3, P4] = this.getPolygonBoundaries(distortedMesh, polygon)
 		const P5 = pixel;
-		
+
 		const a = P1.x * P3.y - P1.x * P4.y - P2.x * P3.y + P2.x * P4.y - P3.x * P1.y + P3.x * P2.y + P4.x * P1.y - P4.x * P2.y;
 		const b = -P1.x * P3.y + 2 * P1.x * P4.y - P1.x * P5.y - P2.x * P4.y + P2.x * P5.y + P3.x * P1.y - P3.x * P5.y - 2 * P4.x * P1.y + P4.x * P2.y + P4.x * P5.y + P5.x * P1.y - P5.x * P2.y + P5.x * P3.y - P5.x * P4.y;
 		const c = -P1.x * P4.y + P1.x * P5.y + P4.x * P1.y - P4.x * P5.y - P5.x * P1.y + P5.x * P4.y;
-		
+
 		const solutions = this.solveQuadratic(a, b, c);
-		
+
 		// Select the best solution and calculate the corresponding v value
 		let u = 0, v = 0
 		for (const sol of solutions) {
 			const u_candidate = sol;
 			const Pv0 = { x: P1.x + u_candidate * (P2.x - P1.x), y: P1.y + u_candidate * (P2.y - P1.y) };
 			const Pv1 = { x: P4.x + u_candidate * (P3.x - P4.x), y: P4.y + u_candidate * (P3.y - P4.y) };
-			
+
 			const diff_x = Pv1.x - Pv0.x;
 			const diff_y = Pv1.y - Pv0.y;
-			
+
 			if (Math.abs(diff_x) > Math.abs(diff_y)) {
 				v = (P5.x - Pv0.x) / diff_x;
 			} else {
 				v = (P5.y - Pv0.y) / diff_y;
 			}
-			
+
 			// Check if the solution is within the [0, 1] range for both u and v
 			if (u_candidate >= 0 && u_candidate <= 1 && v >= 0 && v <= 1) {
 				u = u_candidate;
 				break;
 			}
 		}
-		
+
 		return { x: u, y: v };
 	}
-	
+
 	private solveQuadratic(a: number, b: number, c: number): number[] {
 		if (Math.abs(a) < Number.EPSILON) { // Linear equation
 			if (Math.abs(b) < Number.EPSILON) {
@@ -191,9 +140,9 @@ export class ImageWarper {
 			}
 			return [-c / b]; // One solution
 		}
-		
+
 		const discriminant = b * b - 4 * a * c;
-		
+
 		if (discriminant < 0) {
 			return []; // No real solutions
 		} else if (Math.abs(discriminant) < Number.EPSILON) {
@@ -207,28 +156,35 @@ export class ImageWarper {
 		}
 	}
 
-	private getDistortedBoundaries(distortedMesh: Vertex[][], polygon: Polygon): Coordinate[] {
+	private getPolygonBoundaries(mesh: Vertex[][], polygon: Polygon) {
 		const result = []
-		result.push(distortedMesh[polygon.vertices[0].row][polygon.vertices[0].col].coordinate)
-		result.push(distortedMesh[polygon.vertices[polygon.edgeLength].row][polygon.vertices[polygon.edgeLength].col].coordinate)
-		result.push(distortedMesh[polygon.vertices[2 * polygon.edgeLength].row][polygon.vertices[2 * polygon.edgeLength].col].coordinate)
-		result.push(distortedMesh[polygon.vertices[3 * polygon.edgeLength].row][polygon.vertices[3 * polygon.edgeLength].col].coordinate)
+		result.push(mesh[polygon.vertices[0].row][polygon.vertices[0].col].coordinate)
+		result.push(mesh[polygon.vertices[polygon.edgeLength].row][polygon.vertices[polygon.edgeLength].col].coordinate)
+		result.push(mesh[polygon.vertices[2 * polygon.edgeLength].row][polygon.vertices[2 * polygon.edgeLength].col].coordinate)
+		result.push(mesh[polygon.vertices[3 * polygon.edgeLength].row][polygon.vertices[3 * polygon.edgeLength].col].coordinate)
 		return result
 	}
-	
-	private getOriginalBoundaries(originalMesh: Vertex[][], polygon: Polygon): Coordinate[] {
-		const result = []
-		result.push(originalMesh[polygon.vertices[0].row][polygon.vertices[0].col].coordinate)
-		result.push(originalMesh[polygon.vertices[polygon.edgeLength].row][polygon.vertices[polygon.edgeLength].col].coordinate)
-		result.push(originalMesh[polygon.vertices[2 * polygon.edgeLength].row][polygon.vertices[2 * polygon.edgeLength].col].coordinate)
-		result.push(originalMesh[polygon.vertices[3 * polygon.edgeLength].row][polygon.vertices[3 * polygon.edgeLength].col].coordinate)
-		return result
+
+	setImage(image: HTMLImageElement): void {
+		this.originalImage = image
+		this.canvas = document.createElement('canvas')
+		this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
+		this.canvas.width = image.width
+		this.canvas.height = image.height
+		MeshInstance.image.addEventListener('load', (e) => {
+			this.ctx!.drawImage(image, 0, 0)
+		})
 	}
-	
+
+	getWarpedImage(): HTMLImageElement {
+		const image = new Image()
+		image.src = this.canvas!.toDataURL("image/png")
+		return image
+	}
+
 	download(filename = 'distorted-image.png') {
-		console.log("download")
 		const link = document.createElement('a');
-		link.href = this.canvas.toDataURL('image/png');
+		link.href = this.canvas!.toDataURL('image/png');
 		link.download = filename;
 		link.click();
 	}

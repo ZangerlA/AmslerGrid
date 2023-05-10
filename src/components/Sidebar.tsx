@@ -42,7 +42,7 @@ const Sidebar: FC = (props) => {
 		const url = URL.createObjectURL(file)
 		const image = new Image()
 		image.src = url
-		MeshInstance.setImage(image)
+		MeshInstance.setScaledImage(image)
 		return false
 	}
 

@@ -76,7 +76,9 @@ const Canvas: FC = (props) => {
 	const handleMouseUp = (event: MouseEvent): void => {
 		if (event.button === MouseButton.Left) {
 			MeshInstance.handleRelease()
+			console.log("mouseup")
 			setIsDragging(false);
+			MeshInstance.warpImage()
 		}
 	}
 
@@ -93,6 +95,7 @@ const Canvas: FC = (props) => {
 		setCtx((canvas!.getContext('2d'))!)
 		setCanvasBounds(canvas!.getBoundingClientRect())
 		setCanvasDimension({width: canvas!.width, height: canvas!.height})
+		MeshInstance.setCanvas(canvas!)
 		MeshInstance.initializeMesh({width: canvas!.width, height: canvas!.height})
 	}, [])
 

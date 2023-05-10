@@ -9,8 +9,8 @@ import {InitialMeshConfig} from "../types/InitialMeshConfig";
 import {Edge} from "../types/Edge";
 import {undirectedGraphHash, ValueSet} from "../helperMethods/ValueSet";
 import {calculateCenter} from "../helperMethods/calculateCenter";
-import {ImageWarper} from "./ImageWarper";
 import testImage from "../testimage.jpg"
+import {ImageWarper} from "./ImageWarper";
 
 export class Mesh {
 	vertices: Vertex[][] = []
@@ -19,6 +19,7 @@ export class Mesh {
 	edges: ValueSet<Edge> = new ValueSet<Edge>()
 	warper?: ImageWarper
 	image: HTMLImageElement = new Image()
+	canvas?: HTMLCanvasElement
 
 	initializeMesh(dimension: Dimension): void {
 		const cellCount = 5
@@ -35,9 +36,10 @@ export class Mesh {
 		this.edges = this.createEdges(config)
 		this.polygons = this.groupPolygons(this.createPolygons(config), config.cellCount)
 		this.colorPolygons()
-		this.image = new Image()
-		this.image.src = testImage
-		this.warper = new ImageWarper(this.image, this.createVertices(config), this.polygons)
+		const image = new Image()
+		image.src = testImage
+		this.warper = new ImageWarper(this.createVertices(config))
+		this.setScaledImage(image)
 	}
 
 	private createVertices(config: InitialMeshConfig): Vertex[][] {
@@ -96,9 +98,9 @@ export class Mesh {
 		for (let i = 0; i < polygons.length; i += 2) {
 			const newRow: Polygon[] = [];
 			for (let j = 0; j < polygons[i].length; j += 2) {
-				newRow.push(this.createParentPolygon(i, j, polygons));
+				newRow.push(this.createParentPolygon(i, j, polygons))
 			}
-			mergedPolygons.push(newRow);
+			mergedPolygons.push(newRow)
 		}
 		return this.groupPolygons(mergedPolygons, limit)
 	}
@@ -107,7 +109,7 @@ export class Mesh {
 		const parentPolygon = this.createPolygon(polygons[i][j].vertices[0].row, polygons[i][j].vertices[0].col, 1, polygons[i][j].edgeLength * 2, false)
 		for (let k = 0; k < 2; k++) {
 			for (let l = 0; l < 2; l++) {
-				parentPolygon.children.push(polygons[i + k][j + l]);
+				parentPolygon.children.push(polygons[i + k][j + l])
 			}
 		}
 		return parentPolygon
@@ -305,22 +307,63 @@ export class Mesh {
 	}
 
 	drawImage(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
+		ctx.drawImage(this.image,(dimension.width/2) - (this.image.width/2),(dimension.height/2) - (this.image.height/2))
+	}
+
+	scaleImage(image: HTMLImageElement, dimension: Dimension): HTMLImageElement {
 		let scaleFactorWidth = 1
 		let scaleFactorHeight = 1
-		if (dimension.width - 100 < this.image.width) {
-			scaleFactorWidth = (dimension.width - 100) / this.image.width
+		if (dimension.width - 100 < image.width) {
+			scaleFactorWidth = (dimension.width - 100) / image.width
 		}
-		if (dimension.height - 100 < this.image.height) {
-			scaleFactorHeight = (dimension.height - 100) / this.image.height
+		if (dimension.height - 100 < image.height) {
+			scaleFactorHeight = (dimension.height - 100) / image.height
 		}
 		const scaleFactor = scaleFactorWidth >= scaleFactorHeight ? scaleFactorHeight : scaleFactorWidth
-		const scaledWidth = this.image.width * scaleFactor
-		const scaledHeight = this.image.height * scaleFactor
-		ctx.drawImage(this.image,(dimension.width/2) - (scaledWidth/2),(dimension.height/2) - (scaledHeight/2), scaledWidth, scaledHeight)
+		const scaledWidth = image.width * scaleFactor
+		const scaledHeight = image.height * scaleFactor
+
+		const canvas = document.createElement("canvas")
+		const ctx = canvas?.getContext("2d") as CanvasRenderingContext2D
+
+		canvas.width = scaledWidth
+		canvas.height = scaledHeight
+		ctx.drawImage(image,0,0, scaledWidth, scaledHeight)
+		const url = canvas!.toDataURL("image/png")
+		const scaledImage = new Image()
+		scaledImage.src = url
+		return scaledImage
+	}
+
+	setScaledImage(image: HTMLImageElement): void {
+		const ctx = (this.canvas!.getContext('2d'))!
+		const dimension = {width: this.canvas!.width, height: this.canvas!.height}
+		image.addEventListener("load", (e) => {
+			const scaledImage = this.scaleImage(image, dimension)
+			this.image = scaledImage
+			scaledImage.addEventListener("load", (e) => {
+				this.draw(ctx, dimension)
+				this.warper?.setImage(this.image)
+			})
+		})
 	}
 
 	setImage(image: HTMLImageElement): void {
+		const ctx = (this.canvas!.getContext('2d'))!
+		const dimension = {width: this.canvas!.width, height: this.canvas!.height}
 		this.image = image
+		image.addEventListener("load", (e) => {
+			this.draw(ctx, dimension)
+		})
+	}
+
+	setCanvas(canvas: HTMLCanvasElement): void {
+		this.canvas = canvas
+	}
+
+	warpImage(): void {
+		const dimension = {width: this.canvas!.width, height: this.canvas!.height}
+		this.setImage(this.warper!.warp(this.vertices, this.polygons, dimension))
 	}
 }
 

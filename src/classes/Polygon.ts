@@ -134,6 +134,17 @@ export class Polygon {
         })
     }
 
+    gatherActiveChildren(result: Polygon[]): Polygon[] {
+        if (this.hasActiveChildren()) {
+            this.children.forEach((childShape) => {
+                childShape.gatherActiveChildren(result);
+            });
+        } else {
+            result.push(this);
+        }
+        return result;
+    }
+
     private addOwnEdges(): void {
         for (let i = 0; i < 4; i++) {
             const edge = {a: this.vertices[this.edgeLength*i], b: this.vertices[this.edgeLength*(i+1)]}
