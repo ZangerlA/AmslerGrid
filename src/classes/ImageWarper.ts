@@ -13,16 +13,17 @@ export class ImageWarper {
 	constructor(originalMesh: Vertex[][], image?: HTMLImageElement) {
 		this.originalMesh = originalMesh
 		if (image) {
-			this.setImage(image)
+			//this.setImage(image)
 		}
 	}
 
-	warp(distortedMesh: Vertex[][], polygons: Set<Polygon>, dimension: Dimension): HTMLImageElement {
-		this.ctx!.drawImage(this.originalImage!, 0, 0)
-		const offsetX = (dimension.width - this.originalImage!.width) / 2
-		const offsetY = (dimension.height - this.originalImage!.height) / 2
-		const imageData = this.ctx!.getImageData(0, 0, this.canvas!.width, this.canvas!.height)
-		const originalImageData = this.ctx!.getImageData(0, 0, this.canvas!.width, this.canvas!.height)
+	warp(distortedMesh: Vertex[][], polygons: Set<Polygon>, canvas: HTMLCanvasElement): void {
+		const ctx = canvas.getContext("2d")
+		//this.ctx!.drawImage(this.originalImage!, 0, 0)
+		//const offsetX = (dimension.width - this.originalImage!.width) / 2
+		//const offsetY = (dimension.height - this.originalImage!.height) / 2
+		const imageData = ctx!.getImageData(0, 0, canvas!.width, canvas!.height)
+		const originalImageData = ctx!.getImageData(0, 0,canvas!.width, canvas!.height)
 		const pixels = imageData.data;
 		const originalPixels = originalImageData.data;
 		let activePolygons: Polygon[] = []
@@ -30,19 +31,20 @@ export class ImageWarper {
 			activePolygons.push(...polygon.gatherActiveChildren([]))
 		})
 		const movedPolygons = activePolygons.filter((polygon) => polygon.moved())
-
+		const test = []
 		for (let i = 0; i < movedPolygons.length; i++) {
 			const polygon = movedPolygons[i];
-
-			const bbox = this.getBoundingBox(distortedMesh, polygon);
+			console.log(movedPolygons.length)
+			const bbox = this.getBoundingBox2(distortedMesh, polygon);
+			test.push(bbox)
 			for (let y = bbox.minY; y <= bbox.maxY; y++) {
 				for (let x = bbox.minX; x <= bbox.maxX; x++) {
 					// {x: (x - offsetX), y: (y - offsetY)}
-					if (y > offsetY && x > offsetX && polygon.hasInside({x, y})) {
-						const index = ((y - offsetY) * this.canvas!.width + (x - offsetX)) * 4;
+					if (polygon.hasInside({x, y})) {
+						const index = ((y) * canvas!.width + (x)) * 4;
 						const relPos = this.getRelativePosition(distortedMesh, { x, y }, polygon);
 						const originalPos = this.interpolate(this.originalMesh, relPos, polygon);
-						const origIndex = ((Math.floor(originalPos.y) - offsetY) * this.canvas!.width + (Math.floor(originalPos.x) - offsetX)) * 4;
+						const origIndex = ((Math.floor(originalPos.y)) * canvas!.width + (Math.floor(originalPos.x))) * 4;
 						pixels[index] = originalPixels[origIndex];
 						pixels[index + 1] = originalPixels[origIndex + 1];
 						pixels[index + 2] = originalPixels[origIndex + 2];
@@ -51,12 +53,26 @@ export class ImageWarper {
 				}
 			}
 		}
-		this.ctx!.putImageData(imageData, 0, 0);
-		const image = new Image()
-		image.src = this.canvas!.toDataURL("image/png")
-		return image
+		ctx!.putImageData(imageData, 0, 0);
+		for (let i = 0; i < test.length; i++) {
+			ctx!.beginPath()
+			ctx!.strokeStyle = '#'+(0x1000000+Math.random()*0xffffff).toString(16).substr(1,6)
+			ctx!.lineWidth = 5
+			ctx!.rect(test[i].minX,test[i].minY,test[i].maxX, test[i].maxY)
+			ctx!.stroke()
+		}
+		//return  this.canvas!.toDataURL("image/png")
 	}
-
+	
+	private getBoundingBox2(mesh: Vertex[][], polygon: Polygon) {
+		return {
+			minX: mesh[polygon.vertices[0].row][polygon.vertices[0].col].coordinate.x,
+			minY: mesh[polygon.vertices[polygon.edgeLength].row][polygon.vertices[polygon.edgeLength].col].coordinate.y,
+			maxX: mesh[polygon.vertices[polygon.edgeLength*2].row][polygon.vertices[polygon.edgeLength*2].col].coordinate.x,
+			maxY: mesh[polygon.vertices[polygon.edgeLength*3].row][polygon.vertices[polygon.edgeLength*3].col].coordinate.y,
+		}
+	}
+	
 	private getBoundingBox(mesh: Vertex[][], polygon: Polygon) {
 		let minX = Infinity;
 		let minY = Infinity;
@@ -164,7 +180,7 @@ export class ImageWarper {
 		result.push(mesh[polygon.vertices[3 * polygon.edgeLength].row][polygon.vertices[3 * polygon.edgeLength].col].coordinate)
 		return result
 	}
-
+	/*
 	setImage(image: HTMLImageElement): void {
 		this.originalImage = image
 		this.canvas = document.createElement('canvas')
@@ -175,6 +191,8 @@ export class ImageWarper {
 			this.ctx!.drawImage(image, 0, 0)
 		})
 	}
+	
+	 */
 
 	getWarpedImage(): HTMLImageElement {
 		const image = new Image()
@@ -182,9 +200,9 @@ export class ImageWarper {
 		return image
 	}
 
-	download(filename = 'distorted-image.png') {
+	download(canvas: HTMLCanvasElement, filename = 'distorted-image.png') {
 		const link = document.createElement('a');
-		link.href = this.canvas!.toDataURL('image/png');
+		link.href = canvas!.toDataURL('image/png');
 		link.download = filename;
 		link.click();
 	}

@@ -40,9 +40,7 @@ const Sidebar: FC = (props) => {
 
 	const handleBeforeUpload = (file: File): boolean => {
 		const url = URL.createObjectURL(file)
-		const image = new Image()
-		image.src = url
-		MeshInstance.setScaledImage(image)
+		MeshInstance.setScaledImage(url)
 		return false
 	}
 

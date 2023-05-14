@@ -11,6 +11,9 @@ import {undirectedGraphHash, ValueSet} from "../helperMethods/ValueSet";
 import {calculateCenter} from "../helperMethods/calculateCenter";
 import testImage from "../testimage.jpg"
 import {ImageWarper} from "./ImageWarper";
+import {loadImage, scaleImage} from "../helperMethods/ImageHelper";
+import {Simulate} from "react-dom/test-utils";
+import load = Simulate.load;
 
 export class Mesh {
 	vertices: Vertex[][] = []
@@ -19,8 +22,12 @@ export class Mesh {
 	edges: ValueSet<Edge> = new ValueSet<Edge>()
 	warper?: ImageWarper
 	image: HTMLImageElement = new Image()
+	warpedImageData?: ImageData
+	imagePosition: Coordinate = {x:0, y:0}
 	canvas?: HTMLCanvasElement
-
+	canvasDimension: Dimension = {width: 0, height: 0}
+	warpingCanvas?: HTMLCanvasElement
+	
 	initializeMesh(dimension: Dimension): void {
 		const cellCount = 5
 		const maxMeshSize = 40
@@ -36,10 +43,8 @@ export class Mesh {
 		this.edges = this.createEdges(config)
 		this.polygons = this.groupPolygons(this.createPolygons(config), config.cellCount)
 		this.colorPolygons()
-		const image = new Image()
-		image.src = testImage
 		this.warper = new ImageWarper(this.createVertices(config))
-		this.setScaledImage(image)
+		this.setScaledImage(testImage)
 	}
 
 	private createVertices(config: InitialMeshConfig): Vertex[][] {
@@ -258,7 +263,7 @@ export class Mesh {
 	draw(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
 		ctx.clearRect(0, 0, dimension.width, dimension.height)
 		this.drawShapeFill(ctx)
-		this.drawImage(ctx, dimension)
+		this.drawImage(ctx)
 		this.drawHelpLines(ctx)
 		this.drawHelpPoints(ctx)
 		this.drawCenterPoint(ctx, dimension)
@@ -306,64 +311,47 @@ export class Mesh {
 		ctx.fill()
 	}
 
-	drawImage(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
-		ctx.drawImage(this.image,(dimension.width/2) - (this.image.width/2),(dimension.height/2) - (this.image.height/2))
-	}
-
-	scaleImage(image: HTMLImageElement, dimension: Dimension): HTMLImageElement {
-		let scaleFactorWidth = 1
-		let scaleFactorHeight = 1
-		if (dimension.width - 100 < image.width) {
-			scaleFactorWidth = (dimension.width - 100) / image.width
+	drawImage(ctx: CanvasRenderingContext2D): void {
+		if (this.warpedImageData) {
+			console.log("hi")
+			ctx.putImageData(this.warpedImageData, this.imagePosition.x, this.imagePosition.y)
 		}
-		if (dimension.height - 100 < image.height) {
-			scaleFactorHeight = (dimension.height - 100) / image.height
+		else {
+			ctx.drawImage(this.image,this.imagePosition.x,this.imagePosition.y)
 		}
-		const scaleFactor = scaleFactorWidth >= scaleFactorHeight ? scaleFactorHeight : scaleFactorWidth
-		const scaledWidth = image.width * scaleFactor
-		const scaledHeight = image.height * scaleFactor
-
-		const canvas = document.createElement("canvas")
-		const ctx = canvas?.getContext("2d") as CanvasRenderingContext2D
-
-		canvas.width = scaledWidth
-		canvas.height = scaledHeight
-		ctx.drawImage(image,0,0, scaledWidth, scaledHeight)
-		const url = canvas!.toDataURL("image/png")
-		const scaledImage = new Image()
-		scaledImage.src = url
-		return scaledImage
 	}
-
-	setScaledImage(image: HTMLImageElement): void {
+	
+	setScaledImage(src: string): void {
 		const ctx = (this.canvas!.getContext('2d'))!
-		const dimension = {width: this.canvas!.width, height: this.canvas!.height}
-		image.addEventListener("load", (e) => {
-			const scaledImage = this.scaleImage(image, dimension)
-			this.image = scaledImage
-			scaledImage.addEventListener("load", (e) => {
-				this.draw(ctx, dimension)
-				this.warper?.setImage(this.image)
+		loadImage(src)
+			.then((loadedImage) => scaleImage(loadedImage, this.canvasDimension))
+			.then((scaledLoadedImage) => {
+				this.image = scaledLoadedImage
+				this.imagePosition.x = (this.canvasDimension.width/2) - (scaledLoadedImage.width/2)
+				this.imagePosition.y = (this.canvasDimension.height/2) - (this.image.height/2)
+				this.drawImage(this.warpingCanvas?.getContext("2d")!)
 			})
-		})
+			.then(() => this.draw(ctx, this.canvasDimension))
 	}
-
-	setImage(image: HTMLImageElement): void {
-		const ctx = (this.canvas!.getContext('2d'))!
-		const dimension = {width: this.canvas!.width, height: this.canvas!.height}
-		this.image = image
-		image.addEventListener("load", (e) => {
-			this.draw(ctx, dimension)
-		})
-	}
-
+	
 	setCanvas(canvas: HTMLCanvasElement): void {
 		this.canvas = canvas
+		this.canvasDimension = {width: this.canvas.width, height: this.canvas.height}
+		this.warpingCanvas = document.createElement('canvas')
+		this.warpingCanvas.width = canvas.width
+		this.warpingCanvas.height = canvas.height
 	}
 
 	warpImage(): void {
-		const dimension = {width: this.canvas!.width, height: this.canvas!.height}
-		this.setImage(this.warper!.warp(this.vertices, this.polygons, dimension))
+		const ctx = this.canvas!.getContext('2d')!
+		const warpCtx = this.warpingCanvas?.getContext("2d")!
+		
+		warpCtx.save()
+		this.warper!.warp(this.vertices, this.polygons, this.warpingCanvas!)
+		const data = warpCtx.getImageData(this.imagePosition.x,this.imagePosition.y, this.image.width, this.image.height)
+		this.warpedImageData = data
+		this.draw(ctx, this.canvasDimension)
+		warpCtx.restore()
 	}
 }
 
