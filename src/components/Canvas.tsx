@@ -52,6 +52,7 @@ const Canvas: FC = (props) => {
 			const vector: Vector = {x: coord.x - mousePosition.x, y: coord.y - mousePosition.y}
 			MeshInstance.handleDrag(vector)
 			MeshInstance.draw(ctx as CanvasRenderingContext2D, canvasDimension)
+			//MeshInstance.warpImage()
 			setMousePosition(toCanvasCoord(event.clientX, event.clientY))
 		}
 	}
@@ -78,6 +79,7 @@ const Canvas: FC = (props) => {
 			MeshInstance.handleRelease()
 			console.log("mouseup")
 			setIsDragging(false);
+			//MeshInstance.draw(ctx, canvasDimension)
 			MeshInstance.warpImage()
 		}
 	}

@@ -64,6 +64,9 @@ const Sidebar: FC = (props) => {
 	];
 
 	const handleClick: MenuClickEventHandler = ({key}) => {
+		if(key === 'print') {
+			MeshInstance.warpImage()
+		}
 		console.log(key)
 	}
 

@@ -14,6 +14,7 @@ import {ImageWarper} from "./ImageWarper";
 import {loadImage, scaleImage} from "../helperMethods/ImageHelper";
 import {Simulate} from "react-dom/test-utils";
 import load = Simulate.load;
+import {ImageWarper2} from "./ImageWarper2";
 
 export class Mesh {
 	vertices: Vertex[][] = []
@@ -313,11 +314,12 @@ export class Mesh {
 
 	drawImage(ctx: CanvasRenderingContext2D): void {
 		if (this.warpedImageData) {
-			console.log("hi")
+			console.log("distorted")
 			ctx.putImageData(this.warpedImageData, this.imagePosition.x, this.imagePosition.y)
 		}
 		else {
-			ctx.drawImage(this.image,this.imagePosition.x,this.imagePosition.y)
+			console.log("original")
+			ctx.drawImage(this.image, this.imagePosition.x, this.imagePosition.y)
 		}
 	}
 	
@@ -329,7 +331,7 @@ export class Mesh {
 				this.image = scaledLoadedImage
 				this.imagePosition.x = (this.canvasDimension.width/2) - (scaledLoadedImage.width/2)
 				this.imagePosition.y = (this.canvasDimension.height/2) - (this.image.height/2)
-				this.drawImage(this.warpingCanvas?.getContext("2d")!)
+				this.warpingCanvas?.getContext("2d")!.drawImage(this.image,this.imagePosition.x,this.imagePosition.y)
 			})
 			.then(() => this.draw(ctx, this.canvasDimension))
 	}
@@ -345,13 +347,12 @@ export class Mesh {
 	warpImage(): void {
 		const ctx = this.canvas!.getContext('2d')!
 		const warpCtx = this.warpingCanvas?.getContext("2d")!
-		
-		warpCtx.save()
+		warpCtx.clearRect(0,0,this.warpingCanvas!.width, this.warpingCanvas!.height)
+		warpCtx.drawImage(this.image,this.imagePosition.x,this.imagePosition.y)
 		this.warper!.warp(this.vertices, this.polygons, this.warpingCanvas!)
-		const data = warpCtx.getImageData(this.imagePosition.x,this.imagePosition.y, this.image.width, this.image.height)
-		this.warpedImageData = data
+		this.warpedImageData = warpCtx.getImageData(this.imagePosition.x,this.imagePosition.y, this.image.width, this.image.height)
+		//this.warper!.download(this.warpingCanvas!)
 		this.draw(ctx, this.canvasDimension)
-		warpCtx.restore()
 	}
 }
 
