@@ -1,17 +1,19 @@
 import {Vertex} from "./Vertex";
 import {MeshIndex} from "../types/MeshIndex";
-import {MeshInstance} from "./Mesh";
-import {Coordinate} from "../types/Coordinate";
+import {Mesh} from "./Mesh";
+import {Point} from "../types/Coordinate";
 import {calculateCenter} from "../helperMethods/calculateCenter";
 
 export class Polygon {
-    vertices: MeshIndex[] = []
+    mesh: Mesh
+    verticesIndices: MeshIndex[] = []
     children: Polygon[] = []
     edgeLength: number
     color: string
     shouldDraw: boolean = false
     
-    constructor(meshIndex: MeshIndex, edgeLength: number, shouldDraw: boolean, color: string) {
+    constructor(mesh: Mesh, meshIndex: MeshIndex, edgeLength: number, shouldDraw: boolean, color: string) {
+        this.mesh = mesh
         this.shouldDraw = shouldDraw
         this.color = color
         this.edgeLength = edgeLength
@@ -20,16 +22,16 @@ export class Polygon {
 
     private setPolygonVertices(row: number, col: number) {
         for (let i = col; i <= col + this.edgeLength; i++) {
-            this.vertices.push({row: row, col: i})
+            this.verticesIndices.push({row: row, col: i})
         }
         for (let i = row + 1; i <= row + this.edgeLength; i++) {
-            this.vertices.push({row: i, col: col + this.edgeLength})
+            this.verticesIndices.push({row: i, col: col + this.edgeLength})
         }
         for (let i = col + this.edgeLength - 1; i >= col; i--) {
-            this.vertices.push({row: row + this.edgeLength, col: i})
+            this.verticesIndices.push({row: row + this.edgeLength, col: i})
         }
         for (let i = row + this.edgeLength - 1; i >= row; i--) {
-            this.vertices.push({row: i, col: col})
+            this.verticesIndices.push({row: i, col: col})
         }
     }
     
@@ -49,25 +51,25 @@ export class Polygon {
             })
             ctx.fillStyle = this.color
             ctx.fill()
-            if (MeshInstance.selectedPolygons.has(this)){
+            if (this.mesh.selectedPolygons.has(this)){
                 ctx.fillStyle = "rgba(33,33,114,0.5)"
                 ctx.fill()
             }
         }
     }
 
-    gatherVertices(vertexIndices: MeshIndex[] = []): MeshIndex[] {
+    gatherVerticesIndices(vertexIndices: MeshIndex[] = []): MeshIndex[] {
         if (this.hasActiveChildren()) {
             this.children.forEach((childShape) => {
-                childShape.gatherVertices(vertexIndices);
+                childShape.gatherVerticesIndices(vertexIndices);
             });
         } else {
-            vertexIndices.push(...this.vertices);
+            vertexIndices.push(...this.verticesIndices);
         }
         return vertexIndices;
     }
 
-    hasInside(mouseClick: Coordinate): boolean {
+    hasInside(mouseClick: Point): boolean {
         for (const child of this.children) {
             if (child.shouldDraw && child.hasInside(mouseClick)) {
                 return true;
@@ -76,7 +78,7 @@ export class Polygon {
         return this.inside(mouseClick.x, mouseClick.y, this.getOwnActiveVertices());
     }
 
-    getContainer(mouseClick: Coordinate): Polygon | undefined {
+    getContainer(mouseClick: Point): Polygon | undefined {
         if (!this.hasInside(mouseClick)) {
             return undefined
         }
@@ -96,38 +98,38 @@ export class Polygon {
             return
         }
 
-        let wasDeleted = MeshInstance.selectedPolygons.delete(this)
+        let wasDeleted = this.mesh.selectedPolygons.delete(this)
 
         const childEdgeLength = this.edgeLength / 2
 
-        for (let i = 0; i < this.vertices.length; i+= childEdgeLength) {
-            const vertex = MeshInstance.vertices[this.vertices[i].row][this.vertices[i].col]
+        for (let i = 0; i < this.verticesIndices.length; i+= childEdgeLength) {
+            const vertex = this.mesh.vertices[this.verticesIndices[i].row][this.verticesIndices[i].col]
             if (!vertex.isActive) {
                 vertex.isActive = true
 
-                const prevPointIndex = this.vertices[i - childEdgeLength]
-                const nextPointIndex = this.vertices[i + childEdgeLength]
+                const prevPointIndex = this.toVertex(this.verticesIndices[i - childEdgeLength])
+                const nextPointIndex = this.toVertex(this.verticesIndices[i + childEdgeLength])
                 vertex.coordinate = calculateCenter([prevPointIndex, nextPointIndex])
             }
         }
 
-        const centerVertexRow = this.vertices[0].row + childEdgeLength;
-        const centerVertexCol = this.vertices[0].col + childEdgeLength;
-        const centerVertex = MeshInstance.vertices[centerVertexRow][centerVertexCol];
+        const centerVertexRow = this.verticesIndices[0].row + childEdgeLength;
+        const centerVertexCol = this.verticesIndices[0].col + childEdgeLength;
+        const centerVertex = this.mesh.vertices[centerVertexRow][centerVertexCol];
         if (!centerVertex.isActive) {
             centerVertex.isActive = true
 
-            const ul = this.vertices[0]
-            const ur = this.vertices[this.edgeLength]
-            const lr = this.vertices[this.edgeLength*2]
-            const ll = this.vertices[this.edgeLength*3]
+            const ul = this.toVertex(this.verticesIndices[0])
+            const ur = this.toVertex(this.verticesIndices[this.edgeLength])
+            const lr = this.toVertex(this.verticesIndices[this.edgeLength*2])
+            const ll = this.toVertex(this.verticesIndices[this.edgeLength*3])
 
             centerVertex.coordinate = calculateCenter([ul, ur, lr, ll])
         }
         this.removeOwnEdges()
         this.children.forEach((childPolygon) => {
             if (wasDeleted){
-                MeshInstance.selectedPolygons.add(childPolygon)
+                this.mesh.selectedPolygons.add(childPolygon)
             }
             childPolygon.shouldDraw = true
             childPolygon.addOwnEdges()
@@ -147,24 +149,24 @@ export class Polygon {
 
     private addOwnEdges(): void {
         for (let i = 0; i < 4; i++) {
-            const edge = {a: this.vertices[this.edgeLength*i], b: this.vertices[this.edgeLength*(i+1)]}
-            const halfEdge = {a: this.vertices[this.edgeLength*i], b: this.vertices[this.edgeLength*(i+1) - this.edgeLength/2]}
-            if (this.edgeLength === 1 || !MeshInstance.edges.has(halfEdge)){
-                MeshInstance.edges.add(edge)
+            const edge = {a: this.verticesIndices[this.edgeLength*i], b: this.verticesIndices[this.edgeLength*(i+1)]}
+            const halfEdge = {a: this.verticesIndices[this.edgeLength*i], b: this.verticesIndices[this.edgeLength*(i+1) - this.edgeLength/2]}
+            if (this.edgeLength === 1 || !this.mesh.edges.has(halfEdge)){
+                this.mesh.edges.add(edge)
             }
         }
     }
 
     private removeOwnEdges(): void {
         for (let i = 0; i < 4; i++) {
-            MeshInstance.edges.delete({a: this.vertices[this.edgeLength*i], b: this.vertices[this.edgeLength*(i+1)]})
+            this.mesh.edges.delete({a: this.verticesIndices[this.edgeLength*i], b: this.verticesIndices[this.edgeLength*(i+1)]})
         }
     }
 
     private getOwnActiveVertices(): Vertex[] {
         let vertices: Vertex[] = []
-        this.vertices.forEach((index) => {
-            const vertex = MeshInstance.vertices[index.row][index.col]
+        this.verticesIndices.forEach((index) => {
+            const vertex = this.mesh.vertices[index.row][index.col]
             if((vertex.isActive)){
                 vertices.push(vertex)
             }
@@ -215,6 +217,10 @@ export class Polygon {
     }
     
     moved(): boolean {
-        return this.vertices.some((vertexIndex) => MeshInstance.vertices[vertexIndex.row][vertexIndex.col].isActive && MeshInstance.vertices[vertexIndex.row][vertexIndex.col].wasMoved)
+        return this.verticesIndices.some((vertexIndex) => this.mesh.vertices[vertexIndex.row][vertexIndex.col].isActive && this.mesh.vertices[vertexIndex.row][vertexIndex.col].wasMoved)
+    }
+
+    private toVertex(meshIndex: MeshIndex): Vertex {
+        return this.mesh.vertices[meshIndex.row][meshIndex.col]
     }
 }
