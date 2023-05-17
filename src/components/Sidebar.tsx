@@ -1,34 +1,35 @@
 import React, {FC, useState} from "react";
-import {Button, Drawer, Layout, Menu, Upload} from "antd";
-import Icon from "antd/lib/icon";
+import {Button, Drawer, Layout, Menu, Radio, RadioChangeEvent, Switch, Upload} from "antd";
 import {
-	MenuFoldOutlined,
-	MenuUnfoldOutlined,
 	FileImageOutlined,
 	FolderOutlined,
 	UploadOutlined,
 	PrinterOutlined,
 	SaveOutlined,
-	WeiboOutlined
+	EyeOutlined,
 } from "@ant-design/icons";
 import type { MenuProps, MenuTheme } from 'antd';
 import { MenuClickEventHandler } from 'rc-menu/lib/interface'
-import {MeshInstance} from "../classes/Mesh";
+import {Mesh} from "../classes/Mesh";
 
 type MenuItem = Required<MenuProps>['items'][number];
+type SidebarProps = {
+	changeActiveMesh: () => void,
+	activeMesh: Mesh
+}
 
 const {Content, Sider } = Layout
+const Sidebar: FC<SidebarProps> = (props) => {
 
-const Sidebar: FC = (props) => {
+	const [collapsed, setCollapsed] = useState(true)
+	const [value, setValue] = useState('Left')
 
-	const [collapsed, setCollapsed] = useState(true);
-	function getItem(
-		label: React.ReactNode,
-		key?: React.Key | null,
-		icon?: React.ReactNode,
-		children?: MenuItem[],
-		type?: 'group',
-	): MenuItem {
+	const options = [
+		{ label: 'Left', value: 'Left' },
+		{ label: 'Right', value: 'Right' },
+	];
+
+	const getItem = (label: React.ReactNode, key?: React.Key | null, icon?: React.ReactNode, children?: MenuItem[], type?: 'group',): MenuItem => {
 		return {
 			key,
 			icon,
@@ -40,8 +41,13 @@ const Sidebar: FC = (props) => {
 
 	const handleBeforeUpload = (file: File): boolean => {
 		const url = URL.createObjectURL(file)
-		MeshInstance.setScaledImage(url)
+		props.activeMesh.setScaledImage(url)
 		return false
+	}
+
+	const onChange = ({ target: { value } }: RadioChangeEvent) => {
+		props.changeActiveMesh()
+		setValue(value)
 	}
 
 	const items: MenuItem[] = [
@@ -60,14 +66,23 @@ const Sidebar: FC = (props) => {
 
 		getItem('Print', 'print', <PrinterOutlined/>),
 
-		getItem('Eye Toggle', 'key', <WeiboOutlined/>)
+		getItem('Eye Toggle', 'eye', <EyeOutlined/>, [
+			getItem(<Radio.Group
+					options={options}
+					onChange={onChange}
+					value={value}
+					optionType="button"
+					buttonStyle="solid"
+					/>
+				,'leftRight')
+		])
 	];
 
-	const handleClick: MenuClickEventHandler = ({key}) => {
-		if(key === 'print') {
-			MeshInstance.warpImage()
+	const handleClick: MenuClickEventHandler = (e) => {
+		if(e.key === 'print') {
+			props.activeMesh.warpImage()
 		}
-		console.log(key)
+		//console.log(e.key)
 	}
 
 	return (

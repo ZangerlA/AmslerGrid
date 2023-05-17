@@ -1,6 +1,6 @@
 import {Vertex} from "./Vertex";
 import {Polygon} from "./Polygon";
-import {Coordinate} from "../types/Coordinate";
+import {Point} from "../types/Coordinate";
 
 export class ImageWarper {
 	private readonly originalMesh: Vertex[][]
@@ -65,8 +65,8 @@ export class ImageWarper {
 		let maxX = -Infinity;
 		let maxY = -Infinity;
 
-		for (let i = 0; i < polygon.vertices.length; i++) {
-			const vertex = mesh[polygon.vertices[i].row][polygon.vertices[i].col];
+		for (let i = 0; i < polygon.verticesIndices.length; i++) {
+			const vertex = mesh[polygon.verticesIndices[i].row][polygon.verticesIndices[i].col];
 			if(vertex.isActive) {
 				minX = Math.min(minX, vertex.coordinate.x);
 				minY = Math.min(minY, vertex.coordinate.y);
@@ -83,7 +83,7 @@ export class ImageWarper {
 		};
 	}
 
-	private interpolate(originalMesh: Vertex[][], pixel: Coordinate, polygon: Polygon): Coordinate {
+	private interpolate(originalMesh: Vertex[][], pixel: Point, polygon: Polygon): Point {
 		const [ul, ur, lr, ll] = this.getPolygonBoundaries(originalMesh, polygon)
 
 		const x = ul.x * (1 - pixel.x) * (1 - pixel.y) +
@@ -99,7 +99,7 @@ export class ImageWarper {
 		return { x, y };
 	}
 
-	private getRelativePosition(distortedMesh: Vertex[][], pixel: Coordinate, polygon: Polygon): Coordinate {
+	private getRelativePosition(distortedMesh: Vertex[][], pixel: Point, polygon: Polygon): Point {
 		const [P1, P2, P3, P4] = this.getPolygonBoundaries(distortedMesh, polygon)
 		const P5 = pixel;
 
@@ -158,12 +158,12 @@ export class ImageWarper {
 		}
 	}
 
-	private getPolygonBoundaries(mesh: Vertex[][], polygon: Polygon): Coordinate[] {
+	private getPolygonBoundaries(mesh: Vertex[][], polygon: Polygon): Point[] {
 		const result = []
-		result.push(mesh[polygon.vertices[0].row][polygon.vertices[0].col].coordinate)
-		result.push(mesh[polygon.vertices[polygon.edgeLength].row][polygon.vertices[polygon.edgeLength].col].coordinate)
-		result.push(mesh[polygon.vertices[2 * polygon.edgeLength].row][polygon.vertices[2 * polygon.edgeLength].col].coordinate)
-		result.push(mesh[polygon.vertices[3 * polygon.edgeLength].row][polygon.vertices[3 * polygon.edgeLength].col].coordinate)
+		result.push(mesh[polygon.verticesIndices[0].row][polygon.verticesIndices[0].col].coordinate)
+		result.push(mesh[polygon.verticesIndices[polygon.edgeLength].row][polygon.verticesIndices[polygon.edgeLength].col].coordinate)
+		result.push(mesh[polygon.verticesIndices[2 * polygon.edgeLength].row][polygon.verticesIndices[2 * polygon.edgeLength].col].coordinate)
+		result.push(mesh[polygon.verticesIndices[3 * polygon.edgeLength].row][polygon.verticesIndices[3 * polygon.edgeLength].col].coordinate)
 		return result
 	}
 

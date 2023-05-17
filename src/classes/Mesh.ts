@@ -1,7 +1,7 @@
 import {Vertex} from "./Vertex";
 import {Polygon} from "./Polygon";
 import {Dimension} from "../customHooks/UseWindowDimensions";
-import {Coordinate} from "../types/Coordinate";
+import {Point} from "../types/Coordinate";
 import {MeshIndex} from "../types/MeshIndex";
 import {Vector} from "../types/Vector";
 import {getUniqueArray} from "../helperMethods/getUniqueArray";
@@ -15,6 +15,7 @@ import {loadImage, scaleImage} from "../helperMethods/ImageHelper";
 import {Simulate} from "react-dom/test-utils";
 import load = Simulate.load;
 import {ImageWarper2} from "./ImageWarper2";
+import {MeshPainter} from "./MeshPainter";
 
 export class Mesh {
 	vertices: Vertex[][] = []
@@ -23,12 +24,20 @@ export class Mesh {
 	edges: ValueSet<Edge> = new ValueSet<Edge>()
 	warper?: ImageWarper
 	image: HTMLImageElement = new Image()
+	//meshPainter: MeshPainter
 	warpedImageData?: ImageData
-	imagePosition: Coordinate = {x:0, y:0}
-	canvas?: HTMLCanvasElement
+	imagePosition: Point = {x:0, y:0}
+	canvas: HTMLCanvasElement = document.createElement('init') as HTMLCanvasElement
 	canvasDimension: Dimension = {width: 0, height: 0}
 	warpingCanvas?: HTMLCanvasElement
-	
+
+	constructor(canvas?: HTMLCanvasElement) {
+		if(canvas) {
+			this.setCanvas(canvas)
+			this.initializeMesh({width: this.canvasDimension.width, height: this.canvasDimension.height})
+		}
+	}
+
 	initializeMesh(dimension: Dimension): void {
 		const cellCount = 5
 		const maxMeshSize = 40
@@ -60,7 +69,7 @@ export class Mesh {
 	}
 
 	private createVertex(i: number, j: number, config: InitialMeshConfig): Vertex {
-		const coordinate: Coordinate = {
+		const coordinate: Point = {
 			x: (config.cellSizeVertical * j) + 50,
 			y: (config.cellSizeHorizontal * i) + 50
 		}
@@ -85,7 +94,7 @@ export class Mesh {
 	createPolygon(i: number, j: number, offset: number, size: number, shouldDraw: boolean): Polygon {
 		const isGreen = ((i ^ j) & 1) === 0
 		let color = isGreen ? "rgba(75,139,59,0.5)" : "white"
-		return new Polygon({row: i * offset, col: j * offset}, size, shouldDraw, color)
+		return new Polygon(this, {row: i * offset, col: j * offset}, size, shouldDraw, color)
 	}
 
 	private groupPolygons(polygons: Polygon[][], limit: number): Set<Polygon> {
@@ -112,7 +121,7 @@ export class Mesh {
 	}
 
 	private createParentPolygon(i: number, j: number, polygons: Polygon[][]): Polygon {
-		const parentPolygon = this.createPolygon(polygons[i][j].vertices[0].row, polygons[i][j].vertices[0].col, 1, polygons[i][j].edgeLength * 2, false)
+		const parentPolygon = this.createPolygon(polygons[i][j].verticesIndices[0].row, polygons[i][j].verticesIndices[0].col, 1, polygons[i][j].edgeLength * 2, false)
 		for (let k = 0; k < 2; k++) {
 			for (let l = 0; l < 2; l++) {
 				parentPolygon.children.push(polygons[i + k][j + l])
@@ -154,7 +163,7 @@ export class Mesh {
 		return edges
 	}
 
-	handleSelect(mouseClick: Coordinate): void {
+	handleSelect(mouseClick: Point): void {
 		this.polygons.forEach((polygon) => {
 			const container = polygon.getContainer(mouseClick)
 			if (container === undefined) {
@@ -168,7 +177,7 @@ export class Mesh {
 		})
 	}
 
-	handleSingleVertex(mouseClick: Coordinate): void {
+	handleSingleVertex(mouseClick: Point): void {
 		this.vertices.forEach((row) => {
 			row.forEach((vertex) => {
 				if (vertex.isActive && vertex.wasClicked(mouseClick)) {
@@ -198,12 +207,12 @@ export class Mesh {
 	}
 
 	private dragSelectedPolygons(vector: Vector): void {
-		this.moveVertices(this.getUniqueSelectedVertices(), vector)
+		this.moveVertices(this.getUniqueVertices(this.polygons), vector)
 	}
 
-	private moveVertices(vertexIndices: MeshIndex[], vector: Vector): void {
-		vertexIndices.forEach((index) => {
-			this.vertices[index.row][index.col].move(vector)
+	private moveVertices(vertices: Vertex[], vector: Vector): void {
+		vertices.forEach((vertex) => {
+			vertex.move(vector)
 		})
 	}
 
@@ -222,38 +231,40 @@ export class Mesh {
 	}
 
 	private rotateSelectedPolygons(degree: number): void {
-		const uniqueVertices = this.getUniqueSelectedVertices()
+		const uniqueVertices = this.getUniqueVertices(this.polygons)
 		const centerPoint = calculateCenter(uniqueVertices)
 		this.rotateVertices(uniqueVertices, centerPoint, degree)
 	}
 
-	private rotateVertices(vertexIndices: MeshIndex[], point: Coordinate, degree: number): void {
-		vertexIndices.forEach((index) => {
-			this.vertices[index.row][index.col].rotateAround(point, degree)
+	private rotateVertices(vertices: Vertex[], point: Point, degree: number): void {
+		vertices.forEach((vertex) => {
+			vertex.rotateAround(point, degree)
 		})
 	}
 
 	handleScale(scaleFactor: number): void {
-		const uniqueVertices = this.getUniqueSelectedVertices()
+		const uniqueVertices = this.getUniqueVertices(this.polygons)
 		const centerPoint = calculateCenter(uniqueVertices)
 		this.scaleVertices(uniqueVertices,centerPoint,scaleFactor)
 	}
 
-	private scaleVertices(vertexIndices: MeshIndex[], centerPoint: Coordinate, scalingFactor: number): void {
-		vertexIndices.forEach((index) => {
-			this.vertices[index.row][index.col].scale(scalingFactor, centerPoint)
+	private scaleVertices(vertices: Vertex[], centerPoint: Point, scalingFactor: number): void {
+		vertices.forEach((vertex) => {
+			vertex.scale(scalingFactor, centerPoint)
 		})
 	}
 
-	private getUniqueSelectedVertices(): MeshIndex[]{
+	private getUniqueVertices(polygons: Set<Polygon>): Vertex[] {
 		let vertexIndices: MeshIndex[] = []
-		this.selectedPolygons.forEach((polygon) => {
-			vertexIndices.push(...polygon.gatherVertices([]))
+		polygons.forEach((polygon) => {
+			vertexIndices.push(...polygon.gatherVerticesIndices([]))
 		})
-		return getUniqueArray(vertexIndices)
+		let vertices: Vertex[] = vertexIndices.map((curr) => this.vertices[curr.row][curr.col])
+		return getUniqueArray(vertices)
 	}
 
-	handleSplit(mouseClick: Coordinate): void {
+
+	handleSplit(mouseClick: Point): void {
 		this.polygons.forEach((shape) => {
 			if (shape.hasInside(mouseClick)) {
 				shape.getContainer(mouseClick)!.split()
@@ -297,14 +308,14 @@ export class Mesh {
 	}
 
 	drawCenterPoint(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
-		const coordinate: Coordinate = {
+		const coordinate: Point = {
 			x: dimension.width / 2,
 			y: dimension.height / 2
 		}
 		this.drawPoint(ctx, coordinate, 10, "rgba(215,0,25,1)")
 	}
 
-	drawPoint(ctx: CanvasRenderingContext2D, coordinate: Coordinate, radius: number, color: string): void {
+	drawPoint(ctx: CanvasRenderingContext2D, coordinate: Point, radius: number, color: string): void {
 		ctx.beginPath()
 		ctx.moveTo(coordinate.x, coordinate.y)
 		ctx.fillStyle = color
@@ -314,11 +325,11 @@ export class Mesh {
 
 	drawImage(ctx: CanvasRenderingContext2D): void {
 		if (this.warpedImageData) {
-			console.log("distorted")
+			//console.log("distorted")
 			ctx.putImageData(this.warpedImageData, this.imagePosition.x, this.imagePosition.y)
 		}
 		else {
-			console.log("original")
+			//console.log("original")
 			ctx.drawImage(this.image, this.imagePosition.x, this.imagePosition.y)
 		}
 	}
@@ -356,4 +367,5 @@ export class Mesh {
 	}
 }
 
-export const MeshInstance = new Mesh()
+export const MeshInstanceLeft = new Mesh()
+export const MeshInstanceRight = new Mesh()

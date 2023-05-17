@@ -1,11 +1,12 @@
 import {MeshIndex} from "../types/MeshIndex";
-import {Coordinate} from "../types/Coordinate";
-import {MeshInstance} from "../classes/Mesh";
+import {Point} from "../types/Coordinate";
+import {Mesh} from "../classes/Mesh";
+import {Vertex} from "../classes/Vertex";
 
-export const calculateCenter = (points: MeshIndex[]): Coordinate => {
-	const totalX = points.reduce((acc, point) => acc + MeshInstance.vertices[point.row][point.col].coordinate.x, 0)
-	const totalY = points.reduce((acc, point) => acc + MeshInstance.vertices[point.row][point.col].coordinate.y, 0)
-	const centerX = totalX / points.length
-	const centerY = totalY / points.length
+export const calculateCenter = (vertices: Vertex[]): Point => {
+	const totalX = vertices.reduce((acc, point) => acc + point.coordinate.x, 0)
+	const totalY = vertices.reduce((acc, point) => acc + point.coordinate.y, 0)
+	const centerX = totalX / vertices.length
+	const centerY = totalY / vertices.length
 	return {x: centerX, y: centerY}
 }
