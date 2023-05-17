@@ -52,7 +52,6 @@ const Canvas: FC = (props) => {
 			const vector: Vector = {x: coord.x - mousePosition.x, y: coord.y - mousePosition.y}
 			MeshInstance.handleDrag(vector)
 			MeshInstance.draw(ctx as CanvasRenderingContext2D, canvasDimension)
-			//MeshInstance.warpImage()
 			setMousePosition(toCanvasCoord(event.clientX, event.clientY))
 		}
 	}
@@ -65,7 +64,7 @@ const Canvas: FC = (props) => {
 		} else {
 			MeshInstance.handleRotate(degree)
 		}
-		MeshInstance.draw(ctx as CanvasRenderingContext2D, canvasDimension)
+		MeshInstance.warpImage()
 	}
 
 	const getScaleFactor = (deltaY: number): number => {
@@ -77,15 +76,16 @@ const Canvas: FC = (props) => {
 	const handleMouseUp = (event: MouseEvent): void => {
 		if (event.button === MouseButton.Left) {
 			MeshInstance.handleRelease()
-			console.log("mouseup")
 			setIsDragging(false);
-			//MeshInstance.draw(ctx, canvasDimension)
 			MeshInstance.warpImage()
 		}
 	}
 
 	const handleMouseOut = (event: MouseEvent): void => {
-		handleMouseUp(event);
+		if (event.button === MouseButton.Left) {
+			MeshInstance.handleRelease()
+			setIsDragging(false);
+		}
 	}
 
 	const toCanvasCoord = (clientX: number, clientY: number): Coordinate => {

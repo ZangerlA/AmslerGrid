@@ -54,7 +54,7 @@ const Sidebar: FC = (props) => {
 
 		getItem('Image', 'sub2', <FileImageOutlined />, [
 			getItem(<Upload beforeUpload={handleBeforeUpload}><UploadOutlined /> Upload </Upload>, 'upload'),
-			getItem('SuperUltraLock', '6'),
+			getItem('Lock', '6'),
 			getItem('Submenu', 'sub3', null, [getItem('Option 7', '7'), getItem('Option 8', '8')]),
 		]),
 

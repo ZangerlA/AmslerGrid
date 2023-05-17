@@ -16,31 +16,57 @@ export class ImageWarper2 {
 		polygons.forEach((polygon) => {
 			activePolygons.push(...polygon.gatherActiveChildren([]))
 		})
-		const movedPolygons = activePolygons.filter((polygon) => polygon.moved())
-
+		const movedPolygons  = activePolygons.filter((polygon) => polygon.moved())
+		const image = ctx.getImageData(0,0, canvas.width, canvas.height)
+		const tempCanvas = document.createElement("canvas")
+		tempCanvas.width = canvas.width
+		tempCanvas.height = canvas.height
+		const tempCtx = tempCanvas.getContext("2d")!
+		tempCtx.putImageData(image,0,0)
+		//this.download(tempCanvas)
 		for (let i = 0; i < movedPolygons.length; i++) {
-			const bbox = this.getBoundingBox(distortedMesh, movedPolygons[i], canvas);
+
 			const originalPoints = this.getPolygonBoundaries(this.originalMesh, movedPolygons[i])
 			const distortedPoints = this.getPolygonBoundaries(distortedMesh, movedPolygons[i])
 
-			const originalWidth = Math.max(originalPoints[0].x, originalPoints[1].x, originalPoints[2].x) - Math.min(originalPoints[0].x, originalPoints[1].x, originalPoints[2].x)
-			const originalHeight = Math.max(originalPoints[0].y, originalPoints[1].y, originalPoints[2].y) - Math.min(originalPoints[0].y, originalPoints[1].y, originalPoints[2].y)
+			const originalWidth = Math.max(originalPoints[0].x, originalPoints[1].x, originalPoints[2].x, originalPoints[3].x) - Math.min(originalPoints[0].x, originalPoints[1].x, originalPoints[2].x, originalPoints[3].x)
+			const originalHeight = Math.max(originalPoints[0].y, originalPoints[1].y, originalPoints[2].y, originalPoints[3].y) - Math.min(originalPoints[0].y, originalPoints[1].y, originalPoints[2].y, originalPoints[3].y)
 
-			const xm = this.getLinearSolution(0, 0, distortedPoints[0].x, originalWidth, 0, distortedPoints[1].x, 0, originalWidth, distortedPoints[2].x)
-			const ym = this.getLinearSolution(0, 0, distortedPoints[0].y, originalHeight, 0, distortedPoints[1].y, 0, originalHeight, distortedPoints[2].y)
+			const xm = this.getLinearSolution(0, 0, distortedPoints[0].x, originalWidth, 0, distortedPoints[1].x, 0, originalHeight, distortedPoints[3].x)
+			const ym = this.getLinearSolution(0, 0, distortedPoints[0].y, originalWidth, 0, distortedPoints[1].y, 0, originalHeight, distortedPoints[3].y)
 
-			ctx.restore()
 			ctx.save()
 			ctx.setTransform(xm[0], ym[0], xm[1], ym[1], xm[2], ym[2])
-
-			ctx.drawImage(MeshInstance.image, originalPoints[0].x, originalPoints[0].y, originalWidth, originalHeight,0,0,originalWidth, originalHeight)
+			//ctx.setTransform(xm[0], ym[1], xm[1], ym[0], xm[2], ym[2])
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(originalWidth, 0);
+			ctx.lineTo(0, originalHeight);
+			ctx.lineTo(0, 0);
+			ctx.closePath();
+			ctx.fill();
+			ctx.clip();
+			//ctx.setTransform(1, 0, 0, 1, 500, 500);
+			//ctx.drawImage(MeshInstance.image,0,0)
+			ctx.drawImage(tempCanvas, originalPoints[0].x, originalPoints[0].y, originalWidth, originalHeight,0,0,originalWidth, originalHeight)
 			ctx.restore();
 			ctx.save();
-			const xn = this.getLinearSolution(originalWidth, originalHeight, distortedPoints[3].x, originalWidth, 0, distortedPoints[1].x,0, originalHeight, distortedPoints[2].x)
-			const yn = this.getLinearSolution(originalWidth, originalHeight, distortedPoints[3].y, originalWidth, 0, distortedPoints[1].y,0, originalHeight, distortedPoints[2].y)
-
+			const xn = this.getLinearSolution(originalWidth, originalHeight, distortedPoints[2].x, originalWidth, 0, distortedPoints[1].x,0, originalHeight, distortedPoints[3].x)
+			const yn = this.getLinearSolution(originalWidth, originalHeight, distortedPoints[2].y, originalWidth, 0, distortedPoints[1].y,0, originalHeight, distortedPoints[3].y)
+			//ctx.setTransform(1, 0, 0, 1, 0, 0);
 			ctx.setTransform(xn[0], yn[0], xn[1], yn[1], xn[2], yn[2])
-			ctx.drawImage(MeshInstance.image, originalPoints[0].x, originalPoints[0].y, originalWidth, originalHeight,0,0,originalWidth, originalHeight)
+			ctx.beginPath();
+			ctx.moveTo(originalWidth, originalHeight);
+			ctx.lineTo(originalWidth, 0);
+			ctx.lineTo(0, originalHeight);
+			ctx.lineTo(originalWidth, originalHeight);
+			ctx.closePath();
+			ctx.fill();
+			ctx.clip();
+			//ctx.setTransform(xn[0], yn[1], xn[1], yn[0], xn[2], yn[2])
+			//ctx.drawImage(MeshInstance.image,0,0)
+			ctx.drawImage(tempCanvas, originalPoints[0].x, originalPoints[0].y, originalWidth, originalHeight,0,0,originalWidth, originalHeight)
+			ctx.restore()
 		}
 	}
 

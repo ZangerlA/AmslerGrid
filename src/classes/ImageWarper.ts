@@ -28,10 +28,12 @@ export class ImageWarper {
 
 		const imageData = ctx!.getImageData(0, 0, canvas!.width, canvas!.height)
 		const pixels = imageData.data;
+		const test = []
 
 		for (let i = 0; i < movedPolygons.length; i++) {
 			const polygon = movedPolygons[i];
 			const bbox = this.getBoundingBox(distortedMesh, polygon, canvas);
+			test.push(bbox)
 			for (let y = bbox.minY; y <= bbox.maxY; y++) {
 				for (let x = bbox.minX; x <= bbox.maxX; x++) {
 					if (polygon.hasInside({x, y})) {
@@ -48,6 +50,13 @@ export class ImageWarper {
 			}
 		}
 		ctx!.putImageData(imageData, 0, 0);
+		for (let i = 0; i < test.length; i++) {
+			ctx!.beginPath()
+			ctx!.strokeStyle = '#'+(0x1000000+Math.random()*0xffffff).toString(16).substr(1,6)
+			ctx!.lineWidth = 5
+			ctx!.rect(test[i].minX,test[i].minY,test[i].maxX - test[i].minX, test[i].maxY - test[i].minY)
+			ctx!.stroke()
+		}
 	}
 	
 	private getBoundingBox(mesh: Vertex[][], polygon: Polygon, canvas: HTMLCanvasElement) {
