@@ -4,19 +4,19 @@ import Canvas from "./Canvas";
 import {Layout} from "antd";
 import {leftEyeMesh, Mesh, rightEyeMesh} from "../classes/Mesh";
 
-const { Content } = Layout
+const {Content} = Layout
 
 const AmslerGrid: FC = () => {
-	const [ activeMesh, setActiveMesh ] = useState<Mesh>(leftEyeMesh)
-
-	const changeActiveMesh = (): void =>{
-		if(activeMesh === leftEyeMesh){
+	const [activeMesh, setActiveMesh] = useState<Mesh>(leftEyeMesh)
+	
+	const changeActiveMesh = (): void => {
+		if (activeMesh === leftEyeMesh) {
 			setActiveMesh(rightEyeMesh)
-		}else {
+		} else {
 			setActiveMesh(leftEyeMesh)
 		}
 	}
-
+	
 	return (
 		<>
 			<Sidebar changeActiveMesh={changeActiveMesh} activeMesh={activeMesh}/>
@@ -27,4 +27,4 @@ const AmslerGrid: FC = () => {
 	)
 }
 
-export default  AmslerGrid
+export default AmslerGrid

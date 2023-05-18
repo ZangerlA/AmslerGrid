@@ -3,12 +3,12 @@ import './App.css';
 import {Layout} from "antd";
 import AmslerGrid from "./components/AmslerGrid";
 
-const { Content } = Layout
+const {Content} = Layout
 
 function App() {
 	return (
 		<Layout>
-			<AmslerGrid />
+			<AmslerGrid/>
 		</Layout>
 	);
 }

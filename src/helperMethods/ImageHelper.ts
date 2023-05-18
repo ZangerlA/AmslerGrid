@@ -18,7 +18,7 @@ export const scaleImage = (image: HTMLImageElement, dimension: Dimension): Promi
 	
 	canvas.width = scaledWidth
 	canvas.height = scaledHeight
-	ctx.drawImage(image,0,0, scaledWidth, scaledHeight)
+	ctx.drawImage(image, 0, 0, scaledWidth, scaledHeight)
 	return loadImage(canvas!.toDataURL("image/png"))
 }
 

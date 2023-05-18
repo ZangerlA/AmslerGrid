@@ -3,10 +3,10 @@ import {Point} from "../types/Coordinate";
 import {Vertex} from "./Vertex";
 
 export class MeshCanvas {
+	public dimension: Dimension
 	private canvas: HTMLCanvasElement
 	private ctx: CanvasRenderingContext2D
-	public dimension: Dimension
-
+	
 	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas
 		const ctx = canvas.getContext("2d")
@@ -15,10 +15,12 @@ export class MeshCanvas {
 		this.dimension = {width: canvas.width, height: canvas.height}
 	}
 	
-	public getImageData(upperLeft: Point, width: number, height: number): ImageData {
-		return this.ctx.getImageData(upperLeft.x, upperLeft.y, width, height);
+	public getImageData(upperLeft?: Point, width?: number, height?: number): ImageData {
+		if (upperLeft !== undefined && width !== undefined && height !== undefined) {
+			return this.ctx.getImageData(upperLeft.x, upperLeft.y, width, height);
+		} else return this.ctx.getImageData(0, 0, this.dimension.width, this.dimension.height);
 	}
-
+	
 	public drawCanvasCenter(radius: number, color: string): void {
 		const centerPoint: Point = {
 			x: this.dimension.width / 2,
@@ -26,7 +28,7 @@ export class MeshCanvas {
 		}
 		this.drawPoint(centerPoint, radius, color)
 	}
-
+	
 	public drawPolygon(vertices: Vertex[], fillColor: string, overlayColor?: string): void {
 		this.ctx.beginPath()
 		this.ctx.moveTo(vertices[0].coordinate.x, vertices[0].coordinate.y)
@@ -37,12 +39,12 @@ export class MeshCanvas {
 		})
 		this.ctx.fillStyle = fillColor
 		this.ctx.fill()
-		if (overlayColor !== undefined){
+		if (overlayColor !== undefined) {
 			this.ctx.fillStyle = "rgba(33,33,114,0.5)"
 			this.ctx.fill()
 		}
 	}
-
+	
 	public clearCanvas(): void;
 	public clearCanvas(upperLeft: Point, width: number, height: number): void;
 	public clearCanvas(upperLeft?: Point, width?: number, height?: number): void {
@@ -52,7 +54,7 @@ export class MeshCanvas {
 			this.ctx.clearRect(0, 0, this.dimension.width, this.dimension.height)
 		}
 	}
-
+	
 	public drawPoint(point: Point, radius: number, color: string): void {
 		this.ctx.beginPath()
 		this.ctx.moveTo(point.x, point.y)
@@ -60,7 +62,7 @@ export class MeshCanvas {
 		this.ctx.arc(point.x, point.y, radius, 0, Math.PI * 2, false)
 		this.ctx.fill()
 	}
-
+	
 	public drawLine(from: Point, to: Point) {
 		this.ctx.beginPath()
 		this.ctx.moveTo(from.x, from.y)
@@ -88,5 +90,5 @@ export class MeshCanvas {
 		link.download = filename;
 		link.click();
 	}
-
+	
 }

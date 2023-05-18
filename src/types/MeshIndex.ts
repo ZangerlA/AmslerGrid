@@ -1,4 +1,4 @@
 export type MeshIndex = {
-    row: number,
-    col: number,
+	row: number,
+	col: number,
 }

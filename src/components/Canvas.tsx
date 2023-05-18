@@ -23,10 +23,10 @@ const Canvas: FC<CanvasProps> = (props) => {
 		const meshPainter = new MeshCanvas(canvas)
 		const canvasDimension = {width: canvas.width, height: canvas.height}
 		setCanvasBounds(canvas.getBoundingClientRect())
-		leftEyeMesh.initCanvas(meshPainter)
-		rightEyeMesh.initCanvas(meshPainter)
 		leftEyeMesh.initializeMesh(canvasDimension)
 		rightEyeMesh.initializeMesh(canvasDimension)
+		leftEyeMesh.initCanvas(meshPainter)
+		rightEyeMesh.initCanvas(meshPainter)
 	}, []);
 	
 	const handleClick = (event: MouseEvent): void => {
