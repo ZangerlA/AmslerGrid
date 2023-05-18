@@ -1,6 +1,8 @@
 import {Vertex} from "./Vertex";
 import {Polygon} from "./Polygon";
 import {Point} from "../types/Coordinate";
+import {MeshCanvas} from "./MeshCanvas";
+import {Dimension} from "../customHooks/UseWindowDimensions";
 
 export class ImageWarper {
 	private readonly originalMesh: Vertex[][]
@@ -9,10 +11,8 @@ export class ImageWarper {
 		this.originalMesh = originalMesh
 	}
 
-	warp(distortedMesh: Vertex[][], polygons: Set<Polygon>, canvas: HTMLCanvasElement): void {
-		const ctx = canvas.getContext("2d")
-
-		const originalImageData = ctx!.getImageData(0, 0,canvas!.width, canvas!.height)
+	warp(distortedMesh: Vertex[][], polygons: Set<Polygon>, painter: MeshCanvas): void {
+		const originalImageData = painter.getImageData({x:0, y:0} ,painter.dimension.width, painter.dimension.height)
 		const originalPixels = originalImageData.data;
 
 		let activePolygons: Polygon[] = []
@@ -22,25 +22,25 @@ export class ImageWarper {
 		const movedPolygons = activePolygons.filter((polygon) => polygon.moved())
 		for (let i = 0; i < movedPolygons.length; i++) {
 			const polygon = movedPolygons[i];
-			const bbox = this.getBoundingBox(this.originalMesh, polygon, canvas);
-			ctx!.clearRect(bbox.minX,bbox.minY, bbox.maxX - bbox.minX, bbox.maxY - bbox.minY)
+			const bbox = this.getBoundingBox(this.originalMesh, polygon, painter.dimension);
+			painter.clearCanvas({x: bbox.minX, y: bbox.minY}, bbox.maxX - bbox.minX, bbox.maxY - bbox.minY)
 		}
 
-		const imageData = ctx!.getImageData(0, 0, canvas!.width, canvas!.height)
+		const imageData = painter.getImageData({x:0, y:0} ,painter.dimension.width, painter.dimension.height)
 		const pixels = imageData.data;
 		const test = []
 
 		for (let i = 0; i < movedPolygons.length; i++) {
 			const polygon = movedPolygons[i];
-			const bbox = this.getBoundingBox(distortedMesh, polygon, canvas);
+			const bbox = this.getBoundingBox(distortedMesh, polygon, painter.dimension);
 			test.push(bbox)
 			for (let y = bbox.minY; y <= bbox.maxY; y++) {
 				for (let x = bbox.minX; x <= bbox.maxX; x++) {
 					if (polygon.hasInside({x, y})) {
-						const index = ((y) * canvas!.width + (x)) * 4;
+						const index = ((y) * painter.dimension.width + (x)) * 4;
 						const relPos = this.getRelativePosition(distortedMesh, { x, y }, polygon);
 						const originalPos = this.interpolate(this.originalMesh, relPos, polygon);
-						const origIndex = ((Math.floor(originalPos.y)) * canvas!.width + (Math.floor(originalPos.x))) * 4;
+						const origIndex = ((Math.floor(originalPos.y)) * painter.dimension.width + (Math.floor(originalPos.x))) * 4;
 						pixels[index] = originalPixels[origIndex];
 						pixels[index + 1] = originalPixels[origIndex + 1];
 						pixels[index + 2] = originalPixels[origIndex + 2];
@@ -49,17 +49,10 @@ export class ImageWarper {
 				}
 			}
 		}
-		ctx!.putImageData(imageData, 0, 0);
-		for (let i = 0; i < test.length; i++) {
-			ctx!.beginPath()
-			ctx!.strokeStyle = '#'+(0x1000000+Math.random()*0xffffff).toString(16).substr(1,6)
-			ctx!.lineWidth = 5
-			ctx!.rect(test[i].minX,test[i].minY,test[i].maxX - test[i].minX, test[i].maxY - test[i].minY)
-			ctx!.stroke()
-		}
+		painter.drawImage(imageData,{x:0, y:0})
 	}
 	
-	private getBoundingBox(mesh: Vertex[][], polygon: Polygon, canvas: HTMLCanvasElement) {
+	private getBoundingBox(mesh: Vertex[][], polygon: Polygon, dimension: Dimension) {
 		let minX = Infinity;
 		let minY = Infinity;
 		let maxX = -Infinity;
@@ -78,8 +71,8 @@ export class ImageWarper {
 		return {
 			minX: Math.max(0, Math.floor(minX)),
 			minY: Math.max(0, Math.floor(minY)),
-			maxX: Math.min(canvas!.width - 1, Math.ceil(maxX)),
-			maxY: Math.min(canvas!.height - 1, Math.ceil(maxY)),
+			maxX: Math.min(dimension.width - 1, Math.ceil(maxX)),
+			maxY: Math.min(dimension.height - 1, Math.ceil(maxY)),
 		};
 	}
 
@@ -167,10 +160,5 @@ export class ImageWarper {
 		return result
 	}
 
-	download(canvas: HTMLCanvasElement, filename = 'distorted-image.png') {
-		const link = document.createElement('a');
-		link.href = canvas!.toDataURL('image/png');
-		link.download = filename;
-		link.click();
-	}
+	
 }

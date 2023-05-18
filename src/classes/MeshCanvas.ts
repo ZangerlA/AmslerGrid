@@ -2,19 +2,21 @@ import {Dimension} from "../customHooks/UseWindowDimensions";
 import {Point} from "../types/Coordinate";
 import {Vertex} from "./Vertex";
 
-export class MeshPainter {
+export class MeshCanvas {
 	private canvas: HTMLCanvasElement
 	private ctx: CanvasRenderingContext2D
-	private dimension: Dimension
+	public dimension: Dimension
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas
-		const ctx = canvas.getContext("2d");
-		if (ctx === null) {
-			throw new Error("Unable to get 2D context from canvas");
-		}
+		const ctx = canvas.getContext("2d")
+		if (!ctx) throw new Error("Unable to get 2D context from canvas")
 		this.ctx = ctx;
 		this.dimension = {width: canvas.width, height: canvas.height}
+	}
+	
+	public getImageData(upperLeft: Point, width: number, height: number): ImageData {
+		return this.ctx.getImageData(upperLeft.x, upperLeft.y, width, height);
 	}
 
 	public drawCanvasCenter(radius: number, color: string): void {
@@ -65,17 +67,26 @@ export class MeshPainter {
 		this.ctx.lineTo(to.x, to.y)
 		this.ctx.stroke()
 	}
-
-	public drawImage(image: HTMLImageElement, upperLeft: Point, scaledWidth: number, scaledHeight: number): void;
-	public drawImage(image: ImageData, upperLeft: Point): void;
+	
 	public drawImage(image: HTMLImageElement | ImageData, upperLeft: Point, scaledWidth?: number, scaledHeight?: number): void {
-		if (image instanceof HTMLImageElement && scaledWidth !== undefined && scaledHeight !== undefined) {
-			this.ctx.drawImage(image, upperLeft.x, upperLeft.y, scaledWidth, scaledHeight);
+		if (image instanceof HTMLImageElement) {
+			if (scaledWidth !== undefined && scaledHeight !== undefined) {
+				this.ctx.drawImage(image, upperLeft.x, upperLeft.y, scaledWidth, scaledHeight)
+			} else {
+				this.ctx.drawImage(image, upperLeft.x, upperLeft.y)
+			}
 		} else if (image instanceof ImageData) {
-			this.ctx.putImageData(image, upperLeft.x, upperLeft.y);
+			this.ctx.putImageData(image, upperLeft.x, upperLeft.y)
 		} else {
-			throw new Error("Invalid arguments");
+			throw new Error("Invalid arguments")
 		}
+	}
+	
+	public download(filename = 'distorted-image.png') {
+		const link = document.createElement('a');
+		link.href = this.canvas.toDataURL('image/png');
+		link.download = filename;
+		link.click();
 	}
 
 }

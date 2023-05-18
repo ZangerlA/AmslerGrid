@@ -22,6 +22,7 @@
 * distort image from vectors
 * print vectors and lines to 
 * use setTransform instead of custom warp?
+* async subscribe task implementation for ImageWarper
 
 * (?) polygons shouldn´t be able to overlap
 * (?) scaling/rotation only for one polygon or for multiple (problem neighbor/ not neighbor)

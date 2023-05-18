@@ -2,19 +2,11 @@ import React, {FC, useState} from "react";
 import Sidebar from "./Sidebar";
 import Canvas from "./Canvas";
 import {Layout} from "antd";
-import {Mesh} from "../classes/Mesh";
-import canvas from "./Canvas";
+import {leftEyeMesh, Mesh, rightEyeMesh} from "../classes/Mesh";
 
 const { Content } = Layout
 
-enum MeshType {
-	Left,
-	Right,
-}
-
-const AmslerAmsler: FC = () => {
-	const [ leftEyeMesh, setLeftEyeMesh ] = useState<Mesh>(new Mesh())
-	const [ rightEyeMesh, setRightEyeMesh ] = useState<Mesh>(new Mesh())
+const AmslerGrid: FC = () => {
 	const [ activeMesh, setActiveMesh ] = useState<Mesh>(leftEyeMesh)
 
 	const changeActiveMesh = (): void =>{
@@ -24,19 +16,15 @@ const AmslerAmsler: FC = () => {
 			setActiveMesh(leftEyeMesh)
 		}
 	}
-	const setCanvas = (canvas: HTMLCanvasElement): void => {
-		setLeftEyeMesh(new Mesh(canvas))
-		setRightEyeMesh(new Mesh(canvas))
-	}
 
 	return (
 		<>
 			<Sidebar changeActiveMesh={changeActiveMesh} activeMesh={activeMesh}/>
 			<Content>
-				<Canvas activeMesh={activeMesh} setCanvas={setCanvas}/>
+				<Canvas activeMesh={activeMesh}/>
 			</Content>
 		</>
 	)
 }
 
-export default  AmslerAmsler
+export default  AmslerGrid

@@ -1,6 +1,4 @@
-import {MeshIndex} from "../types/MeshIndex";
 import {Point} from "../types/Coordinate";
-import {Mesh} from "../classes/Mesh";
 import {Vertex} from "../classes/Vertex";
 
 export const calculateCenter = (vertices: Vertex[]): Point => {

@@ -3,6 +3,7 @@ import {MeshIndex} from "../types/MeshIndex";
 import {Mesh} from "./Mesh";
 import {Point} from "../types/Coordinate";
 import {calculateCenter} from "../helperMethods/calculateCenter";
+import {MeshCanvas} from "./MeshCanvas";
 
 export class Polygon {
     mesh: Mesh
@@ -35,26 +36,15 @@ export class Polygon {
         }
     }
     
-    draw(ctx: CanvasRenderingContext2D): void {
+    draw(painter: MeshCanvas): void {
         if (this.hasActiveChildren()){
             this.children.forEach((childShape)=>{
-                childShape.draw(ctx)
+                childShape.draw(painter)
             })
         }else{
             const shapeVertices : Vertex[] = this.getOwnActiveVertices()
-            ctx.beginPath()
-            ctx.moveTo(shapeVertices[0].coordinate.x, shapeVertices[0].coordinate.y)
-            shapeVertices.forEach((vertex) => {
-                if (vertex.isActive) {
-                    ctx.lineTo(vertex.coordinate.x, vertex.coordinate.y)
-                }
-            })
-            ctx.fillStyle = this.color
-            ctx.fill()
-            if (this.mesh.selectedPolygons.has(this)){
-                ctx.fillStyle = "rgba(33,33,114,0.5)"
-                ctx.fill()
-            }
+            const fillColor = this.mesh.selectedPolygons.has(this) ? "rgba(33,33,114,0.5)" : undefined
+            painter.drawPolygon(shapeVertices, this.color, fillColor)
         }
     }
 
@@ -164,15 +154,9 @@ export class Polygon {
     }
 
     private getOwnActiveVertices(): Vertex[] {
-        let vertices: Vertex[] = []
-        this.verticesIndices.forEach((index) => {
-            const vertex = this.mesh.vertices[index.row][index.col]
-            if((vertex.isActive)){
-                vertices.push(vertex)
-            }
-        })
-        vertices.pop()
-        return vertices
+        return this.verticesIndices
+            .filter((vertexIndex) => this.toVertex(vertexIndex).isActive)
+            .map((vertexIndex) => this.toVertex(vertexIndex))
     }
 
     private inside(x: number, y: number, vertices: Vertex[]): boolean {
@@ -180,14 +164,14 @@ export class Polygon {
         // https://en.wikipedia.org/wiki/Point_in_polygon
         // found on
         // https://stackoverflow.com/questions/22521982/check-if-point-is-inside-a-polygon
-        let result = false
+        let result = 0
         for (let k = 0, l = vertices.length - 1; k < vertices.length; l = k++) {
             const xi = vertices[k].coordinate.x, yi = vertices[k].coordinate.y
             const xj = vertices[l].coordinate.x, yj = vertices[l].coordinate.y
-            const intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
-            if (intersect) result = !result
+            const intersect: any = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
+            result = intersect ^ result
         }
-        return result
+        return result === 1
     }
 
     public hasActiveChildren(): boolean {

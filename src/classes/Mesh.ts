@@ -12,32 +12,19 @@ import {calculateCenter} from "../helperMethods/calculateCenter";
 import testImage from "../testimage.jpg"
 import {ImageWarper} from "./ImageWarper";
 import {loadImage, scaleImage} from "../helperMethods/ImageHelper";
-import {Simulate} from "react-dom/test-utils";
-import load = Simulate.load;
-import {ImageWarper2} from "./ImageWarper2";
-import {MeshPainter} from "./MeshPainter";
+import {MeshCanvas} from "./MeshCanvas";
+import {WarpImage} from "../types/WarpImage";
 
 export class Mesh {
 	vertices: Vertex[][] = []
 	polygons: Set<Polygon> = new Set<Polygon>()
 	selectedPolygons: Set<Polygon> = new Set<Polygon>()
 	edges: ValueSet<Edge> = new ValueSet<Edge>()
+	canvas?: MeshCanvas
+	warpCanvas?: MeshCanvas
 	warper?: ImageWarper
-	image: HTMLImageElement = new Image()
-	//meshPainter: MeshPainter
-	warpedImageData?: ImageData
-	imagePosition: Point = {x:0, y:0}
-	canvas: HTMLCanvasElement = document.createElement('init') as HTMLCanvasElement
-	canvasDimension: Dimension = {width: 0, height: 0}
-	warpingCanvas?: HTMLCanvasElement
-
-	constructor(canvas?: HTMLCanvasElement) {
-		if(canvas) {
-			this.setCanvas(canvas)
-			this.initializeMesh({width: this.canvasDimension.width, height: this.canvasDimension.height})
-		}
-	}
-
+	image?: WarpImage
+	
 	initializeMesh(dimension: Dimension): void {
 		const cellCount = 5
 		const maxMeshSize = 40
@@ -272,100 +259,90 @@ export class Mesh {
 		})
 	}
 
-	draw(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
-		ctx.clearRect(0, 0, dimension.width, dimension.height)
-		this.drawShapeFill(ctx)
-		this.drawImage(ctx)
-		this.drawHelpLines(ctx)
-		this.drawHelpPoints(ctx)
-		this.drawCenterPoint(ctx, dimension)
+	draw(): void {
+		if (!this.canvas) return
+		this.canvas.clearCanvas()
+		this.drawShapeFill(this.canvas)
+		if (this.image) {
+			const image = this.image.warpedImageData ?? this.image.image;
+			this.canvas.drawImage(image, this.image.imagePosition);
+		}
+		this.drawHelpLines(this.canvas)
+		this.drawHelpPoints(this.canvas)
+		this.canvas.drawCanvasCenter(10, "rgba(215,0,25,1)")
 	}
 
-	drawShapeFill(ctx: CanvasRenderingContext2D): void {
+	drawShapeFill(painter: MeshCanvas): void {
 		this.polygons.forEach((polygon) => {
-			polygon.draw(ctx)
+			polygon.draw(painter)
 		})
 	}
 
-	drawHelpLines(ctx: CanvasRenderingContext2D): void {
+	drawHelpLines(painter: MeshCanvas): void {
 		this.edges.forEach((edge) => {
-			ctx.beginPath()
-			ctx.moveTo(this.vertices[edge.a.row][edge.a.col].coordinate.x, this.vertices[edge.a.row][edge.a.col].coordinate.y)
-			ctx.lineTo(this.vertices[edge.b.row][edge.b.col].coordinate.x, this.vertices[edge.b.row][edge.b.col].coordinate.y)
-			ctx.stroke()
+			const from: Point = {
+				x: this.vertices[edge.a.row][edge.a.col].coordinate.x,
+				y: this.vertices[edge.a.row][edge.a.col].coordinate.y
+			}
+			const to: Point = {
+				x: this.vertices[edge.b.row][edge.b.col].coordinate.x,
+				y: this.vertices[edge.b.row][edge.b.col].coordinate.y
+			}
+			painter.drawLine(from, to)
 		})
 	}
 
-	drawHelpPoints(ctx: CanvasRenderingContext2D): void {
+	drawHelpPoints(painter: MeshCanvas): void {
 		for (let i = 0; i < this.vertices.length; i++) {
 			for (let j = 0; j < this.vertices[i].length; j++) {
 				const vertex = this.vertices[i][j]
 				if (this.vertices[i][j].isActive) {
-					this.drawPoint(ctx, vertex.coordinate, vertex.drawRadius, vertex.color)
+					painter.drawPoint(vertex.coordinate, vertex.drawRadius, vertex.color)
 				}
 			}
 		}
 	}
-
-	drawCenterPoint(ctx: CanvasRenderingContext2D, dimension: Dimension): void {
-		const coordinate: Point = {
-			x: dimension.width / 2,
-			y: dimension.height / 2
-		}
-		this.drawPoint(ctx, coordinate, 10, "rgba(215,0,25,1)")
-	}
-
-	drawPoint(ctx: CanvasRenderingContext2D, coordinate: Point, radius: number, color: string): void {
-		ctx.beginPath()
-		ctx.moveTo(coordinate.x, coordinate.y)
-		ctx.fillStyle = color
-		ctx.arc(coordinate.x, coordinate.y, radius, 0, Math.PI * 2, false)
-		ctx.fill()
-	}
-
-	drawImage(ctx: CanvasRenderingContext2D): void {
-		if (this.warpedImageData) {
-			//console.log("distorted")
-			ctx.putImageData(this.warpedImageData, this.imagePosition.x, this.imagePosition.y)
-		}
-		else {
-			//console.log("original")
-			ctx.drawImage(this.image, this.imagePosition.x, this.imagePosition.y)
-		}
-	}
 	
 	setScaledImage(src: string): void {
-		const ctx = (this.canvas!.getContext('2d'))!
 		loadImage(src)
-			.then((loadedImage) => scaleImage(loadedImage, this.canvasDimension))
-			.then((scaledLoadedImage) => {
-				this.image = scaledLoadedImage
-				this.imagePosition.x = (this.canvasDimension.width/2) - (scaledLoadedImage.width/2)
-				this.imagePosition.y = (this.canvasDimension.height/2) - (this.image.height/2)
-				this.warpingCanvas?.getContext("2d")!.drawImage(this.image,this.imagePosition.x,this.imagePosition.y)
+			.then((loadedImage) => {
+				if (!this.canvas) throw new Error("meshPainter should be initialized")
+				return scaleImage(loadedImage, this.canvas.dimension)
 			})
-			.then(() => this.draw(ctx, this.canvasDimension))
+			.then((scaledLoadedImage) => {
+				if (!this.canvas) throw new Error("meshPainter should be initialized")
+				if (!this.warpCanvas) throw new Error("warpPainter should be initialized")
+				const imagePosition = {
+					x: (this.canvas.dimension.width/2) - (scaledLoadedImage.width/2),
+					y: (this.canvas.dimension.height/2) - (scaledLoadedImage.height/2)
+				}
+				this.image = {
+					image: scaledLoadedImage,
+					warpedImageData: undefined,
+					imagePosition
+				}
+				this.warpCanvas.drawImage(this.image.image, this.image.imagePosition)
+			})
+			.then(() => this.draw())
 	}
 	
-	setCanvas(canvas: HTMLCanvasElement): void {
-		this.canvas = canvas
-		this.canvasDimension = {width: this.canvas.width, height: this.canvas.height}
-		this.warpingCanvas = document.createElement('canvas')
-		this.warpingCanvas.width = canvas.width
-		this.warpingCanvas.height = canvas.height
+	initCanvas(meshPainter: MeshCanvas): void {
+		this.canvas = meshPainter
+		const warpCanvas = document.createElement('canvas')
+		if (!warpCanvas) throw new Error("Could not create canvas for warping.")
+		warpCanvas.width = meshPainter.dimension.width
+		warpCanvas.height = meshPainter.dimension.height
+		this.warpCanvas = new MeshCanvas(warpCanvas)
 	}
 
 	warpImage(): void {
-		const ctx = this.canvas!.getContext('2d')!
-		const warpCtx = this.warpingCanvas?.getContext("2d")!
-		warpCtx.clearRect(0,0,this.warpingCanvas!.width, this.warpingCanvas!.height)
-		warpCtx.drawImage(this.image,this.imagePosition.x,this.imagePosition.y)
-		this.warper!.warp(this.vertices, this.polygons, this.warpingCanvas!)
-		this.warpedImageData = warpCtx.getImageData(this.imagePosition.x,this.imagePosition.y, this.image.width, this.image.height)
-		//this.warper!.download(this.warpingCanvas!)
-		this.draw(ctx, this.canvasDimension)
+		if (!this.warpCanvas || !this.image || !this.warper) return
+		this.warpCanvas.clearCanvas()
+		this.warpCanvas.drawImage(this.image.image, this.image.imagePosition)
+		this.warper.warp(this.vertices, this.polygons, this.warpCanvas)
+		this.image.warpedImageData = this.warpCanvas.getImageData(this.image.imagePosition, this.image.image.width, this.image.image.height)
 	}
 }
 
-export const MeshInstanceLeft = new Mesh()
-export const MeshInstanceRight = new Mesh()
+export const leftEyeMesh = new Mesh()
+export const rightEyeMesh = new Mesh()
