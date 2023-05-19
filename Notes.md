@@ -26,6 +26,7 @@
 * print vectors and lines to
 * use setTransform instead of custom warp?
 * async subscribe task implementation for ImageWarper
+* https://stackoverflow.com/questions/74101155/chrome-warning-willreadfrequently-attribute-set-to-true
 
 * (?) polygons shouldn´t be able to overlap
 * (?) scaling/rotation only for one polygon or for multiple (problem neighbor/ not neighbor)

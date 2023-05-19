@@ -7,7 +7,6 @@ export class Vertex {
 	drawRadius: number = 6
 	color: string = "black"
 	isActive: boolean = false
-	dragging: boolean = false
 	wasMoved: boolean = false
 	
 	constructor(coordinate: Point) {
@@ -19,6 +18,7 @@ export class Vertex {
 		this.wasMoved = true
 		this.coordinate.x += vector.x
 		this.coordinate.y += vector.y
+		console.log(this.coordinate)
 	}
 	
 	rotateAround(point: Point, degree: number): void {

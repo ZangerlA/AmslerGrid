@@ -17,6 +17,7 @@ import {MeshCanvas} from "./MeshCanvas";
 export class Mesh {
 	public vertices: Vertex[][] = []
 	public selectedPolygons: Set<Polygon> = new Set<Polygon>()
+	public selectedVertex?: Vertex
 	public edges: ValueSet<Edge> = new ValueSet<Edge>()
 	private polygons: Set<Polygon> = new Set<Polygon>()
 	private canvas?: MeshCanvas
@@ -40,6 +41,141 @@ export class Mesh {
 		this.warper = new ImageWarper(this.createVertices(config))
 		this.setScaledImage(testImage)
 	}
+
+	private createVertices(config: InitialMeshConfig): Vertex[][] {
+		const vertices: Vertex[][] = []
+		for (let i = 0; i <= config.maxMeshSize; i++) {
+			vertices[i] = []
+			for (let j = 0; j <= config.maxMeshSize; j++) {
+				vertices[i][j] = this.createVertex(i, j, config)
+			}
+		}
+		return vertices
+	}
+
+	private createVertex(i: number, j: number, config: InitialMeshConfig): Vertex {
+		const coordinate: Point = {
+			x: (config.cellSizeVertical * j) + 50,
+			y: (config.cellSizeHorizontal * i) + 50
+		}
+		const vertex = new Vertex(coordinate)
+		if (i % config.cellSizeOffset === 0 && j % config.cellSizeOffset === 0) {
+			vertex.isActive = true
+		}
+		return vertex
+	}
+
+	private createPolygons(config: InitialMeshConfig): Polygon[][] {
+		const polygons: Polygon[][] = []
+		for (let i = 0; i < config.maxMeshSize; i++) {
+			polygons[i] = []
+			for (let j = 0; j < config.maxMeshSize; j++) {
+				polygons[i][j] = (this.createPolygon(i, j, 1, 1, false))
+			}
+		}
+		return polygons
+	}
+
+	private createPolygon(i: number, j: number, offset: number, size: number, shouldDraw: boolean): Polygon {
+		const isGreen = ((i ^ j) & 1) === 0
+		let color = isGreen ? "rgba(75,139,59,0.5)" : "white"
+		return new Polygon(this, {row: i * offset, col: j * offset}, size, shouldDraw, color)
+	}
+
+	private createEdges(config: InitialMeshConfig): ValueSet<Edge> {
+		return this.createVerticalEdges(config).union(this.createHorizontalEdges(config))
+	}
+
+	private createVerticalEdges(config: InitialMeshConfig): ValueSet<Edge> {
+		const edges: ValueSet<Edge> = new ValueSet<Edge>(undirectedGraphHash)
+		for (let i = 0; i < config.maxMeshSize; i += config.cellSizeOffset) {
+			for (let j = 0; j <= config.maxMeshSize; j += config.cellSizeOffset) {
+				edges.add({a: {row: i, col: j}, b: {row: i + config.cellSizeOffset, col: j}})
+			}
+		}
+		return edges
+	}
+
+	private createHorizontalEdges(config: InitialMeshConfig): ValueSet<Edge> {
+		const edges: ValueSet<Edge> = new ValueSet<Edge>(undirectedGraphHash)
+		for (let i = 0; i <= config.maxMeshSize; i += config.cellSizeOffset) {
+			for (let j = 0; j < config.maxMeshSize; j += config.cellSizeOffset) {
+				edges.add({a: {row: i, col: j}, b: {row: i, col: j + config.cellSizeOffset}})
+			}
+		}
+		return edges
+	}
+
+	private groupPolygons(polygons: Polygon[][], limit: number): Set<Polygon> {
+		if (polygons.length <= limit) {
+			const result = new Set<Polygon>()
+			for (let row of polygons) {
+				for (let polygon of row) {
+					polygon.shouldDraw = true
+					result.add(polygon)
+				}
+			}
+			return result
+		}
+		const mergedPolygons: Polygon[][] = [];
+
+		for (let i = 0; i < polygons.length; i += 2) {
+			const newRow: Polygon[] = [];
+			for (let j = 0; j < polygons[i].length; j += 2) {
+				newRow.push(this.createParentPolygon(i, j, polygons))
+			}
+			mergedPolygons.push(newRow)
+		}
+		return this.groupPolygons(mergedPolygons, limit)
+	}
+
+	private createParentPolygon(i: number, j: number, polygons: Polygon[][]): Polygon {
+		const parentPolygon = this.createPolygon(polygons[i][j].verticesIndices[0].row, polygons[i][j].verticesIndices[0].col, 1, polygons[i][j].edgeLength * 2, false)
+		for (let k = 0; k < 2; k++) {
+			for (let l = 0; l < 2; l++) {
+				parentPolygon.children.push(polygons[i + k][j + l])
+			}
+		}
+		return parentPolygon
+	}
+
+	private colorPolygons(): void {
+		let colored = true
+		this.polygons.forEach((polygon) => {
+			polygon.setColor(colored)
+			colored = !colored
+			polygon.colorChildren()
+		})
+	}
+
+	public setScaledImage(src: string): void {
+		loadImage(src)
+			.then((loadedImage) => {
+				if (!this.canvas) throw new Error("meshPainter should be initialized")
+				return scaleImage(loadedImage, this.canvas.dimension)
+			})
+			.then((scaledLoadedImage) => {
+				if (!this.canvas) throw new Error("meshPainter should be initialized")
+				if (!this.warper) throw new Error("warper should be initialized")
+				const imagePosition = {
+					x: (this.canvas.dimension.width / 2) - (scaledLoadedImage.width / 2),
+					y: (this.canvas.dimension.height / 2) - (scaledLoadedImage.height / 2)
+				}
+				this.warper.setImage(scaledLoadedImage)
+				this.warper.imagePosition = imagePosition
+			})
+			.then(() => this.draw())
+	}
+
+	public initCanvas(meshPainter: MeshCanvas): void {
+		this.canvas = meshPainter
+		const warpCanvas = document.createElement('canvas')
+		if (!warpCanvas) throw new Error("Could not create canvas for warping.")
+		if (!this.warper) throw new Error("Warper should be initialized.")
+		warpCanvas.width = meshPainter.dimension.width
+		warpCanvas.height = meshPainter.dimension.height
+		this.warper.canvas = new MeshCanvas(warpCanvas)
+	}
 	
 	public handleSelect(mouseClick: Point): void {
 		this.polygons.forEach((polygon) => {
@@ -59,7 +195,7 @@ export class Mesh {
 		this.vertices.forEach((row) => {
 			row.forEach((vertex) => {
 				if (vertex.isActive && vertex.wasClicked(mouseClick)) {
-					vertex.dragging = true
+					this.selectedVertex = vertex
 				}
 			})
 		})
@@ -72,13 +208,7 @@ export class Mesh {
 	}
 	
 	public handleRelease(): void {
-		this.vertices.forEach((row) => {
-			row.forEach((vertex) => {
-				if (vertex.dragging) {
-					vertex.dragging = false
-				}
-			})
-		})
+		this.selectedVertex = undefined
 	}
 	
 	public handleRotate(degree: number): void {
@@ -86,7 +216,7 @@ export class Mesh {
 	}
 	
 	public handleScale(scaleFactor: number): void {
-		const uniqueVertices = this.getUniqueVertices(this.polygons)
+		const uniqueVertices = this.getUniqueVertices(this.selectedPolygons)
 		const centerPoint = calculateCenter(uniqueVertices)
 		this.scaleVertices(uniqueVertices, centerPoint, scaleFactor)
 	}
@@ -99,176 +229,15 @@ export class Mesh {
 		})
 	}
 	
-	public draw(): void {
-		if (!this.canvas) return
-		this.canvas.clearCanvas()
-		this.drawShapeFill(this.canvas)
-		if (this.warper) {
-			const image = this.warper.getImageAsData()
-			if (image && this.warper.imagePosition) {
-				this.canvas.drawImage(image, this.warper.imagePosition);
-			}
-		}
-		this.drawHelpLines(this.canvas)
-		this.drawHelpPoints(this.canvas)
-		this.canvas.drawCanvasCenter(10, "rgba(215,0,25,1)")
-	}
-	
-	public setScaledImage(src: string): void {
-		loadImage(src)
-			.then((loadedImage) => {
-				if (!this.canvas) throw new Error("meshPainter should be initialized")
-				return scaleImage(loadedImage, this.canvas.dimension)
-			})
-			.then((scaledLoadedImage) => {
-				if (!this.canvas) throw new Error("meshPainter should be initialized")
-				if (!this.warper) throw new Error("warper should be initialized")
-				const imagePosition = {
-					x: (this.canvas.dimension.width / 2) - (scaledLoadedImage.width / 2),
-					y: (this.canvas.dimension.height / 2) - (scaledLoadedImage.height / 2)
-				}
-				this.warper.setImage(scaledLoadedImage)
-				this.warper.imagePosition = imagePosition
-			})
-			.then(() => this.draw())
-	}
-	
-	public initCanvas(meshPainter: MeshCanvas): void {
-		this.canvas = meshPainter
-		const warpCanvas = document.createElement('canvas')
-		if (!warpCanvas) throw new Error("Could not create canvas for warping.")
-		if (!this.warper) throw new Error("Warper should be initialized.")
-		warpCanvas.width = meshPainter.dimension.width
-		warpCanvas.height = meshPainter.dimension.height
-		this.warper.canvas = new MeshCanvas(warpCanvas)
-	}
-	
-	public warpImage(): void {
-		if (!this.warper) return
-		this.warper.warp(this.vertices, this.polygons)
-	}
-	
-	private createVertices(config: InitialMeshConfig): Vertex[][] {
-		const vertices: Vertex[][] = []
-		for (let i = 0; i <= config.maxMeshSize; i++) {
-			vertices[i] = []
-			for (let j = 0; j <= config.maxMeshSize; j++) {
-				vertices[i][j] = this.createVertex(i, j, config)
-			}
-		}
-		return vertices
-	}
-	
-	private createVertex(i: number, j: number, config: InitialMeshConfig): Vertex {
-		const coordinate: Point = {
-			x: (config.cellSizeVertical * j) + 50,
-			y: (config.cellSizeHorizontal * i) + 50
-		}
-		const vertex = new Vertex(coordinate)
-		if (i % config.cellSizeOffset === 0 && j % config.cellSizeOffset === 0) {
-			vertex.isActive = true
-		}
-		return vertex
-	}
-	
-	private createPolygons(config: InitialMeshConfig): Polygon[][] {
-		const polygons: Polygon[][] = []
-		for (let i = 0; i < config.maxMeshSize; i++) {
-			polygons[i] = []
-			for (let j = 0; j < config.maxMeshSize; j++) {
-				polygons[i][j] = (this.createPolygon(i, j, 1, 1, false))
-			}
-		}
-		return polygons
-	}
-	
-	private createPolygon(i: number, j: number, offset: number, size: number, shouldDraw: boolean): Polygon {
-		const isGreen = ((i ^ j) & 1) === 0
-		let color = isGreen ? "rgba(75,139,59,0.5)" : "white"
-		return new Polygon(this, {row: i * offset, col: j * offset}, size, shouldDraw, color)
-	}
-	
-	private groupPolygons(polygons: Polygon[][], limit: number): Set<Polygon> {
-		if (polygons.length <= limit) {
-			const result = new Set<Polygon>()
-			for (let row of polygons) {
-				for (let polygon of row) {
-					polygon.shouldDraw = true
-					result.add(polygon)
-				}
-			}
-			return result
-		}
-		const mergedPolygons: Polygon[][] = [];
-		
-		for (let i = 0; i < polygons.length; i += 2) {
-			const newRow: Polygon[] = [];
-			for (let j = 0; j < polygons[i].length; j += 2) {
-				newRow.push(this.createParentPolygon(i, j, polygons))
-			}
-			mergedPolygons.push(newRow)
-		}
-		return this.groupPolygons(mergedPolygons, limit)
-	}
-	
-	private createParentPolygon(i: number, j: number, polygons: Polygon[][]): Polygon {
-		const parentPolygon = this.createPolygon(polygons[i][j].verticesIndices[0].row, polygons[i][j].verticesIndices[0].col, 1, polygons[i][j].edgeLength * 2, false)
-		for (let k = 0; k < 2; k++) {
-			for (let l = 0; l < 2; l++) {
-				parentPolygon.children.push(polygons[i + k][j + l])
-			}
-		}
-		return parentPolygon
-	}
-	
-	private colorPolygons(): void {
-		let colored = true
-		this.polygons.forEach((polygon) => {
-			polygon.setColor(colored)
-			colored = !colored
-			polygon.colorChildren()
-		})
-	}
-	
-	private createEdges(config: InitialMeshConfig): ValueSet<Edge> {
-		return this.createVerticalEdges(config).union(this.createHorizontalEdges(config))
-	}
-	
-	private createVerticalEdges(config: InitialMeshConfig): ValueSet<Edge> {
-		const edges: ValueSet<Edge> = new ValueSet<Edge>(undirectedGraphHash)
-		for (let i = 0; i < config.maxMeshSize; i += config.cellSizeOffset) {
-			for (let j = 0; j <= config.maxMeshSize; j += config.cellSizeOffset) {
-				edges.add({a: {row: i, col: j}, b: {row: i + config.cellSizeOffset, col: j}})
-			}
-		}
-		return edges
-	}
-	
-	private createHorizontalEdges(config: InitialMeshConfig): ValueSet<Edge> {
-		const edges: ValueSet<Edge> = new ValueSet<Edge>(undirectedGraphHash)
-		for (let i = 0; i <= config.maxMeshSize; i += config.cellSizeOffset) {
-			for (let j = 0; j < config.maxMeshSize; j += config.cellSizeOffset) {
-				edges.add({a: {row: i, col: j}, b: {row: i, col: j + config.cellSizeOffset}})
-			}
-		}
-		return edges
-	}
-	
 	private dragSelectedVertices(vector: Vector): boolean {
-		let moved = false
-		this.vertices.forEach((row) => {
-			row.forEach((vertex) => {
-				if (vertex.dragging) {
-					vertex.move(vector)
-					moved = true
-				}
-			})
-		})
-		return moved
+		if (this.selectedVertex) {
+			this.selectedVertex.move(vector)
+			return true
+		} else return false
 	}
 	
 	private dragSelectedPolygons(vector: Vector): void {
-		this.moveVertices(this.getUniqueVertices(this.polygons), vector)
+		this.moveVertices(this.getUniqueVertices(this.selectedPolygons), vector)
 	}
 	
 	private moveVertices(vertices: Vertex[], vector: Vector): void {
@@ -278,7 +247,7 @@ export class Mesh {
 	}
 	
 	private rotateSelectedPolygons(degree: number): void {
-		const uniqueVertices = this.getUniqueVertices(this.polygons)
+		const uniqueVertices = this.getUniqueVertices(this.selectedPolygons)
 		const centerPoint = calculateCenter(uniqueVertices)
 		this.rotateVertices(uniqueVertices, centerPoint, degree)
 	}
@@ -302,6 +271,21 @@ export class Mesh {
 		})
 		let vertices: Vertex[] = vertexIndices.map((curr) => this.vertices[curr.row][curr.col])
 		return getUniqueArray(vertices)
+	}
+
+	public draw(): void {
+		if (!this.canvas) return
+		this.canvas.clearCanvas()
+		this.drawShapeFill(this.canvas)
+		if (this.warper) {
+			const image = this.warper.getImageAsData()
+			if (image && this.warper.imagePosition) {
+				this.canvas.drawImage(image, this.warper.imagePosition);
+			}
+		}
+		this.drawHelpLines(this.canvas)
+		this.drawHelpPoints(this.canvas)
+		this.canvas.drawCanvasCenter(10, "rgba(215,0,25,1)")
 	}
 	
 	private drawShapeFill(painter: MeshCanvas): void {
@@ -333,6 +317,11 @@ export class Mesh {
 				}
 			}
 		}
+	}
+
+	public warpImage(): void {
+		if (!this.warper) return
+		this.warper.warp(this.vertices, this.polygons)
 	}
 }
 

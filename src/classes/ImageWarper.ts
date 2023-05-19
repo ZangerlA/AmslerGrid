@@ -30,7 +30,6 @@ export class ImageWarper {
 			const bbox = this.getBoundingBox(this.originalMesh, polygon, this.canvas.dimension);
 			this.canvas.clearCanvas({x: bbox.minX, y: bbox.minY}, bbox.maxX - bbox.minX, bbox.maxY - bbox.minY)
 		}
-		
 		const imageData = this.canvas.getImageData()
 		const pixels = imageData.data;
 		const test = []

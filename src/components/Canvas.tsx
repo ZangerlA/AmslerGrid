@@ -10,10 +10,9 @@ type CanvasProps = {
 	activeMesh: Mesh
 }
 const Canvas: FC<CanvasProps> = (props) => {
-	const {activeMesh} = props
+	const { activeMesh} = props
 	const canvasRef = useRef<HTMLCanvasElement>(null)
 	const windowDimension = useWindowDimensions()
-	const [mousePosition, setMousePosition] = useState<Point>({x: 0, y: 0})
 	const [canvasBounds, setCanvasBounds] = useState<DOMRect>()
 	const [isDragging, setIsDragging] = useState<boolean>(false)
 	
@@ -54,18 +53,15 @@ const Canvas: FC<CanvasProps> = (props) => {
 			setIsDragging(true)
 			activeMesh.handleSingleVertex(toCanvasCoord(event.clientX, event.clientY))
 		}
-		setMousePosition(toCanvasCoord(event.clientX, event.clientY))
 	}
 	
 	const handleMouseMove = (event: MouseEvent): void => {
 		event.preventDefault()
 		
 		if (event.button === MouseButton.Left && isDragging) {
-			const coord = toCanvasCoord(event.clientX, event.clientY)
-			const vector: Vector = {x: coord.x - mousePosition.x, y: coord.y - mousePosition.y}
+			const vector: Vector = {x: event.movementX, y: event.movementY}
 			activeMesh.handleDrag(vector)
 			activeMesh.draw()
-			setMousePosition(toCanvasCoord(event.clientX, event.clientY))
 		}
 	}
 	
