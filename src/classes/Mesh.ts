@@ -323,6 +323,10 @@ export class Mesh {
 		if (!this.warper) return
 		this.warper.warp(this.vertices, this.polygons)
 	}
+
+	clearSelected() {
+		this.selectedPolygons.clear()
+	}
 }
 
 export const leftEyeMesh = new Mesh()

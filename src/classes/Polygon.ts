@@ -22,7 +22,7 @@ export class Polygon {
 	}
 	
 	draw(painter: MeshCanvas): void {
-		if (this.hasActiveChildren()) {
+		if (this.hasChildren()) {
 			this.children.forEach((childShape) => {
 				childShape.draw(painter)
 			})
@@ -34,7 +34,7 @@ export class Polygon {
 	}
 	
 	gatherVerticesIndices(vertexIndices: MeshIndex[] = []): MeshIndex[] {
-		if (this.hasActiveChildren()) {
+		if (this.hasChildren()) {
 			this.children.forEach((childShape) => {
 				childShape.gatherVerticesIndices(vertexIndices);
 			});
@@ -56,7 +56,7 @@ export class Polygon {
 	getContainer(mouseClick: Point): Polygon | undefined {
 		if (!this.hasInside(mouseClick)) {
 			return undefined
-		} else if (this.hasActiveChildren()) {
+		} else if (this.hasChildren()) {
 			for (let child of this.children) {
 				const container = child.getContainer(mouseClick)
 				if (container) {
@@ -99,6 +99,14 @@ export class Polygon {
 			
 			centerVertex.coordinate = calculateCenter([ul, ur, lr, ll])
 		}
+
+        this.children.push(
+            new Polygon(this.mesh, {row: this.verticesIndices[0].row, col: this.verticesIndices[0].col}, childEdgeLength, true, "rgba(75,139,59,0.5)"),
+            new Polygon(this.mesh, {row: this.verticesIndices[childEdgeLength].row, col: this.verticesIndices[childEdgeLength].col}, childEdgeLength, true,"white"),
+            new Polygon(this.mesh, {row: centerVertexRow, col: centerVertexCol}, childEdgeLength, true, "rgba(75,139,59,0.5)"),
+            new Polygon(this.mesh, {row: this.verticesIndices[this.verticesIndices.length - childEdgeLength - 1].row, col: this.verticesIndices[this.verticesIndices.length - childEdgeLength - 1].col}, childEdgeLength, true, "white"),
+        );
+
 		this.removeOwnEdges()
 		this.children.forEach((childPolygon) => {
 			if (wasDeleted) {
@@ -109,19 +117,15 @@ export class Polygon {
 		})
 	}
 	
-	gatherActiveChildren(result: Polygon[]): Polygon[] {
-		if (this.hasActiveChildren()) {
+	gatherChildren(result: Polygon[]): Polygon[] {
+		if (this.hasChildren()) {
 			this.children.forEach((childShape) => {
-				childShape.gatherActiveChildren(result);
+				childShape.gatherChildren(result);
 			});
 		} else {
 			result.push(this);
 		}
 		return result;
-	}
-	
-	public hasActiveChildren(): boolean {
-		return this.children.some((child) => child.shouldDraw)
 	}
 	
 	public colorChildren() {
@@ -214,4 +218,8 @@ export class Polygon {
 	private toVertex(meshIndex: MeshIndex): Vertex {
 		return this.mesh.vertices[meshIndex.row][meshIndex.col]
 	}
+
+    public hasChildren(): boolean {
+        return !(this.children.length === 0)
+    }
 }
