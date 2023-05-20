@@ -18,7 +18,6 @@ export class Vertex {
 		this.wasMoved = true
 		this.coordinate.x += vector.x
 		this.coordinate.y += vector.y
-		console.log(this.coordinate)
 	}
 	
 	rotateAround(point: Point, degree: number): void {

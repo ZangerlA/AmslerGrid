@@ -116,8 +116,8 @@ export class Polygon {
 			childPolygon.addOwnEdges()
 		})
 	}
-	
-	gatherChildren(result: Polygon[]): Polygon[] {
+
+	public gatherChildren(result: Polygon[]): Polygon[] {
 		if (this.hasChildren()) {
 			this.children.forEach((childShape) => {
 				childShape.gatherChildren(result);
@@ -127,29 +127,7 @@ export class Polygon {
 		}
 		return result;
 	}
-	
-	public colorChildren() {
-		this.children[0].color = "rgba(75,139,59,0.5)"
-		this.children[1].color = "white"
-		this.children[2].color = "white"
-		this.children[3].color = "rgba(75,139,59,0.5)"
-		
-		for (let i = 0; i < this.children.length; i++) {
-			let polygon = this.children[i]
-			if (polygon.children.length !== 0) {
-				polygon.colorChildren()
-			}
-		}
-	}
-	
-	public setColor(colored: boolean) {
-		if (colored) {
-			this.color = "rgba(75,139,59,0.5)"
-		} else {
-			this.color = "white"
-		}
-	}
-	
+
 	moved(): boolean {
 		return this.verticesIndices.some((vertexIndex) => this.mesh.vertices[vertexIndex.row][vertexIndex.col].isActive && this.mesh.vertices[vertexIndex.row][vertexIndex.col].wasMoved)
 	}

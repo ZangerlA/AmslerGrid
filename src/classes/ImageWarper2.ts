@@ -13,7 +13,7 @@ export class ImageWarper2 {
 		const ctx = canvas.getContext("2d")!
 		let activePolygons: Polygon[] = []
 		polygons.forEach((polygon) => {
-			activePolygons.push(...polygon.gatherActiveChildren([]))
+			activePolygons.push(...polygon.gatherChildren([]))
 		})
 		const movedPolygons = activePolygons.filter((polygon) => polygon.moved())
 		const image = ctx.getImageData(0, 0, canvas.width, canvas.height)

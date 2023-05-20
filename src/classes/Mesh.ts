@@ -36,8 +36,7 @@ export class Mesh {
 		
 		this.vertices = this.createVertices(config)
 		this.edges = this.createEdges(config)
-		this.polygons = this.groupPolygons(this.createPolygons(config), config.cellCount)
-		this.colorPolygons()
+		this.polygons = this.createPolygons(config)
 		this.warper = new ImageWarper(this.createVertices(config))
 		this.setScaledImage(testImage)
 	}
@@ -65,21 +64,20 @@ export class Mesh {
 		return vertex
 	}
 
-	private createPolygons(config: InitialMeshConfig): Polygon[][] {
-		const polygons: Polygon[][] = []
-		for (let i = 0; i < config.maxMeshSize; i++) {
-			polygons[i] = []
-			for (let j = 0; j < config.maxMeshSize; j++) {
-				polygons[i][j] = (this.createPolygon(i, j, 1, 1, false))
+	private createPolygons(config: InitialMeshConfig): Set<Polygon> {
+		const polygons: Set<Polygon> = new Set<Polygon>()
+		for (let i = 0; i < config.cellCount; i++) {
+			for (let j = 0; j < config.cellCount; j++) {
+				polygons.add(this.createPolygon(i, j, config.cellSizeOffset, config.cellSizeOffset))
 			}
 		}
 		return polygons
 	}
 
-	private createPolygon(i: number, j: number, offset: number, size: number, shouldDraw: boolean): Polygon {
+	private createPolygon(i: number, j: number, offset: number, size: number): Polygon {
 		const isGreen = ((i ^ j) & 1) === 0
-		let color = isGreen ? "rgba(75,139,59,0.5)" : "white"
-		return new Polygon(this, {row: i * offset, col: j * offset}, size, shouldDraw, color)
+		const color = isGreen ? "rgba(75,139,59,0.5)" : "white"
+		return new Polygon(this, {row: i * offset, col: j * offset}, size, true, color)
 	}
 
 	private createEdges(config: InitialMeshConfig): ValueSet<Edge> {
@@ -104,48 +102,6 @@ export class Mesh {
 			}
 		}
 		return edges
-	}
-
-	private groupPolygons(polygons: Polygon[][], limit: number): Set<Polygon> {
-		if (polygons.length <= limit) {
-			const result = new Set<Polygon>()
-			for (let row of polygons) {
-				for (let polygon of row) {
-					polygon.shouldDraw = true
-					result.add(polygon)
-				}
-			}
-			return result
-		}
-		const mergedPolygons: Polygon[][] = [];
-
-		for (let i = 0; i < polygons.length; i += 2) {
-			const newRow: Polygon[] = [];
-			for (let j = 0; j < polygons[i].length; j += 2) {
-				newRow.push(this.createParentPolygon(i, j, polygons))
-			}
-			mergedPolygons.push(newRow)
-		}
-		return this.groupPolygons(mergedPolygons, limit)
-	}
-
-	private createParentPolygon(i: number, j: number, polygons: Polygon[][]): Polygon {
-		const parentPolygon = this.createPolygon(polygons[i][j].verticesIndices[0].row, polygons[i][j].verticesIndices[0].col, 1, polygons[i][j].edgeLength * 2, false)
-		for (let k = 0; k < 2; k++) {
-			for (let l = 0; l < 2; l++) {
-				parentPolygon.children.push(polygons[i + k][j + l])
-			}
-		}
-		return parentPolygon
-	}
-
-	private colorPolygons(): void {
-		let colored = true
-		this.polygons.forEach((polygon) => {
-			polygon.setColor(colored)
-			colored = !colored
-			polygon.colorChildren()
-		})
 	}
 
 	public setScaledImage(src: string): void {
@@ -324,7 +280,7 @@ export class Mesh {
 		this.warper.warp(this.vertices, this.polygons)
 	}
 
-	clearSelected() {
+	public clearSelected() {
 		this.selectedPolygons.clear()
 	}
 }

@@ -22,7 +22,7 @@ export class ImageWarper {
 		
 		let activePolygons: Polygon[] = []
 		polygons.forEach((polygon) => {
-			activePolygons.push(...polygon.gatherActiveChildren([]))
+			activePolygons.push(...polygon.gatherChildren([]))
 		})
 		const movedPolygons = activePolygons.filter((polygon) => polygon.moved())
 		for (let i = 0; i < movedPolygons.length; i++) {
