@@ -4,24 +4,53 @@ import {Point} from "../types/Coordinate";
 import {MeshCanvas} from "./MeshCanvas";
 import {Dimension} from "../customHooks/UseWindowDimensions";
 
+export type Unsubscribe = () => void;
+type Subscriber = (distortedImage: ImageData | undefined) => void
+
 export class ImageWarper {
 	public canvas?: MeshCanvas
 	public image?: HTMLImageElement
 	public imagePosition?: Point
 	private readonly originalMesh: Vertex[][]
+	private readonly polygons: Set<Polygon>
+	private currentMesh?: Vertex[][]
+	private nextMesh?: Vertex[][]
+	private subscribers: Subscriber[] = []
 	
-	constructor(originalMesh: Vertex[][]) {
+	constructor(originalMesh: Vertex[][], polygons: Set<Polygon>) {
 		this.originalMesh = originalMesh
+		this.polygons = polygons
+	}
+
+	public subscribeDistortion(subscriber: (distortedImage: ImageData | undefined) => void): Unsubscribe {
+		this.subscribers.push(subscriber)
+		return () => this.subscribers = this.subscribers.filter(s => s !== subscriber)
+	}
+
+	private notifyAll(distortedImage: ImageData | undefined) {
+		this.subscribers.forEach(s => s(distortedImage));
+	}
+
+	public pushWarp(mesh: Vertex[][]): void {
+		this.nextMesh = mesh
+		setTimeout(() => this.warp(), 10)
 	}
 	
-	warp(distortedMesh: Vertex[][], polygons: Set<Polygon>): void {
+	warp(): void {
 		if (!this.canvas) return
+		if (!this.nextMesh) {
+			return
+		}
+
+		this.currentMesh = this.nextMesh
+		this.nextMesh = undefined
+
 		this.resetWarpCanvas()
 		const originalImageData = this.canvas.getImageData()
 		const originalPixels = originalImageData.data;
 		
 		let activePolygons: Polygon[] = []
-		polygons.forEach((polygon) => {
+		this.polygons.forEach((polygon) => {
 			activePolygons.push(...polygon.gatherChildren([]))
 		})
 		const movedPolygons = activePolygons.filter((polygon) => polygon.moved())
@@ -36,13 +65,13 @@ export class ImageWarper {
 		
 		for (let i = 0; i < movedPolygons.length; i++) {
 			const polygon = movedPolygons[i];
-			const bbox = this.getBoundingBox(distortedMesh, polygon, this.canvas.dimension);
-			test.push(bbox)
+			const bbox = this.getBoundingBox(this.currentMesh, polygon, this.canvas.dimension);
+			//test.push(bbox)
 			for (let y = bbox.minY; y <= bbox.maxY; y++) {
 				for (let x = bbox.minX; x <= bbox.maxX; x++) {
 					if (polygon.hasInside({x, y})) {
 						const index = ((y) * this.canvas.dimension.width + (x)) * 4;
-						const relPos = this.getRelativePosition(distortedMesh, {x, y}, polygon);
+						const relPos = this.getRelativePosition(this.currentMesh, {x, y}, polygon);
 						const originalPos = this.interpolate(this.originalMesh, relPos, polygon);
 						const origIndex = ((Math.floor(originalPos.y)) * this.canvas.dimension.width + (Math.floor(originalPos.x))) * 4;
 						pixels[index] = originalPixels[origIndex];
@@ -54,6 +83,20 @@ export class ImageWarper {
 			}
 		}
 		this.canvas.drawImage(imageData, {x: 0, y: 0})
+		const ctx = this.canvas.ctx
+		/*
+		for (let i = 0; i < test.length; i++) {
+			ctx.beginPath()
+			ctx.strokeStyle = '#'+(0x1000000+Math.random()*0xffffff).toString(16).substr(1,6)
+			ctx.lineWidth = 5
+			ctx.rect(test[i].minX,test[i].minY,test[i].maxX - test[i].minX, test[i].maxY - test[i].minY)
+			ctx.stroke()
+		}
+
+		 */
+		this.currentMesh = undefined
+		this.notifyAll(this.getImageAsData())
+		setTimeout(() => this.warp(), 0)
 	}
 	
 	public setImage(image: HTMLImageElement): void {

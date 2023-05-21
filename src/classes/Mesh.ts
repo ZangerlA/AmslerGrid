@@ -10,7 +10,7 @@ import {Edge} from "../types/Edge";
 import {undirectedGraphHash, ValueSet} from "../helperMethods/ValueSet";
 import {calculateCenter} from "../helperMethods/calculateCenter";
 import testImage from "../testimage.jpg"
-import {ImageWarper} from "./ImageWarper";
+import {ImageWarper, Unsubscribe} from "./ImageWarper";
 import {loadImage, scaleImage} from "../helperMethods/ImageHelper";
 import {MeshCanvas} from "./MeshCanvas";
 
@@ -22,6 +22,7 @@ export class Mesh {
 	private polygons: Set<Polygon> = new Set<Polygon>()
 	private canvas?: MeshCanvas
 	private warper?: ImageWarper
+	private imageData?: ImageData
 	public shouldDrawImage = false
 	
 	public initializeMesh(dimension: Dimension): void {
@@ -34,12 +35,21 @@ export class Mesh {
 			cellSizeHorizontal: (dimension.height - 100) / maxMeshSize,
 			cellSizeOffset: Math.floor(maxMeshSize / cellCount),
 		}
-		
 		this.vertices = this.createVertices(config)
 		this.edges = this.createEdges(config)
 		this.polygons = this.createPolygons(config)
-		this.warper = new ImageWarper(this.createVertices(config))
+		this.warper = new ImageWarper(this.createVertices(config), this.polygons)
 		this.setScaledImage(testImage)
+	}
+
+	public subscribe(): Unsubscribe {
+		if (!this.warper) throw new Error("warper should be initialized")
+		return this.warper.subscribeDistortion((distortedImage) => {
+			if (distortedImage) {
+				this.imageData = distortedImage
+				this.draw()
+			}
+		})
 	}
 
 	private createVertices(config: InitialMeshConfig): Vertex[][] {
@@ -234,10 +244,10 @@ export class Mesh {
 		if (!this.canvas) return
 		this.canvas.clearCanvas()
 		this.drawShapeFill(this.canvas)
-		if (this.shouldDrawImage && this.warper) {
-			const image = this.warper.getImageAsData()
-			if (image && this.warper.imagePosition) {
-				this.canvas.drawImage(image, this.warper.imagePosition);
+		if (this.shouldDrawImage && this.warper && this.warper.imagePosition) {
+			const tmp = this.imageData ?? this.warper.getImageAsData()
+			if (tmp) {
+				this.canvas.drawImage(tmp, this.warper.imagePosition)
 			}
 		}
 		this.drawHelpLines(this.canvas)
@@ -278,7 +288,7 @@ export class Mesh {
 
 	public warpImage(): void {
 		if (!this.warper) return
-		this.warper.warp(this.vertices, this.polygons)
+		this.warper.pushWarp(this.vertices)
 	}
 
 	public clearSelected() {

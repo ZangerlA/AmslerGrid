@@ -28,6 +28,13 @@ const Canvas: FC<CanvasProps> = (props) => {
 		rightEyeMesh.initializeMesh(canvasDimension)
 		leftEyeMesh.initCanvas(meshPainter)
 		rightEyeMesh.initCanvas(meshPainter)
+		const leftEyeUnsub = leftEyeMesh.subscribe()
+		const rightEyeUnsub = rightEyeMesh.subscribe()
+
+		return (() => {
+			leftEyeUnsub()
+			rightEyeUnsub()
+		})
 	}, [])
 
 	useEffect(() => activeMesh.draw(), [activeMesh])
@@ -66,6 +73,7 @@ const Canvas: FC<CanvasProps> = (props) => {
 			const vector: Vector = {x: event.movementX, y: event.movementY}
 			activeMesh.handleDrag(vector)
 			activeMesh.draw()
+			activeMesh.warpImage()
 		}
 	}
 
@@ -78,6 +86,7 @@ const Canvas: FC<CanvasProps> = (props) => {
 			activeMesh.handleRotate(degree)
 		}
 		activeMesh.draw()
+		activeMesh.warpImage()
 	}
 
 	const getScaleFactor = (deltaY: number): number => {

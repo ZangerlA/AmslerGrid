@@ -1,11 +1,12 @@
 import {Dimension} from "../customHooks/UseWindowDimensions";
 import {Point} from "../types/Coordinate";
 import {Vertex} from "./Vertex";
+import {ImageWarper} from "./ImageWarper";
 
 export class MeshCanvas {
 	public dimension: Dimension
 	private canvas: HTMLCanvasElement
-	private ctx: CanvasRenderingContext2D
+	public ctx: CanvasRenderingContext2D
 	
 	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas
@@ -69,7 +70,8 @@ export class MeshCanvas {
 		this.ctx.lineTo(to.x, to.y)
 		this.ctx.stroke()
 	}
-	
+	public drawImage(image: HTMLImageElement, upperLeft: Point, scaledWidth?: number, scaledHeight?: number ): void
+	public drawImage(image: ImageData, upperLeft: Point): void
 	public drawImage(image: HTMLImageElement | ImageData, upperLeft: Point, scaledWidth?: number, scaledHeight?: number): void {
 		if (image instanceof HTMLImageElement) {
 			if (scaledWidth !== undefined && scaledHeight !== undefined) {
