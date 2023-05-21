@@ -22,6 +22,7 @@ export class Mesh {
 	private polygons: Set<Polygon> = new Set<Polygon>()
 	private canvas?: MeshCanvas
 	private warper?: ImageWarper
+	public shouldDrawImage = false
 	
 	public initializeMesh(dimension: Dimension): void {
 		const cellCount = 5
@@ -233,7 +234,7 @@ export class Mesh {
 		if (!this.canvas) return
 		this.canvas.clearCanvas()
 		this.drawShapeFill(this.canvas)
-		if (this.warper) {
+		if (this.shouldDrawImage && this.warper) {
 			const image = this.warper.getImageAsData()
 			if (image && this.warper.imagePosition) {
 				this.canvas.drawImage(image, this.warper.imagePosition);
@@ -282,6 +283,11 @@ export class Mesh {
 
 	public clearSelected() {
 		this.selectedPolygons.clear()
+	}
+
+	public toggleImage(show: boolean): void {
+		this.shouldDrawImage = show
+		this.draw()
 	}
 }
 

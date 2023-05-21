@@ -28,7 +28,9 @@ const Canvas: FC<CanvasProps> = (props) => {
 		rightEyeMesh.initializeMesh(canvasDimension)
 		leftEyeMesh.initCanvas(meshPainter)
 		rightEyeMesh.initCanvas(meshPainter)
-	}, []);
+	}, [])
+
+	useEffect(() => activeMesh.draw(), [activeMesh])
 
 	const handleClick = (event: MouseEvent): void => {
 		event.preventDefault()

@@ -1,6 +1,6 @@
 import React, {FC, useState} from "react";
 import type {MenuProps} from 'antd';
-import {Layout, Menu, Radio, RadioChangeEvent, Upload} from "antd";
+import {Layout, Menu, Radio, RadioChangeEvent, Switch, Upload} from "antd";
 import {
 	EyeOutlined,
 	FileImageOutlined,
@@ -10,7 +10,7 @@ import {
 	UploadOutlined,
 } from "@ant-design/icons";
 import {MenuClickEventHandler} from 'rc-menu/lib/interface'
-import {Mesh} from "../classes/Mesh";
+import {leftEyeMesh, Mesh, rightEyeMesh} from "../classes/Mesh";
 
 type MenuItem = Required<MenuProps>['items'][number];
 type SidebarProps = {
@@ -18,7 +18,7 @@ type SidebarProps = {
 	activeMesh: Mesh
 }
 
-const {Content, Sider} = Layout
+const {Sider} = Layout
 const Sidebar: FC<SidebarProps> = (props) => {
 	
 	const [collapsed, setCollapsed] = useState(true)
@@ -49,6 +49,11 @@ const Sidebar: FC<SidebarProps> = (props) => {
 		props.changeActiveMesh()
 		setValue(value)
 	}
+
+	const toggleImage = (checked: boolean) => {
+		leftEyeMesh.toggleImage(checked)
+		rightEyeMesh.toggleImage(checked)
+	}
 	
 	const items: MenuItem[] = [
 		getItem('Menu', 'sub1', <FolderOutlined/>, [
@@ -60,7 +65,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
 		
 		getItem('Image', 'sub2', <FileImageOutlined/>, [
 			getItem(<Upload beforeUpload={handleBeforeUpload}><UploadOutlined/> Upload </Upload>, 'upload'),
-			getItem('Lock', '6'),
+			getItem(<><span>Show image: </span><Switch onChange={toggleImage}/></>, '6'),
 			getItem('Submenu', 'sub3', null, [getItem('Option 7', '7'), getItem('Option 8', '8')]),
 		]),
 		
