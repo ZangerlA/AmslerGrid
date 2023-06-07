@@ -51,7 +51,6 @@ export class Mesh {
 	public subscribe(): Unsubscribe {
 		return this.warper.subscribeDistortion((distortedImage) => {
 			if (distortedImage) {
-				console.log(distortedImage)
 				this.imageData = distortedImage
 				this.draw()
 			}
@@ -137,7 +136,7 @@ export class Mesh {
 				this.warper.setImage(scaledLoadedImage)
 				this.warper.imagePosition = imagePosition
 			})
-			.then(() => this.draw())
+			//.then(() => this.draw())
 	}
 
 	public initWarpingCanvas(): void {

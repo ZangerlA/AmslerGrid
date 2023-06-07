@@ -154,11 +154,20 @@ const AmslerGrid: FC = () => {
 			canvas.removeEventListener("keydown", handleKeyboardPress)
 		})
 		
-	},[activeMesh, canvas, isDragging])
+	},[activeMesh, canvas, isDragging, leftEyeMesh, rightEyeMesh])
+	
+	const handleImageUpload = (file: File): boolean => {
+		if(!leftEyeMesh || !rightEyeMesh || !canvas) throw new Error("meshes should be initialized")
+		const url = URL.createObjectURL(file)
+		leftEyeMesh.setScaledImage(url)
+		rightEyeMesh.setScaledImage(url)
+		canvas.focus()
+		return false
+	}
 	
 	return (
 		<>
-			{activeMesh && (<Sidebar changeActiveMesh={changeActiveMesh} activeMesh={activeMesh}/>)}
+			{activeMesh && (<Sidebar changeActiveMesh={changeActiveMesh} handleImageUpload={handleImageUpload}/>)}
 			<Content>
 				<canvas
 					tabIndex={0}

@@ -17,7 +17,7 @@ import PopupWindow from "./PopupWindow";
 type MenuItem = Required<MenuProps>['items'][number];
 type SidebarProps = {
 	changeActiveMesh: () => void,
-	activeMesh: Mesh | null
+	handleImageUpload: (file: File) => boolean,
 }
 
 const {Sider} = Layout
@@ -42,27 +42,18 @@ const Sidebar: FC<SidebarProps> = (props) => {
 		} as MenuItem;
 	}
 	
-	const handleBeforeUpload = (file: File): boolean => {
-		const url = URL.createObjectURL(file)
-		//TODO do for both meshes
-		props.activeMesh?.setScaledImage(url)
-		return false
-	}
-	
 	const onChange = ({target: {value}}: RadioChangeEvent) => {
 		props.changeActiveMesh()
 		setValue(value)
 	}
-
-
-
+	
 	const items: MenuItem[] = [
 		/*getItem('Menu', 'sub1', <FolderOutlined/>, [
 			getItem('Save', 'save', <SaveOutlined/>),
 		]),*/
 		
 		getItem('Image', 'sub2', <FileImageOutlined/>, [
-			getItem(<Upload beforeUpload={handleBeforeUpload}><UploadOutlined/> Upload </Upload>, 'upload'),
+			getItem(<Upload beforeUpload={props.handleImageUpload}><UploadOutlined/> Upload </Upload>, 'upload'),
 			/*getItem(<><span>Show image: </span><Switch /></>, '6'),*/
 		]),
 		
@@ -83,7 +74,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
 	
 	const handleClick: MenuClickEventHandler = (e) => {
 		if (e.key === 'print') {
-			props.activeMesh?.warpImage()
+		
 		}
 		if (e.key === 'help'){
 			setModalOpen(true)

@@ -113,7 +113,6 @@ export class ImageWarper {
 	
 	public getImageAsData(): ImageData | undefined {
 		if (!this.canvas || !this.image || !this.imagePosition) return
-		console.log(this.canvas)
 		return this.canvas.getImageData(this.imagePosition, this.image.width, this.image.height)
 	}
 	
