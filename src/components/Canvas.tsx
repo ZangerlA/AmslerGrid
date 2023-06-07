@@ -1,18 +1,21 @@
-import React, {FC, MouseEvent, useEffect, useRef, useState} from "react";
+import React, {FC, MouseEvent, RefObject, useEffect, useRef, useState} from "react";
 import useWindowDimensions from "../customHooks/UseWindowDimensions";
 import {Vector} from "../types/Vector";
 import {Point} from "../types/Coordinate";
-import {leftEyeMesh, Mesh, rightEyeMesh} from "../classes/Mesh";
+import {Mesh} from "../classes/Mesh";
 import {MouseButton} from "../types/MouseButton";
 import {MeshCanvas} from "../classes/MeshCanvas";
 import {Key} from "../types/Key";
 
 type CanvasProps = {
+	canvasRef: RefObject<HTMLCanvasElement>
+	canvas: HTMLCanvasElement
 	activeMesh: Mesh
 }
+
 const Canvas: FC<CanvasProps> = (props) => {
-	const { activeMesh} = props
 	const canvasRef = useRef<HTMLCanvasElement>(null)
+	const { activeMesh } = props
 	const windowDimension = useWindowDimensions()
 	const [canvasBounds, setCanvasBounds] = useState<DOMRect>()
 	const [isDragging, setIsDragging] = useState<boolean>(false)
@@ -20,24 +23,17 @@ const Canvas: FC<CanvasProps> = (props) => {
 	useEffect(() => {
 		const canvas = canvasRef.current
 		if (!canvas) throw new Error("Could not get canvas reference.")
-		canvas.focus()
-		const meshPainter = new MeshCanvas(canvas)
-		const canvasDimension = {width: canvas.width, height: canvas.height}
-		setCanvasBounds(canvas.getBoundingClientRect())
-		leftEyeMesh.initializeMesh(canvasDimension)
-		rightEyeMesh.initializeMesh(canvasDimension)
-		leftEyeMesh.initCanvas(meshPainter)
-		rightEyeMesh.initCanvas(meshPainter)
-		const leftEyeUnsub = leftEyeMesh.subscribe()
-		const rightEyeUnsub = rightEyeMesh.subscribe()
-
-		return (() => {
-			leftEyeUnsub()
-			rightEyeUnsub()
-		})
+		//props.canvasRef(canvas)
+		props.canvas.focus()
+		setCanvasBounds(props.canvas.getBoundingClientRect())
 	}, [])
 
-	useEffect(() => activeMesh.draw(), [activeMesh])
+	useEffect(() => {
+		const canvas = canvasRef.current
+		if (!canvas) throw new Error("Could not get canvas reference.")
+		canvas.focus()
+		activeMesh.draw()
+	}, [activeMesh])
 
 	const handleClick = (event: MouseEvent): void => {
 		event.preventDefault()
@@ -68,12 +64,10 @@ const Canvas: FC<CanvasProps> = (props) => {
 
 	const handleMouseMove = (event: MouseEvent): void => {
 		event.preventDefault()
-
 		if (event.button === MouseButton.Left && isDragging) {
 			const vector: Vector = {x: event.movementX, y: event.movementY}
 			activeMesh.handleDrag(vector)
 			activeMesh.draw()
-			activeMesh.warpImage()
 		}
 	}
 
@@ -86,7 +80,6 @@ const Canvas: FC<CanvasProps> = (props) => {
 			activeMesh.handleRotate(degree)
 		}
 		activeMesh.draw()
-		activeMesh.warpImage()
 	}
 
 	const getScaleFactor = (deltaY: number): number => {
@@ -98,8 +91,7 @@ const Canvas: FC<CanvasProps> = (props) => {
 	const handleMouseUp = (event: MouseEvent): void => {
 		if (event.button === MouseButton.Left) {
 			activeMesh.handleRelease()
-			setIsDragging(false);
-			activeMesh.warpImage()
+			setIsDragging(false)
 			activeMesh.draw()
 		}
 	}
@@ -112,9 +104,12 @@ const Canvas: FC<CanvasProps> = (props) => {
 	}
 
 	const handleKeyboardPress = (event: React.KeyboardEvent<HTMLCanvasElement>) => {
-		if (event.key === Key.Escape){
+		if (event.key === Key.Escape) {
 			activeMesh.clearSelected()
 			activeMesh.draw()
+		}
+		if (event.key === Key.SpaceBar) {
+			activeMesh.toggleImage()
 		}
 	}
 

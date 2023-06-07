@@ -3,6 +3,7 @@ import {Polygon} from "./Polygon";
 import {Point} from "../types/Coordinate";
 import {MeshCanvas} from "./MeshCanvas";
 import {Dimension} from "../customHooks/UseWindowDimensions";
+import {wait} from "@testing-library/user-event/dist/utils";
 
 export type Unsubscribe = () => void;
 type Subscriber = (distortedImage: ImageData | undefined) => void
@@ -13,6 +14,7 @@ export class ImageWarper {
 	public imagePosition?: Point
 	private readonly originalMesh: Vertex[][]
 	private readonly polygons: Set<Polygon>
+	private tasks?: Set<Vertex[][]>
 	private currentMesh?: Vertex[][]
 	private nextMesh?: Vertex[][]
 	private subscribers: Subscriber[] = []
@@ -32,8 +34,11 @@ export class ImageWarper {
 	}
 
 	public pushWarp(mesh: Vertex[][]): void {
+		this.tasks?.add(mesh)
+
+		//setTimeout(() => this.warp(), 10)
 		this.nextMesh = mesh
-		setTimeout(() => this.warp(), 10)
+		this.warp()
 	}
 	
 	warp(): void {
@@ -66,7 +71,7 @@ export class ImageWarper {
 		for (let i = 0; i < movedPolygons.length; i++) {
 			const polygon = movedPolygons[i];
 			const bbox = this.getBoundingBox(this.currentMesh, polygon, this.canvas.dimension);
-			//test.push(bbox)
+			test.push(bbox)
 			for (let y = bbox.minY; y <= bbox.maxY; y++) {
 				for (let x = bbox.minX; x <= bbox.maxX; x++) {
 					if (polygon.hasInside({x, y})) {
@@ -84,7 +89,7 @@ export class ImageWarper {
 		}
 		this.canvas.drawImage(imageData, {x: 0, y: 0})
 		const ctx = this.canvas.ctx
-		/*
+
 		for (let i = 0; i < test.length; i++) {
 			ctx.beginPath()
 			ctx.strokeStyle = '#'+(0x1000000+Math.random()*0xffffff).toString(16).substr(1,6)
@@ -93,10 +98,10 @@ export class ImageWarper {
 			ctx.stroke()
 		}
 
-		 */
 		this.currentMesh = undefined
 		this.notifyAll(this.getImageAsData())
 		setTimeout(() => this.warp(), 0)
+		//this.warp()
 	}
 	
 	public setImage(image: HTMLImageElement): void {
