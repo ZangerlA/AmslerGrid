@@ -28,11 +28,12 @@ export class Mesh {
 	constructor(canvas: MeshCanvas, dimension: Dimension) {
 		this.canvas = canvas
 		const meshConfig = this.getMeshConfig(dimension)
-		this.warper = new ImageWarper(this.createVertices(meshConfig), this.polygons)
 		this.vertices = this.createVertices(meshConfig)
 		this.edges = this.createEdges(meshConfig)
 		this.polygons = this.createPolygons(meshConfig)
+		this.warper = new ImageWarper(this.createVertices(meshConfig), this.polygons)
 		this.setScaledImage(testImage)
+		this.initWarpingCanvas()
 	}
 
 	private getMeshConfig(dimension: Dimension) {
@@ -48,9 +49,9 @@ export class Mesh {
 	}
 
 	public subscribe(): Unsubscribe {
-		if (!this.warper) throw new Error("warper should be initialized")
 		return this.warper.subscribeDistortion((distortedImage) => {
 			if (distortedImage) {
+				console.log(distortedImage)
 				this.imageData = distortedImage
 				this.draw()
 			}
@@ -139,13 +140,11 @@ export class Mesh {
 			.then(() => this.draw())
 	}
 
-	public initCanvas(meshPainter: MeshCanvas): void {
-		this.canvas = meshPainter
+	public initWarpingCanvas(): void {
 		const warpCanvas = document.createElement('canvas')
 		if (!warpCanvas) throw new Error("Could not create canvas for warping.")
-		if (!this.warper) throw new Error("Warper should be initialized.")
-		warpCanvas.width = meshPainter.dimension.width
-		warpCanvas.height = meshPainter.dimension.height
+		warpCanvas.width = this.canvas.dimension.width
+		warpCanvas.height = this.canvas.dimension.height
 		this.warper.canvas = new MeshCanvas(warpCanvas)
 	}
 	
@@ -246,12 +245,10 @@ export class Mesh {
 	}
 
 	public draw(): void {
-		if (!this.canvas) return
 		this.canvas.clearCanvas()
 
-		if (this.shouldDrawImage && this.warper && this.warper.imagePosition) {
+		if (this.shouldDrawImage && this.warper.imagePosition) {
 			const tmp = this.imageData ?? this.warper.getImageAsData()
-
 			if (tmp) {
 				this.canvas.drawImage(tmp, this.warper.imagePosition)
 			}
@@ -296,7 +293,6 @@ export class Mesh {
 	}
 
 	public warpImage(): void {
-		if (!this.warper) return
 		this.warper.pushWarp(this.vertices)
 	}
 
@@ -309,8 +305,6 @@ export class Mesh {
 		if (this.shouldDrawImage) {
 			this.warpImage()
 		}
-		else {
-			this.draw()
-		}
+		this.draw()
 	}
 }
