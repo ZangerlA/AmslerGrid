@@ -12,6 +12,7 @@ import {
 import {MenuClickEventHandler} from 'rc-menu/lib/interface'
 import { Mesh } from "../classes/Mesh";
 import popupWindow from "./PopupWindow";
+import PopupWindow from "./PopupWindow";
 
 type MenuItem = Required<MenuProps>['items'][number];
 type SidebarProps = {
@@ -24,6 +25,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
 	
 	const [collapsed, setCollapsed] = useState(true)
 	const [value, setValue] = useState('Left')
+	const [modalOpen, setModalOpen] = useState(false);
 	
 	const options = [
 		{label: 'Left', value: 'Left'},
@@ -42,6 +44,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
 	
 	const handleBeforeUpload = (file: File): boolean => {
 		const url = URL.createObjectURL(file)
+		//TODO do for both meshes
 		props.activeMesh?.setScaledImage(url)
 		return false
 	}
@@ -83,7 +86,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
 			props.activeMesh?.warpImage()
 		}
 		if (e.key === 'help'){
-			popupWindow({title: "help"})
+			setModalOpen(true)
 		}
 		//console.log(e.key)
 	}
@@ -97,6 +100,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
 				items={items}
 				onClick={handleClick}
 			/>
+			<PopupWindow title={''} open={modalOpen} setOpen={setModalOpen}></PopupWindow>
 		</Sider>
 	)
 }
