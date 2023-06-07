@@ -1,68 +1,173 @@
-import React, {FC, useEffect, useRef, useState} from "react";
+import React, {FC, useEffect, useState} from "react";
 import Sidebar from "./Sidebar";
-import Canvas from "./Canvas";
 import {Layout} from "antd";
 import {Mesh} from "../classes/Mesh";
 import {MeshCanvas} from "../classes/MeshCanvas";
+import {MouseButton} from "../types/MouseButton";
+import {Point} from "../types/Coordinate";
+import {Vector} from "../types/Vector";
+import {Key} from "../types/Key";
+import useWindowDimensions from "../customHooks/UseWindowDimensions";
 
 const {Content} = Layout
 
 const AmslerGrid: FC = () => {
-	const canvasRef = useRef<HTMLCanvasElement>(null)
-
+	const windowDimension = useWindowDimensions()
 	const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
-	const [leftEyeMesh, setLeftEyeMesh] = useState<Mesh | null>(null)
-	const [rightEyeMesh, setRightEyeMesh] = useState<Mesh | null>(null)
-	const [activeMesh, setActiveMesh] = useState<Mesh | null>(null)
-	/*
+	const [isDragging, setIsDragging] = useState<boolean>(false)
+	const [leftEyeMesh, setLeftEyeMesh] = useState<Mesh>()
+	const [rightEyeMesh, setRightEyeMesh] = useState<Mesh>()
+	const [isLeftEyeMesh, setIsLeftEyeMesh ] = useState<boolean>(true)
+	const changeActiveMesh = () => setIsLeftEyeMesh(b => !b)
+	const [activeMesh] = isLeftEyeMesh ? [leftEyeMesh, setLeftEyeMesh] : [rightEyeMesh, setRightEyeMesh]
+	
 	useEffect(() => {
-		if (!canvasRef.current) {
-			throw new Error("Could not get canvas reference.")
-		}
-
-		const canvas = canvasRef.current
-		setCanvas(canvas)
-
+		if (!canvas) return
+		
 		const meshCanvas = new MeshCanvas(canvas)
 		const canvasDimension = {width: canvas.width, height: canvas.height}
-
+		
 		const leftMesh = new Mesh(meshCanvas, canvasDimension)
 		const rightMesh = new Mesh(meshCanvas, canvasDimension)
-
+		
 		setLeftEyeMesh(leftMesh)
 		setRightEyeMesh(rightMesh)
-		setActiveMesh(leftMesh)
-
+		
 		const leftEyeUnsub = leftMesh.subscribe()
 		const rightEyeUnsub = rightMesh.subscribe()
-
+		
 		return (() => {
 			leftEyeUnsub()
 			rightEyeUnsub()
 		})
-	}, [])
-
-
-	 */
-	const changeActiveMesh = (): void => {
-		if (activeMesh === leftEyeMesh) {
-			setActiveMesh(rightEyeMesh)
-		} else {
-			setActiveMesh(leftEyeMesh)
+	}, [canvas])
+	
+	useEffect(() => {
+		if (!canvas || !activeMesh) return
+		canvas.focus()
+		activeMesh.draw()
+	}, [canvas, activeMesh])
+	
+	useEffect(() => {
+		if (!canvas || !activeMesh || !leftEyeMesh || !rightEyeMesh) return
+		
+		const canvasBounds = canvas.getBoundingClientRect()
+		
+		const toCanvasCoord = (clientX: number, clientY: number): Point => {
+			return {x: clientX - canvasBounds!.left, y: clientY - canvasBounds!.top}
 		}
-	}
-
-	// handle the null states in your render
-	if (!canvas || !leftEyeMesh || !rightEyeMesh || !activeMesh) {
-		// Render some loading state
-		return <Sidebar changeActiveMesh={changeActiveMesh} activeMesh={activeMesh}/>
-	}
-
+		
+		const getScaleFactor = (deltaY: number): number => {
+			if (deltaY < 0) {
+				return 0.995
+			} else return 1.0051
+		}
+		
+		const handleClick = (event: MouseEvent) => {
+			event.preventDefault()
+			if (event.ctrlKey && event.button === MouseButton.Left) {
+				activeMesh.handleSplit(toCanvasCoord(event.clientX, event.clientY))
+				activeMesh.draw()
+			}
+		}
+		
+		const handleContextMenu = (event: MouseEvent): void => {
+			event.preventDefault()
+			
+			if (event.button === MouseButton.Right) {
+				const coordinate: Point = toCanvasCoord(event.clientX, event.clientY)
+				activeMesh.handleSelect(coordinate)
+				activeMesh.draw()
+			}
+		}
+		
+		const handleMouseDown = (event: MouseEvent): void => {
+			event.preventDefault()
+			
+			if (event.button === MouseButton.Left) {
+				setIsDragging(true)
+				activeMesh.handleSingleVertex(toCanvasCoord(event.clientX, event.clientY))
+			}
+		}
+		
+		const handleMouseMove = (event: MouseEvent): void => {
+			event.preventDefault()
+			if (event.button === MouseButton.Left && isDragging) {
+				const vector: Vector = {x: event.movementX, y: event.movementY}
+				activeMesh.handleDrag(vector)
+				activeMesh.draw()
+			}
+		}
+		
+		const handleWheel = (event: WheelEvent): void => {
+			const degree = event.deltaY * 0.007
+			let scaleFactor = getScaleFactor(event.deltaY)
+			if (event.shiftKey) {
+				activeMesh.handleScale(scaleFactor)
+			} else {
+				activeMesh.handleRotate(degree)
+			}
+			activeMesh.draw()
+		}
+		
+		const handleMouseUp = (event: MouseEvent): void => {
+			if (event.button === MouseButton.Left) {
+				activeMesh.handleRelease()
+				setIsDragging(false)
+				activeMesh.draw()
+			}
+		}
+		
+		const handleMouseOut = (event: MouseEvent): void => {
+			if (event.button === MouseButton.Left) {
+				activeMesh.handleRelease()
+				setIsDragging(false);
+			}
+		}
+		
+		const handleKeyboardPress = (event: KeyboardEvent) => {
+			if (event.key === Key.Escape) {
+				activeMesh.clearSelected()
+				activeMesh.draw()
+			}
+			if (event.key === Key.SpaceBar) {
+				activeMesh.toggleImage()
+			}
+		}
+		canvas.addEventListener("click", handleClick)
+		canvas.addEventListener("mousedown", handleMouseDown)
+		canvas.addEventListener("mousemove", handleMouseMove)
+		canvas.addEventListener("mouseup", handleMouseUp)
+		canvas.addEventListener("mouseout", handleMouseOut)
+		canvas.addEventListener("wheel", handleWheel)
+		canvas.addEventListener("contextmenu", handleContextMenu)
+		canvas.addEventListener("keydown", handleKeyboardPress)
+		
+		return (() => {
+			canvas.removeEventListener("click", handleClick)
+			canvas.removeEventListener("mousedown", handleMouseDown)
+			canvas.removeEventListener("mousemove", handleMouseMove)
+			canvas.removeEventListener("mouseup", handleMouseUp)
+			canvas.removeEventListener("mouseout", handleMouseOut)
+			canvas.removeEventListener("wheel", handleWheel)
+			canvas.removeEventListener("contextmenu", handleContextMenu)
+			canvas.removeEventListener("keydown", handleKeyboardPress)
+		})
+		
+	},[activeMesh, canvas, isDragging])
+	
 	return (
 		<>
-			<Sidebar changeActiveMesh={changeActiveMesh} activeMesh={activeMesh}/>
+			{activeMesh && (<Sidebar changeActiveMesh={changeActiveMesh} activeMesh={activeMesh}/>)}
 			<Content>
-				<Canvas canvasRef={canvasRef} canvas={canvas} activeMesh={activeMesh}/>
+				<canvas
+					tabIndex={0}
+					ref={setCanvas}
+					width={windowDimension[0].width - 60}
+					height={windowDimension[0].height}
+					style={{marginLeft: 60}}
+				>
+				</canvas>
 			</Content>
 		</>
 	)
