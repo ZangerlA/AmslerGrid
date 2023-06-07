@@ -115,9 +115,6 @@ const PopupWindow: FC<PopupWindowProps> = (props) => {
 		<Table dataSource={dataSource} columns={columns} pagination={false}/>
 	)
 
-	console.log(dataSource)
-	console.log(columns)
-
 	return (
 		<Modal
 			title = {props.title}
