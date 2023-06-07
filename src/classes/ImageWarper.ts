@@ -89,7 +89,8 @@ export class ImageWarper {
 		}
 		this.canvas.drawImage(imageData, {x: 0, y: 0})
 		const ctx = this.canvas.ctx
-
+		
+		/* Leave for debugging, shows rectangles for warping
 		for (let i = 0; i < test.length; i++) {
 			ctx.beginPath()
 			ctx.strokeStyle = '#'+(0x1000000+Math.random()*0xffffff).toString(16).substr(1,6)
@@ -97,6 +98,7 @@ export class ImageWarper {
 			ctx.rect(test[i].minX,test[i].minY,test[i].maxX - test[i].minX, test[i].maxY - test[i].minY)
 			ctx.stroke()
 		}
+		 */
 
 		this.currentMesh = undefined
 		this.notifyAll(this.getImageAsData())
@@ -111,6 +113,7 @@ export class ImageWarper {
 	
 	public getImageAsData(): ImageData | undefined {
 		if (!this.canvas || !this.image || !this.imagePosition) return
+		console.log(this.canvas)
 		return this.canvas.getImageData(this.imagePosition, this.image.width, this.image.height)
 	}
 	
