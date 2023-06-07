@@ -1,3 +1,4 @@
 export enum Key {
-	"Escape" = "Escape"
+	"Escape" = "Escape",
+	"SpaceBar" = " ",
 }
