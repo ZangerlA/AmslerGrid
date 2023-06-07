@@ -1,21 +1,22 @@
 import React, {FC, useState} from "react";
 import type {MenuProps} from 'antd';
-import {Layout, Menu, Radio, RadioChangeEvent, Switch, Upload} from "antd";
+import {Button, Layout, Menu, Popover, Radio, RadioChangeEvent, Switch, Upload} from "antd";
 import {
 	EyeOutlined,
 	FileImageOutlined,
-	FolderOutlined,
-	PrinterOutlined,
+	FolderOutlined, InfoCircleOutlined,
+	PrinterOutlined, QuestionCircleOutlined,
 	SaveOutlined,
 	UploadOutlined,
 } from "@ant-design/icons";
 import {MenuClickEventHandler} from 'rc-menu/lib/interface'
-import {leftEyeMesh, Mesh, rightEyeMesh} from "../classes/Mesh";
+import { Mesh } from "../classes/Mesh";
+import popupWindow from "./PopupWindow";
 
 type MenuItem = Required<MenuProps>['items'][number];
 type SidebarProps = {
 	changeActiveMesh: () => void,
-	activeMesh: Mesh
+	activeMesh: Mesh | null
 }
 
 const {Sider} = Layout
@@ -41,7 +42,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
 	
 	const handleBeforeUpload = (file: File): boolean => {
 		const url = URL.createObjectURL(file)
-		props.activeMesh.setScaledImage(url)
+		props.activeMesh?.setScaledImage(url)
 		return false
 	}
 	
@@ -50,23 +51,16 @@ const Sidebar: FC<SidebarProps> = (props) => {
 		setValue(value)
 	}
 
-	const toggleImage = (checked: boolean) => {
-		leftEyeMesh.toggleImage(checked)
-		rightEyeMesh.toggleImage(checked)
-	}
-	
+
+
 	const items: MenuItem[] = [
 		getItem('Menu', 'sub1', <FolderOutlined/>, [
 			getItem('Save', 'save', <SaveOutlined/>),
-			getItem('Option 2', '2'),
-			getItem('Option 3', '3'),
-			getItem('Option 4', '4'),
 		]),
 		
 		getItem('Image', 'sub2', <FileImageOutlined/>, [
 			getItem(<Upload beforeUpload={handleBeforeUpload}><UploadOutlined/> Upload </Upload>, 'upload'),
-			getItem(<><span>Show image: </span><Switch onChange={toggleImage}/></>, '6'),
-			getItem('Submenu', 'sub3', null, [getItem('Option 7', '7'), getItem('Option 8', '8')]),
+			getItem(<><span>Show image: </span><Switch /></>, '6'),
 		]),
 		
 		getItem('Print', 'print', <PrinterOutlined/>),
@@ -80,12 +74,16 @@ const Sidebar: FC<SidebarProps> = (props) => {
 					buttonStyle="solid"
 				/>
 				, 'leftRight')
-		])
+		]),
+		getItem('Help', 'help',<QuestionCircleOutlined/>),
 	];
 	
 	const handleClick: MenuClickEventHandler = (e) => {
 		if (e.key === 'print') {
-			props.activeMesh.warpImage()
+			props.activeMesh?.warpImage()
+		}
+		if (e.key === 'help'){
+			popupWindow({title: "help"})
 		}
 		//console.log(e.key)
 	}

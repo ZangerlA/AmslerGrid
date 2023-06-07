@@ -10,7 +10,7 @@ import {Edge} from "../types/Edge";
 import {undirectedGraphHash, ValueSet} from "../helperMethods/ValueSet";
 import {calculateCenter} from "../helperMethods/calculateCenter";
 import testImage from "../testimage.jpg"
-import {ImageWarper} from "./ImageWarper";
+import {ImageWarper, Unsubscribe} from "./ImageWarper";
 import {loadImage, scaleImage} from "../helperMethods/ImageHelper";
 import {MeshCanvas} from "./MeshCanvas";
 
@@ -20,26 +20,41 @@ export class Mesh {
 	public selectedVertex?: Vertex
 	public edges: ValueSet<Edge> = new ValueSet<Edge>()
 	private polygons: Set<Polygon> = new Set<Polygon>()
-	private canvas?: MeshCanvas
-	private warper?: ImageWarper
+	private canvas: MeshCanvas
+	private warper: ImageWarper
+	private imageData?: ImageData
 	public shouldDrawImage = false
-	
-	public initializeMesh(dimension: Dimension): void {
+
+	constructor(canvas: MeshCanvas, dimension: Dimension) {
+		this.canvas = canvas
+		const meshConfig = this.getMeshConfig(dimension)
+		this.warper = new ImageWarper(this.createVertices(meshConfig), this.polygons)
+		this.vertices = this.createVertices(meshConfig)
+		this.edges = this.createEdges(meshConfig)
+		this.polygons = this.createPolygons(meshConfig)
+		this.setScaledImage(testImage)
+	}
+
+	private getMeshConfig(dimension: Dimension) {
 		const cellCount = 5
 		const maxMeshSize = 40
-		const config: InitialMeshConfig = {
+		return  {
 			cellCount: cellCount,
 			maxMeshSize: maxMeshSize,
 			cellSizeVertical: (dimension.width - 100) / maxMeshSize,
 			cellSizeHorizontal: (dimension.height - 100) / maxMeshSize,
 			cellSizeOffset: Math.floor(maxMeshSize / cellCount),
 		}
-		
-		this.vertices = this.createVertices(config)
-		this.edges = this.createEdges(config)
-		this.polygons = this.createPolygons(config)
-		this.warper = new ImageWarper(this.createVertices(config))
-		this.setScaledImage(testImage)
+	}
+
+	public subscribe(): Unsubscribe {
+		if (!this.warper) throw new Error("warper should be initialized")
+		return this.warper.subscribeDistortion((distortedImage) => {
+			if (distortedImage) {
+				this.imageData = distortedImage
+				this.draw()
+			}
+		})
 	}
 
 	private createVertices(config: InitialMeshConfig): Vertex[][] {
@@ -233,15 +248,19 @@ export class Mesh {
 	public draw(): void {
 		if (!this.canvas) return
 		this.canvas.clearCanvas()
-		this.drawShapeFill(this.canvas)
-		if (this.shouldDrawImage && this.warper) {
-			const image = this.warper.getImageAsData()
-			if (image && this.warper.imagePosition) {
-				this.canvas.drawImage(image, this.warper.imagePosition);
+
+		if (this.shouldDrawImage && this.warper && this.warper.imagePosition) {
+			const tmp = this.imageData ?? this.warper.getImageAsData()
+
+			if (tmp) {
+				this.canvas.drawImage(tmp, this.warper.imagePosition)
 			}
 		}
-		this.drawHelpLines(this.canvas)
-		this.drawHelpPoints(this.canvas)
+		else {
+			this.drawShapeFill(this.canvas)
+			this.drawHelpLines(this.canvas)
+			this.drawHelpPoints(this.canvas)
+		}
 		this.canvas.drawCanvasCenter(10, "rgba(215,0,25,1)")
 	}
 	
@@ -278,18 +297,20 @@ export class Mesh {
 
 	public warpImage(): void {
 		if (!this.warper) return
-		this.warper.warp(this.vertices, this.polygons)
+		this.warper.pushWarp(this.vertices)
 	}
 
 	public clearSelected() {
 		this.selectedPolygons.clear()
 	}
 
-	public toggleImage(show: boolean): void {
-		this.shouldDrawImage = show
-		this.draw()
+	public toggleImage(): void {
+		this.shouldDrawImage = !this.shouldDrawImage
+		if (this.shouldDrawImage) {
+			this.warpImage()
+		}
+		else {
+			this.draw()
+		}
 	}
 }
-
-export const leftEyeMesh = new Mesh()
-export const rightEyeMesh = new Mesh()

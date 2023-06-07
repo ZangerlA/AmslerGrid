@@ -79,7 +79,7 @@ export class Polygon {
 			const vertex = this.mesh.vertices[this.verticesIndices[i].row][this.verticesIndices[i].col]
 			if (!vertex.isActive) {
 				vertex.isActive = true
-				
+				vertex.wasMoved = this.moved()
 				const prevPointIndex = this.toVertex(this.verticesIndices[i - childEdgeLength])
 				const nextPointIndex = this.toVertex(this.verticesIndices[i + childEdgeLength])
 				vertex.coordinate = calculateCenter([prevPointIndex, nextPointIndex])
@@ -96,8 +96,9 @@ export class Polygon {
 			const ur = this.toVertex(this.verticesIndices[this.edgeLength])
 			const lr = this.toVertex(this.verticesIndices[this.edgeLength * 2])
 			const ll = this.toVertex(this.verticesIndices[this.edgeLength * 3])
-			
+
 			centerVertex.coordinate = calculateCenter([ul, ur, lr, ll])
+			centerVertex.wasMoved = this.moved()
 		}
 
         this.children.push(
@@ -129,7 +130,7 @@ export class Polygon {
 	}
 
 	moved(): boolean {
-		return this.verticesIndices.some((vertexIndex) => this.mesh.vertices[vertexIndex.row][vertexIndex.col].isActive && this.mesh.vertices[vertexIndex.row][vertexIndex.col].wasMoved)
+		return this.verticesIndices.some((vertexIndex) => this.toVertex(vertexIndex).isActive && this.toVertex(vertexIndex).wasMoved)
 	}
 	
 	private setPolygonVertices(row: number, col: number) {
