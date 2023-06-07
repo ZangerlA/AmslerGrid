@@ -57,16 +57,16 @@ const Sidebar: FC<SidebarProps> = (props) => {
 
 
 	const items: MenuItem[] = [
-		getItem('Menu', 'sub1', <FolderOutlined/>, [
+		/*getItem('Menu', 'sub1', <FolderOutlined/>, [
 			getItem('Save', 'save', <SaveOutlined/>),
-		]),
+		]),*/
 		
 		getItem('Image', 'sub2', <FileImageOutlined/>, [
 			getItem(<Upload beforeUpload={handleBeforeUpload}><UploadOutlined/> Upload </Upload>, 'upload'),
-			getItem(<><span>Show image: </span><Switch /></>, '6'),
+			/*getItem(<><span>Show image: </span><Switch /></>, '6'),*/
 		]),
 		
-		getItem('Print', 'print', <PrinterOutlined/>),
+		/*getItem('Print', 'print', <PrinterOutlined/>),*/
 		
 		getItem('Eye Toggle', 'eye', <EyeOutlined/>, [
 			getItem(<Radio.Group

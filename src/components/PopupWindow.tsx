@@ -45,13 +45,13 @@ const PopupWindow: FC<PopupWindowProps> = (props) => {
 		},
 		{
 			key: 'rotate',
-			action: 'Rotate selected Fieldspan',
+			action: 'Rotate selected field',
 			condition: 'Field selected',
 			tags: ['Wheel Up/Down'],
 		},
 		{
 			key: 'scale',
-			action: 'Scale selected Field',
+			action: 'Scale selected field',
 			condition: 'Field selected',
 			tags: ['SHIFT', '+', 'Wheel Up/Down'],
 		},
