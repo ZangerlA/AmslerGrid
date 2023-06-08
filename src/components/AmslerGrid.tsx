@@ -44,7 +44,6 @@ const AmslerGrid: FC = () => {
 	
 	useEffect(() => {
 		if (!canvas || !activeMesh) return
-		canvas.focus()
 		activeMesh.draw()
 	}, [canvas, activeMesh])
 	
@@ -141,7 +140,7 @@ const AmslerGrid: FC = () => {
 		canvas.addEventListener("mouseout", handleMouseOut)
 		canvas.addEventListener("wheel", handleWheel)
 		canvas.addEventListener("contextmenu", handleContextMenu)
-		canvas.addEventListener("keydown", handleKeyboardPress)
+		window.addEventListener("keydown", handleKeyboardPress)
 		
 		return (() => {
 			canvas.removeEventListener("click", handleClick)
@@ -151,7 +150,7 @@ const AmslerGrid: FC = () => {
 			canvas.removeEventListener("mouseout", handleMouseOut)
 			canvas.removeEventListener("wheel", handleWheel)
 			canvas.removeEventListener("contextmenu", handleContextMenu)
-			canvas.removeEventListener("keydown", handleKeyboardPress)
+			window.removeEventListener("keydown", handleKeyboardPress)
 		})
 		
 	},[activeMesh, canvas, isDragging, leftEyeMesh, rightEyeMesh])
@@ -161,7 +160,6 @@ const AmslerGrid: FC = () => {
 		const url = URL.createObjectURL(file)
 		leftEyeMesh.setScaledImage(url)
 		rightEyeMesh.setScaledImage(url)
-		canvas.focus()
 		return false
 	}
 	
