@@ -91,13 +91,20 @@ export class Polygon {
 		const centerVertex = this.mesh.vertices[centerVertexRow][centerVertexCol];
 		if (!centerVertex.isActive) {
 			centerVertex.isActive = true
-			
+
 			const ul = this.toVertex(this.verticesIndices[0])
 			const ur = this.toVertex(this.verticesIndices[this.edgeLength])
 			const lr = this.toVertex(this.verticesIndices[this.edgeLength * 2])
 			const ll = this.toVertex(this.verticesIndices[this.edgeLength * 3])
 
 			centerVertex.coordinate = calculateCenter([ul, ur, lr, ll])
+			/* Need to calculate Center for all active Vertices not only for corners!!!
+			let allVertices: Vertex[] = []
+			for (let j = 0; j < this.verticesIndices.length; j++) {
+				const meshIndex = this.verticesIndices.at(j)
+				allVertices.push(this.toVertex(meshIndex!))
+			}
+			centerVertex.coordinate = calculateCenter(allVertices)*/
 			centerVertex.wasMoved = this.moved()
 		}
 
@@ -194,7 +201,7 @@ export class Polygon {
 		return result === 1
 	}
 	
-	private toVertex(meshIndex: MeshIndex): Vertex {
+	public toVertex(meshIndex: MeshIndex): Vertex {
 		return this.mesh.vertices[meshIndex.row][meshIndex.col]
 	}
 

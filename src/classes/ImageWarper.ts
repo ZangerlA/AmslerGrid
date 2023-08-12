@@ -4,6 +4,7 @@ import {Point} from "../types/Coordinate";
 import {MeshCanvas} from "./MeshCanvas";
 import {Dimension} from "../customHooks/UseWindowDimensions";
 import {wait} from "@testing-library/user-event/dist/utils";
+import {calculateCenter} from "../helperMethods/calculateCenter";
 
 export type Unsubscribe = () => void;
 type Subscriber = (distortedImage: ImageData | undefined) => void
@@ -18,6 +19,7 @@ export class ImageWarper {
 	private currentMesh?: Vertex[][]
 	private nextMesh?: Vertex[][]
 	private subscribers: Subscriber[] = []
+	private changedVertices: Vertex[] = []
 	
 	constructor(originalMesh: Vertex[][], polygons: Set<Polygon>) {
 		this.originalMesh = originalMesh
@@ -69,25 +71,32 @@ export class ImageWarper {
 		const test = []
 		
 		for (let i = 0; i < movedPolygons.length; i++) {
-			const polygon = movedPolygons[i];
-			const bbox = this.getBoundingBox(this.currentMesh, polygon, this.canvas.dimension);
-			test.push(bbox)
-			for (let y = bbox.minY; y <= bbox.maxY; y++) {
-				for (let x = bbox.minX; x <= bbox.maxX; x++) {
-					if (polygon.hasInside({x, y})) {
-						const index = ((y) * this.canvas.dimension.width + (x)) * 4;
-						const relPos = this.getRelativePosition(this.currentMesh, {x, y}, polygon);
-						const originalPos = this.interpolate(this.originalMesh, relPos, polygon);
-						const origIndex = ((Math.floor(originalPos.y)) * this.canvas.dimension.width + (Math.floor(originalPos.x))) * 4;
-						pixels[index] = originalPixels[origIndex];
-						pixels[index + 1] = originalPixels[origIndex + 1];
-						pixels[index + 2] = originalPixels[origIndex + 2];
-						pixels[index + 3] = originalPixels[origIndex + 3];
+			const chunkyBoy = movedPolygons[i];
+
+			const polygons = this.splitPolygon([chunkyBoy])
+			for (let polygon of polygons) {
+				console.log(polygon)
+				const bbox = this.getBoundingBox(this.currentMesh, polygon, this.canvas.dimension);
+				test.push(bbox)
+				for (let y = bbox.minY; y <= bbox.maxY; y++) {
+					for (let x = bbox.minX; x <= bbox.maxX; x++) {
+						if (polygon.hasInside({x, y})) {
+							const index = ((y) * this.canvas.dimension.width + (x)) * 4;
+							const relPos = this.getRelativePosition(this.currentMesh, {x, y}, polygon);
+							const originalPos = this.interpolate(this.originalMesh, relPos, polygon);
+							const origIndex = ((Math.floor(originalPos.y)) * this.canvas.dimension.width + (Math.floor(originalPos.x))) * 4;
+							pixels[index] = originalPixels[origIndex];
+							pixels[index + 1] = originalPixels[origIndex + 1];
+							pixels[index + 2] = originalPixels[origIndex + 2];
+							pixels[index + 3] = originalPixels[origIndex + 3];
+						}
 					}
 				}
 			}
+
 		}
 		this.canvas.drawImage(imageData, {x: 0, y: 0})
+		this.reverseSplit()
 		const ctx = this.canvas.ctx
 		
 		/* Leave for debugging, shows rectangles for warping
@@ -104,6 +113,80 @@ export class ImageWarper {
 		this.notifyAll(this.getImageAsData())
 		setTimeout(() => this.warp(), 0)
 		//this.warp()
+	}
+
+	private splitPolygon(result: Polygon[]): Polygon[] {
+		console.log("new call")
+		for (let polygon of result) {
+			let counter = 0
+			for (let j = 0; j < polygon.verticesIndices.length; j++) {
+				const meshIndex = polygon.verticesIndices.at(j)
+				if (polygon.toVertex(meshIndex!).isActive) {
+					counter++
+				}
+			}
+			console.log(counter)
+			if (counter > 5) {
+				// Split the polygon in smaller ones with the code from split
+				const childEdgeLength = polygon.edgeLength / 2
+
+				for (let i = 0; i < polygon.verticesIndices.length; i += childEdgeLength) {
+					const vertex = polygon.mesh.vertices[polygon.verticesIndices[i].row][polygon.verticesIndices[i].col]
+					if (!vertex.isActive) {
+						vertex.isActive = true
+						const prevPointIndex = polygon.toVertex(polygon.verticesIndices[i - childEdgeLength])
+						const nextPointIndex = polygon.toVertex(polygon.verticesIndices[i + childEdgeLength])
+						vertex.coordinate = calculateCenter([prevPointIndex, nextPointIndex])
+						this.changedVertices.push(vertex)
+					}
+
+
+				}
+
+				const centerVertexRow = polygon.verticesIndices[0].row + childEdgeLength;
+				const centerVertexCol = polygon.verticesIndices[0].col + childEdgeLength;
+				const centerVertex = polygon.mesh.vertices[centerVertexRow][centerVertexCol];
+
+				if (!centerVertex.isActive) {
+					centerVertex.isActive = true
+
+					/*const ul = polygon.toVertex(polygon.verticesIndices[0])
+					const ur = polygon.toVertex(polygon.verticesIndices[polygon.edgeLength])
+					const lr = polygon.toVertex(polygon.verticesIndices[polygon.edgeLength * 2])
+					const ll = polygon.toVertex(polygon.verticesIndices[polygon.edgeLength * 3])
+					centerVertex.coordinate = calculateCenter([ul, ur, lr, ll])*/
+					let allVertices: Vertex[] = []
+					for (let j = 0; j < polygon.verticesIndices.length; j++) {
+						const meshIndex = polygon.verticesIndices.at(j)
+						allVertices.push(polygon.toVertex(meshIndex!))
+					}
+					centerVertex.coordinate = calculateCenter(allVertices)
+					this.changedVertices.push(centerVertex)
+				}
+
+				// Add the new polygons to the result array and remove the old one
+				result = result.filter((e) => e != polygon)
+				result.push(
+					new Polygon(polygon.mesh, {row: polygon.verticesIndices[0].row, col: polygon.verticesIndices[0].col}, childEdgeLength, true, "rgba(75,139,59,0.5)"),
+					new Polygon(polygon.mesh, {row: polygon.verticesIndices[childEdgeLength].row, col: polygon.verticesIndices[childEdgeLength].col}, childEdgeLength, true,"white"),
+					new Polygon(polygon.mesh, {row: centerVertexRow, col: centerVertexCol}, childEdgeLength, true, "rgba(75,139,59,0.5)"),
+					new Polygon(polygon.mesh, {row: polygon.verticesIndices[polygon.verticesIndices.length - childEdgeLength - 1].row, col: polygon.verticesIndices[polygon.verticesIndices.length - childEdgeLength - 1].col}, childEdgeLength, true, "white"),
+				);
+
+				// Call splitPolygon again
+				this.splitPolygon(result)
+			}
+			else return result
+		}
+
+		return result
+	}
+
+	private reverseSplit(): void {
+		while(this.changedVertices.length > 0) {
+			const vertex = this.changedVertices.pop()
+			vertex!.isActive = false
+		}
 	}
 	
 	public setImage(image: HTMLImageElement): void {
