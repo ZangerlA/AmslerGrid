@@ -4,6 +4,7 @@ import {Mesh} from "./Mesh";
 import {Point} from "../types/Coordinate";
 import {calculateCenter} from "../helperMethods/calculateCenter";
 import {MeshCanvas} from "./MeshCanvas";
+import {PolygonData} from "../types/SaveFile";
 
 export class Polygon {
 	mesh: Mesh
@@ -208,4 +209,29 @@ export class Polygon {
     public hasChildren(): boolean {
         return !(this.children.length === 0)
     }
+
+	public toJSON(): any {
+		return {
+			verticesIndices: this.verticesIndices,
+			children: this.children,
+			edgeLength: this.edgeLength,
+			color: this.color,
+			shouldDraw: this.shouldDraw
+		};
+	}
+
+	public restoreFromFile(data: PolygonData): void {
+		this.verticesIndices = data.verticesIndices
+		this.edgeLength = data.edgeLength
+		this.color = data.color
+		this.shouldDraw = data.shouldDraw
+
+		if (data.children.length != 0) {
+			this.split()
+			for (let i = 0; i < 4; i++) {
+				this.children.at(i)?.restoreFromFile(data.children.at(i))
+			}
+		}
+	}
+
 }

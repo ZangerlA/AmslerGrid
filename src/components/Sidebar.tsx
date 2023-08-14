@@ -4,6 +4,7 @@ import {Button, Layout, Menu, Popover, Radio, RadioChangeEvent, Switch, Upload} 
 import {
 	EyeOutlined,
 	FileImageOutlined,
+	FolderOpenOutlined,
 	FolderOutlined, InfoCircleOutlined,
 	PrinterOutlined, QuestionCircleOutlined,
 	SaveOutlined,
@@ -17,6 +18,8 @@ import PopupWindow from "./PopupWindow";
 type MenuItem = Required<MenuProps>['items'][number];
 type SidebarProps = {
 	changeActiveMesh: () => void,
+	handleSave: () => void,
+	handleLoad: (file: File) => boolean,
 	handleImageUpload: (file: File) => boolean,
 }
 
@@ -48,9 +51,10 @@ const Sidebar: FC<SidebarProps> = (props) => {
 	}
 	
 	const items: MenuItem[] = [
-		/*getItem('Menu', 'sub1', <FolderOutlined/>, [
+		getItem('Menu', 'sub1', <FolderOutlined/>, [
 			getItem('Save', 'save', <SaveOutlined/>),
-		]),*/
+			getItem(<Upload beforeUpload={props.handleLoad}><FolderOpenOutlined /> Load </Upload>, 'load'),
+		]),
 		
 		getItem('Image', 'sub2', <FileImageOutlined/>, [
 			getItem(<Upload beforeUpload={props.handleImageUpload}><UploadOutlined/> Upload </Upload>, 'upload'),
@@ -76,8 +80,11 @@ const Sidebar: FC<SidebarProps> = (props) => {
 		if (e.key === 'print') {
 		
 		}
-		if (e.key === 'help'){
+		else if (e.key === 'help'){
 			setModalOpen(true)
+		}
+		else if (e.key === 'save'){
+			props.handleSave()
 		}
 		//console.log(e.key)
 	}

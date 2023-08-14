@@ -8,6 +8,8 @@ import {Point} from "../types/Coordinate";
 import {Vector} from "../types/Vector";
 import {Key} from "../types/Key";
 import useWindowDimensions from "../customHooks/UseWindowDimensions";
+import {FileSaver} from "../classes/FileSaver";
+import {SaveFile} from "../types/SaveFile";
 
 const {Content} = Layout
 
@@ -162,10 +164,44 @@ const AmslerGrid: FC = () => {
 		rightEyeMesh.setScaledImage(url)
 		return false
 	}
-	
+
+	const handleSave = (): void => {
+		const data = {
+			leftEyeMesh: leftEyeMesh,
+			rightEyeMesh: rightEyeMesh
+		}
+
+		const json = JSON.stringify(data, null, 2)
+		const blob = new Blob([json], { type: 'application/json' })
+		const fs = new FileSaver()
+		fs.save(blob)
+	}
+
+	const handleLoad = (file: File): boolean => {
+		const reader = new FileReader()
+
+		reader.onload = (e) => {
+			const content = e.target?.result
+			if (typeof content === 'string') {
+				try {
+					const data: SaveFile = JSON.parse(content)
+					console.log(data)
+					leftEyeMesh?.restoreFromFile(data.leftEyeMesh)
+					rightEyeMesh?.restoreFromFile(data.rightEyeMesh)
+
+				} catch (error) {
+					console.error("Failed to parse JSON:", error)
+				}
+			}
+		}
+		reader.readAsText(file)
+
+		return false
+	}
+
 	return (
 		<>
-			{activeMesh && (<Sidebar changeActiveMesh={changeActiveMesh} handleImageUpload={handleImageUpload}/>)}
+			{activeMesh && (<Sidebar changeActiveMesh={changeActiveMesh} handleSave={handleSave} handleLoad={handleLoad} handleImageUpload={handleImageUpload}/>)}
 			<Content>
 				<canvas
 					tabIndex={0}
