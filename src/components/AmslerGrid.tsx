@@ -68,8 +68,11 @@ const AmslerGrid: FC = () => {
 			event.preventDefault()
 			if (event.ctrlKey && event.button === MouseButton.Left) {
 				activeMesh.handleSplit(toCanvasCoord(event.clientX, event.clientY))
-				activeMesh.draw()
 			}
+			else if (event.altKey && event.button === MouseButton.Left) {
+				activeMesh.handleMerge(toCanvasCoord(event.clientX, event.clientY))
+			}
+			activeMesh.draw()
 		}
 		
 		const handleContextMenu = (event: MouseEvent): void => {
@@ -188,7 +191,7 @@ const AmslerGrid: FC = () => {
 					console.log(data)
 					leftEyeMesh?.restoreFromFile(data.leftEyeMesh)
 					rightEyeMesh?.restoreFromFile(data.rightEyeMesh)
-
+					activeMesh?.draw()
 				} catch (error) {
 					console.error("Failed to parse JSON:", error)
 				}

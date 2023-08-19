@@ -200,6 +200,15 @@ export class Mesh {
 		})
 	}
 	
+	public handleMerge(mouseClick: Point): void {
+		console.log("merge")
+		this.polygons.forEach((shape) => {
+			if (shape.hasInside(mouseClick)) {
+				shape.getParentContainer(mouseClick)!.merge()
+			}
+		})
+	}
+	
 	private dragSelectedVertices(vector: Vector): boolean {
 		if (this.selectedVertex) {
 			this.selectedVertex.move(vector)
@@ -317,14 +326,14 @@ export class Mesh {
 			vertices: this.vertices,
 			polygons: polygons,
 			edges: this.edges.toArray(),
-			shouldDrawImage: this.shouldDrawImage
-		};
+			shouldDrawImage: this.shouldDrawImage,
+		}
 	}
 
 	public restoreFromFile(data: MeshData): void {
 		this.edges = new ValueSet<Edge>()
 		for (let edge of data.edges) {
-			this.edges.add(data.edges)
+			this.edges.add(edge)
 		}
 		for (let i = 0; i < this.vertices.length; i++) {
 			for (let j = 0; j < this.vertices.at(0)!.length; j++) {
@@ -337,7 +346,7 @@ export class Mesh {
 		}
 		let count = 0
 		for (let polygon of this.polygons) {
-			polygon.restoreFromFile(data.polygons.at(count))
+			polygon.restoreFromFile(data.polygons.at(count)!)
 			count++
 		}
 	}

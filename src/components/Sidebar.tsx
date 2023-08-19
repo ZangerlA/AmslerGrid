@@ -5,14 +5,12 @@ import {
 	EyeOutlined,
 	FileImageOutlined,
 	FolderOpenOutlined,
-	FolderOutlined, InfoCircleOutlined,
-	PrinterOutlined, QuestionCircleOutlined,
+	FolderOutlined,
+	QuestionCircleOutlined,
 	SaveOutlined,
 	UploadOutlined,
 } from "@ant-design/icons";
 import {MenuClickEventHandler} from 'rc-menu/lib/interface'
-import { Mesh } from "../classes/Mesh";
-import popupWindow from "./PopupWindow";
 import PopupWindow from "./PopupWindow";
 
 type MenuItem = Required<MenuProps>['items'][number];

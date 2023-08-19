@@ -44,6 +44,12 @@ const PopupWindow: FC<PopupWindowProps> = (props) => {
 			tags: ['CTRL', '+', 'Left Click'],
 		},
 		{
+			key: 'merge',
+			action: 'Merge Fields',
+			condition: '',
+			tags: ['ALT', '+', 'Left Click'],
+		},
+		{
 			key: 'rotate',
 			action: 'Rotate selected field',
 			condition: 'Field selected',
@@ -97,7 +103,7 @@ const PopupWindow: FC<PopupWindowProps> = (props) => {
 						if (tag === 'Wheel Up/Down'){
 							color = 'purple'
 						}
-						if (tag === 'CTRL' || tag === 'SHIFT'){
+						if (tag === 'CTRL' || tag === 'SHIFT' || tag === 'ALT'){
 							color = 'green'
 						}
 						return (
@@ -118,7 +124,6 @@ const PopupWindow: FC<PopupWindowProps> = (props) => {
 	return (
 		<Modal
 			title = {props.title}
-			width={'30vw'}
 			centered
 			open={props.open}
 			closable={false}
