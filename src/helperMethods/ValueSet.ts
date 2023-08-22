@@ -43,6 +43,10 @@ export class ValueSet<T> {
 		const values = this.values()
 		values.forEach(callback)
 	}
+
+	toArray(): T[] {
+		return Array.from(this._map.values());
+	}
 }
 
 export const undirectedGraphHash = (obj: Edge): string => {

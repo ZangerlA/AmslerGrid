@@ -93,4 +93,8 @@ export class MeshCanvas {
 		link.click();
 	}
 	
+	public toDataURL(): string {
+		return this.canvas.toDataURL()
+	}
+	
 }

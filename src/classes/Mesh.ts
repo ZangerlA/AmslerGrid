@@ -13,14 +13,15 @@ import testImage from "../testimage.jpg"
 import {ImageWarper, Unsubscribe} from "./ImageWarper";
 import {loadImage, scaleImage} from "../helperMethods/ImageHelper";
 import {MeshCanvas} from "./MeshCanvas";
+import {MeshData} from "../types/SaveFile";
 
 export class Mesh {
 	public vertices: Vertex[][] = []
 	public selectedPolygons: Set<Polygon> = new Set<Polygon>()
 	public selectedVertex?: Vertex
 	public edges: ValueSet<Edge> = new ValueSet<Edge>()
-	private polygons: Set<Polygon> = new Set<Polygon>()
-	private canvas: MeshCanvas
+	public polygons: Set<Polygon> = new Set<Polygon>()
+	public canvas: MeshCanvas
 	private warper: ImageWarper
 	private imageData?: ImageData
 	public shouldDrawImage = false
@@ -199,6 +200,15 @@ export class Mesh {
 		})
 	}
 	
+	public handleMerge(mouseClick: Point): void {
+		console.log("merge")
+		this.polygons.forEach((shape) => {
+			if (shape.hasInside(mouseClick)) {
+				shape.getParentContainer(mouseClick)!.merge()
+			}
+		})
+	}
+	
 	private dragSelectedVertices(vector: Vector): boolean {
 		if (this.selectedVertex) {
 			this.selectedVertex.move(vector)
@@ -295,7 +305,7 @@ export class Mesh {
 		this.warper.pushWarp(this.vertices)
 	}
 
-	public clearSelected() {
+	public clearSelected(): void {
 		this.selectedPolygons.clear()
 	}
 
@@ -305,5 +315,39 @@ export class Mesh {
 			this.warpImage()
 		}
 		this.draw()
+	}
+
+	public toJSON(): any {
+		const polygons = []
+		for (let polygon of this.polygons) {
+			polygons.push(polygon)
+		}
+		return {
+			vertices: this.vertices,
+			polygons: polygons,
+			edges: this.edges.toArray(),
+			shouldDrawImage: this.shouldDrawImage,
+		}
+	}
+
+	public restoreFromFile(data: MeshData): void {
+		this.edges = new ValueSet<Edge>()
+		for (let edge of data.edges) {
+			this.edges.add(edge)
+		}
+		for (let i = 0; i < this.vertices.length; i++) {
+			for (let j = 0; j < this.vertices.at(0)!.length; j++) {
+				this.vertices[i][j].coordinate = data.vertices[i][j].coordinate
+				this.vertices[i][j].drawRadius = data.vertices[i][j].drawRadius
+				this.vertices[i][j].color = data.vertices[i][j].color
+				this.vertices[i][j].isActive = data.vertices[i][j].isActive
+				this.vertices[i][j].wasMoved = data.vertices[i][j].wasMoved
+			}
+		}
+		let count = 0
+		for (let polygon of this.polygons) {
+			polygon.restoreFromFile(data.polygons.at(count)!)
+			count++
+		}
 	}
 }

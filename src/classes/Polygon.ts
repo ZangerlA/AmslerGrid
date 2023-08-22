@@ -4,6 +4,7 @@ import {Mesh} from "./Mesh";
 import {Point} from "../types/Coordinate";
 import {calculateCenter} from "../helperMethods/calculateCenter";
 import {MeshCanvas} from "./MeshCanvas";
+import {PolygonData} from "../types/SaveFile";
 
 export class Polygon {
 	mesh: Mesh
@@ -13,7 +14,7 @@ export class Polygon {
 	color: string
 	shouldDraw: boolean = false
 	
-	constructor(mesh: Mesh, meshIndex: MeshIndex, edgeLength: number, shouldDraw: boolean, color: string) {
+	public constructor(mesh: Mesh, meshIndex: MeshIndex, edgeLength: number, shouldDraw: boolean, color: string) {
 		this.mesh = mesh
 		this.shouldDraw = shouldDraw
 		this.color = color
@@ -21,7 +22,7 @@ export class Polygon {
 		this.setPolygonVertices(meshIndex.row, meshIndex.col)
 	}
 	
-	draw(painter: MeshCanvas): void {
+	public draw(painter: MeshCanvas): void {
 		if (this.hasChildren()) {
 			this.children.forEach((childShape) => {
 				childShape.draw(painter)
@@ -33,27 +34,27 @@ export class Polygon {
 		}
 	}
 	
-	gatherVerticesIndices(vertexIndices: MeshIndex[] = []): MeshIndex[] {
+	public gatherVerticesIndices(vertexIndices: MeshIndex[] = []): MeshIndex[] {
 		if (this.hasChildren()) {
 			this.children.forEach((childShape) => {
-				childShape.gatherVerticesIndices(vertexIndices);
+				childShape.gatherVerticesIndices(vertexIndices)
 			});
 		} else {
-			vertexIndices.push(...this.verticesIndices);
+			vertexIndices.push(...this.verticesIndices)
 		}
-		return vertexIndices;
+		return vertexIndices
 	}
 	
-	hasInside(mouseClick: Point): boolean {
+	public hasInside(mouseClick: Point): boolean {
 		for (const child of this.children) {
 			if (child.shouldDraw && child.hasInside(mouseClick)) {
-				return true;
+				return true
 			}
 		}
-		return this.inside(mouseClick.x, mouseClick.y, this.getOwnActiveVertices());
+		return this.inside(mouseClick.x, mouseClick.y, this.getOwnActiveVertices())
 	}
 	
-	getContainer(mouseClick: Point): Polygon | undefined {
+	public getContainer(mouseClick: Point): Polygon | undefined {
 		if (!this.hasInside(mouseClick)) {
 			return undefined
 		} else if (this.hasChildren()) {
@@ -66,7 +67,20 @@ export class Polygon {
 		} else return this
 	}
 	
-	split(): void {
+	public getParentContainer(mouseClick: Point): Polygon | undefined {
+		if (!this.hasInside(mouseClick)) {
+			return undefined
+		} else if (this.hasChildren()) {
+			for (let child of this.children) {
+				const container = child.getContainer(mouseClick)
+				if (container) {
+					return this
+				}
+			}
+		} else return this
+	}
+	
+	public split(): void {
 		if (this.edgeLength === 1) {
 			return
 		}
@@ -86,9 +100,9 @@ export class Polygon {
 			}
 		}
 		
-		const centerVertexRow = this.verticesIndices[0].row + childEdgeLength;
-		const centerVertexCol = this.verticesIndices[0].col + childEdgeLength;
-		const centerVertex = this.mesh.vertices[centerVertexRow][centerVertexCol];
+		const centerVertexRow = this.verticesIndices[0].row + childEdgeLength
+		const centerVertexCol = this.verticesIndices[0].col + childEdgeLength
+		const centerVertex = this.mesh.vertices[centerVertexRow][centerVertexCol]
 		if (!centerVertex.isActive) {
 			centerVertex.isActive = true
 
@@ -124,16 +138,42 @@ export class Polygon {
 			childPolygon.addOwnEdges()
 		})
 	}
+	
+	public merge(): void {
+		for (let child of this.children) {
+			child.getOwnActiveVertices().forEach(vertex => {
+				vertex.isActive = false
+				vertex.wasMoved = false
+			})
+			child.removeOwnEdges()
+		}
+		
+		const ul = this.toVertex(this.verticesIndices[0])
+		const ur = this.toVertex(this.verticesIndices[this.edgeLength])
+		const lr = this.toVertex(this.verticesIndices[this.edgeLength * 2])
+		const ll = this.toVertex(this.verticesIndices[this.edgeLength * 3])
+		ul.isActive = true
+		ur.isActive = true
+		lr.isActive = true
+		ll.isActive = true
+		ul.wasMoved = true
+		ur.wasMoved = true
+		lr.wasMoved = true
+		ll.wasMoved = true
+		
+		this.children = []
+		this.addOwnEdges()
+	}
 
 	public gatherChildren(result: Polygon[]): Polygon[] {
 		if (this.hasChildren()) {
 			this.children.forEach((childShape) => {
-				childShape.gatherChildren(result);
+				childShape.gatherChildren(result)
 			});
 		} else {
-			result.push(this);
+			result.push(this)
 		}
-		return result;
+		return result
 	}
 
 	moved(): boolean {
@@ -208,4 +248,33 @@ export class Polygon {
     public hasChildren(): boolean {
         return !(this.children.length === 0)
     }
+
+	public toJSON(): any {
+		return {
+			verticesIndices: this.verticesIndices,
+			children: this.children,
+			edgeLength: this.edgeLength,
+			color: this.color,
+			shouldDraw: this.shouldDraw
+		};
+	}
+
+	public restoreFromFile(data: PolygonData): void {
+		console.log(data)
+		this.verticesIndices = data.verticesIndices
+		this.edgeLength = data.edgeLength
+		this.color = data.color
+		this.shouldDraw = data.shouldDraw
+		
+		if (data.children) {
+			for (let i = 0; i < data.children.length; i++) {
+				const childData = data.children.at(i)
+				if (!childData) throw new Error("Error reading polygon data from file. Child polygon not found")
+				const childPolygon = new Polygon(this.mesh, childData.verticesIndices[0], childData.edgeLength, childData.shouldDraw, childData.color)
+				this.children.push(childPolygon)
+				childPolygon.restoreFromFile(childData)
+			}
+		}
+	}
+
 }

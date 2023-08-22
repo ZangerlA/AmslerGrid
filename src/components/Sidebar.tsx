@@ -4,19 +4,21 @@ import {Button, Layout, Menu, Popover, Radio, RadioChangeEvent, Switch, Upload} 
 import {
 	EyeOutlined,
 	FileImageOutlined,
-	FolderOutlined, InfoCircleOutlined,
-	PrinterOutlined, QuestionCircleOutlined,
+	FolderOpenOutlined,
+	FolderOutlined, PrinterOutlined,
+	QuestionCircleOutlined,
 	SaveOutlined,
 	UploadOutlined,
 } from "@ant-design/icons";
 import {MenuClickEventHandler} from 'rc-menu/lib/interface'
-import { Mesh } from "../classes/Mesh";
-import popupWindow from "./PopupWindow";
 import PopupWindow from "./PopupWindow";
 
 type MenuItem = Required<MenuProps>['items'][number];
 type SidebarProps = {
 	changeActiveMesh: () => void,
+	handleSave: () => void,
+	printGrids: () => void,
+	handleLoad: (file: File) => boolean,
 	handleImageUpload: (file: File) => boolean,
 }
 
@@ -48,9 +50,11 @@ const Sidebar: FC<SidebarProps> = (props) => {
 	}
 	
 	const items: MenuItem[] = [
-		/*getItem('Menu', 'sub1', <FolderOutlined/>, [
+		getItem('Menu', 'sub1', <FolderOutlined/>, [
 			getItem('Save', 'save', <SaveOutlined/>),
-		]),*/
+			getItem(<Upload beforeUpload={props.handleLoad}><FolderOpenOutlined /> Load </Upload>, 'load'),
+			getItem('Print', 'print', <PrinterOutlined />),
+		]),
 		
 		getItem('Image', 'sub2', <FileImageOutlined/>, [
 			getItem(<Upload beforeUpload={props.handleImageUpload}><UploadOutlined/> Upload </Upload>, 'upload'),
@@ -73,13 +77,15 @@ const Sidebar: FC<SidebarProps> = (props) => {
 	];
 	
 	const handleClick: MenuClickEventHandler = (e) => {
-		if (e.key === 'print') {
-		
-		}
-		if (e.key === 'help'){
+		if (e.key === 'help') {
 			setModalOpen(true)
 		}
-		//console.log(e.key)
+		else if (e.key === 'save') {
+			props.handleSave()
+		}
+		else if (e.key === 'print') {
+			props.printGrids()
+		}
 	}
 	
 	return (
