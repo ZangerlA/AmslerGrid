@@ -5,7 +5,7 @@ import {
 	EyeOutlined,
 	FileImageOutlined,
 	FolderOpenOutlined,
-	FolderOutlined,
+	FolderOutlined, PrinterOutlined,
 	QuestionCircleOutlined,
 	SaveOutlined,
 	UploadOutlined,
@@ -17,6 +17,7 @@ type MenuItem = Required<MenuProps>['items'][number];
 type SidebarProps = {
 	changeActiveMesh: () => void,
 	handleSave: () => void,
+	printGrids: () => void,
 	handleLoad: (file: File) => boolean,
 	handleImageUpload: (file: File) => boolean,
 }
@@ -52,6 +53,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
 		getItem('Menu', 'sub1', <FolderOutlined/>, [
 			getItem('Save', 'save', <SaveOutlined/>),
 			getItem(<Upload beforeUpload={props.handleLoad}><FolderOpenOutlined /> Load </Upload>, 'load'),
+			getItem('Print', 'print', <PrinterOutlined />),
 		]),
 		
 		getItem('Image', 'sub2', <FileImageOutlined/>, [
@@ -75,16 +77,15 @@ const Sidebar: FC<SidebarProps> = (props) => {
 	];
 	
 	const handleClick: MenuClickEventHandler = (e) => {
-		if (e.key === 'print') {
-		
-		}
-		else if (e.key === 'help'){
+		if (e.key === 'help') {
 			setModalOpen(true)
 		}
-		else if (e.key === 'save'){
+		else if (e.key === 'save') {
 			props.handleSave()
 		}
-		//console.log(e.key)
+		else if (e.key === 'print') {
+			props.printGrids()
+		}
 	}
 	
 	return (

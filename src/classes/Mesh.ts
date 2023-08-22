@@ -21,7 +21,7 @@ export class Mesh {
 	public selectedVertex?: Vertex
 	public edges: ValueSet<Edge> = new ValueSet<Edge>()
 	public polygons: Set<Polygon> = new Set<Polygon>()
-	private canvas: MeshCanvas
+	public canvas: MeshCanvas
 	private warper: ImageWarper
 	private imageData?: ImageData
 	public shouldDrawImage = false

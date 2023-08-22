@@ -14,6 +14,7 @@ import {SaveFile} from "../types/SaveFile";
 const {Content} = Layout
 
 const AmslerGrid: FC = () => {
+	const CURRENT_VERSION = "1.0"
 	const windowDimension = useWindowDimensions()
 	const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
 	const [isDragging, setIsDragging] = useState<boolean>(false)
@@ -169,7 +170,10 @@ const AmslerGrid: FC = () => {
 	}
 
 	const handleSave = (): void => {
+		console.log(leftEyeMesh?.polygons)
+		console.log(leftEyeMesh?.vertices)
 		const data = {
+			version: CURRENT_VERSION,
 			leftEyeMesh: leftEyeMesh,
 			rightEyeMesh: rightEyeMesh
 		}
@@ -178,6 +182,12 @@ const AmslerGrid: FC = () => {
 		const blob = new Blob([json], { type: 'application/json' })
 		const fs = new FileSaver()
 		fs.save(blob)
+	}
+	
+	const printGrids = (): void => {
+		console.log("print")
+		leftEyeMesh?.canvas.download()
+		rightEyeMesh?.canvas.download()
 	}
 
 	const handleLoad = (file: File): boolean => {
@@ -204,7 +214,7 @@ const AmslerGrid: FC = () => {
 
 	return (
 		<>
-			{activeMesh && (<Sidebar changeActiveMesh={changeActiveMesh} handleSave={handleSave} handleLoad={handleLoad} handleImageUpload={handleImageUpload}/>)}
+			{activeMesh && (<Sidebar changeActiveMesh={changeActiveMesh} handleSave={handleSave} printGrids={printGrids} handleLoad={handleLoad} handleImageUpload={handleImageUpload}/>)}
 			<Content>
 				<canvas
 					tabIndex={0}
