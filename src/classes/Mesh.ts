@@ -22,7 +22,7 @@ export class Mesh {
 	public edges: ValueSet<Edge> = new ValueSet<Edge>()
 	public polygons: Set<Polygon> = new Set<Polygon>()
 	public canvas: MeshCanvas
-	private warper: ImageWarper
+	public warper: ImageWarper
 	private imageData?: ImageData
 	public shouldDrawImage = false
 
@@ -204,7 +204,9 @@ export class Mesh {
 		console.log("merge")
 		this.polygons.forEach((shape) => {
 			if (shape.hasInside(mouseClick)) {
-				shape.getParentContainer(mouseClick)!.merge()
+				console.log(shape.getParentContainer(mouseClick, shape))
+				const polygon = shape.getParentContainer(mouseClick, shape)
+				polygon?.merge()
 			}
 		})
 	}
@@ -303,6 +305,10 @@ export class Mesh {
 
 	public warpImage(): void {
 		this.warper.pushWarp(this.vertices)
+	}
+
+	public isWarping(): boolean {
+		return this.warper.tasks.size > 0
 	}
 
 	public clearSelected(): void {

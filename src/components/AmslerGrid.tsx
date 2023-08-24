@@ -1,6 +1,6 @@
 import React, {FC, useEffect, useState} from "react";
 import Sidebar from "./Sidebar";
-import {Layout} from "antd";
+import {Layout, Spin} from "antd";
 import {Mesh} from "../classes/Mesh";
 import {MeshCanvas} from "../classes/MeshCanvas";
 import {MouseButton} from "../types/MouseButton";
@@ -23,7 +23,7 @@ const AmslerGrid: FC = () => {
 	const [isLeftEyeMesh, setIsLeftEyeMesh ] = useState<boolean>(true)
 	const changeActiveMesh = () => setIsLeftEyeMesh(b => !b)
 	const [activeMesh] = isLeftEyeMesh ? [leftEyeMesh, setLeftEyeMesh] : [rightEyeMesh, setRightEyeMesh]
-	
+
 	useEffect(() => {
 		if (!canvas) return
 		
@@ -139,6 +139,11 @@ const AmslerGrid: FC = () => {
 				activeMesh.toggleImage()
 			}
 		}
+
+		const handleResize = (): void => {
+			activeMesh.draw()
+		}
+
 		canvas.addEventListener("click", handleClick)
 		canvas.addEventListener("mousedown", handleMouseDown)
 		canvas.addEventListener("mousemove", handleMouseMove)
@@ -147,6 +152,7 @@ const AmslerGrid: FC = () => {
 		canvas.addEventListener("wheel", handleWheel)
 		canvas.addEventListener("contextmenu", handleContextMenu)
 		window.addEventListener("keydown", handleKeyboardPress)
+		window.addEventListener("resize", handleResize)
 		
 		return (() => {
 			canvas.removeEventListener("click", handleClick)
@@ -157,6 +163,7 @@ const AmslerGrid: FC = () => {
 			canvas.removeEventListener("wheel", handleWheel)
 			canvas.removeEventListener("contextmenu", handleContextMenu)
 			window.removeEventListener("keydown", handleKeyboardPress)
+			window.removeEventListener("resize", handleResize)
 		})
 		
 	},[activeMesh, canvas, isDragging, leftEyeMesh, rightEyeMesh])
@@ -170,10 +177,11 @@ const AmslerGrid: FC = () => {
 	}
 
 	const handleSave = (): void => {
-		console.log(leftEyeMesh?.polygons)
-		console.log(leftEyeMesh?.vertices)
+		const max = activeMesh!.vertices[activeMesh!.vertices.length-1][activeMesh!.vertices[0].length-1].coordinate
 		const data = {
 			version: CURRENT_VERSION,
+			meshWidth: max.x,
+			meshHeight: max.y,
 			leftEyeMesh: leftEyeMesh,
 			rightEyeMesh: rightEyeMesh
 		}

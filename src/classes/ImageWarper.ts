@@ -15,7 +15,7 @@ export class ImageWarper {
 	public imagePosition?: Point
 	private readonly originalMesh: Vertex[][]
 	private readonly polygons: Set<Polygon>
-	private tasks?: Set<Vertex[][]>
+	public tasks: Set<Vertex[][]> = new Set<Vertex[][]>()
 	private currentMesh?: Vertex[][]
 	private nextMesh?: Vertex[][]
 	private subscribers: Subscriber[] = []
@@ -36,6 +36,7 @@ export class ImageWarper {
 	}
 
 	public pushWarp(mesh: Vertex[][]): void {
+
 		this.tasks?.add(mesh)
 
 		//setTimeout(() => this.warp(), 10)
@@ -44,6 +45,7 @@ export class ImageWarper {
 	}
 	
 	warp(): void {
+		console.log("warp")
 		if (!this.canvas) return
 		if (!this.nextMesh) {
 			return
@@ -75,7 +77,6 @@ export class ImageWarper {
 
 			const polygons = this.splitPolygon([chunkyBoy])
 			for (let polygon of polygons) {
-				console.log(polygon)
 				const bbox = this.getBoundingBox(this.currentMesh, polygon, this.canvas.dimension);
 				test.push(bbox)
 				for (let y = bbox.minY; y <= bbox.maxY; y++) {
@@ -116,7 +117,6 @@ export class ImageWarper {
 	}
 
 	private splitPolygon(result: Polygon[]): Polygon[] {
-		console.log("new call")
 		for (let polygon of result) {
 			let counter = 0
 			for (let j = 0; j < polygon.verticesIndices.length; j++) {
@@ -125,7 +125,6 @@ export class ImageWarper {
 					counter++
 				}
 			}
-			console.log(counter)
 			if (counter > 5) {
 				// Split the polygon in smaller ones with the code from split
 				const childEdgeLength = polygon.edgeLength / 2

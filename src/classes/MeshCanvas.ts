@@ -10,7 +10,7 @@ export class MeshCanvas {
 	
 	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas
-		const ctx = canvas.getContext("2d")
+		const ctx = canvas.getContext("2d", {willReadFrequently: true})
 		if (!ctx) throw new Error("Unable to get 2D context from canvas")
 		this.ctx = ctx;
 		this.dimension = {width: canvas.width, height: canvas.height}

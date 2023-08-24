@@ -66,18 +66,19 @@ export class Polygon {
 			}
 		} else return this
 	}
-	
-	public getParentContainer(mouseClick: Point): Polygon | undefined {
+
+	public getParentContainer(mouseClick: Point, parent: Polygon): Polygon | undefined {
 		if (!this.hasInside(mouseClick)) {
 			return undefined
 		} else if (this.hasChildren()) {
 			for (let child of this.children) {
-				const container = child.getContainer(mouseClick)
+				const container = child.getParentContainer(mouseClick, this)
 				if (container) {
-					return this
+					return container
 				}
 			}
-		} else return this
+		}
+		return parent
 	}
 	
 	public split(): void {
@@ -140,6 +141,9 @@ export class Polygon {
 	}
 	
 	public merge(): void {
+		if (this.edgeLength === 8 && !this.hasChildren()) {
+			return
+		}
 		for (let child of this.children) {
 			child.getOwnActiveVertices().forEach(vertex => {
 				vertex.isActive = false
