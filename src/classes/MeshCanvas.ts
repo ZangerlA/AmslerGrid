@@ -34,10 +34,11 @@ export class MeshCanvas {
 		this.ctx.beginPath()
 		this.ctx.moveTo(vertices[0].coordinate.x, vertices[0].coordinate.y)
 		vertices.forEach((vertex) => {
-			if (vertex.isActive) {
+			if (vertex.referenceCounterIsPositive()) {
 				this.ctx.lineTo(vertex.coordinate.x, vertex.coordinate.y)
 			}
 		})
+		this.ctx.lineTo(vertices[0].coordinate.x, vertices[0].coordinate.y)
 		this.ctx.fillStyle = fillColor
 		this.ctx.fill()
 		if (overlayColor !== undefined) {

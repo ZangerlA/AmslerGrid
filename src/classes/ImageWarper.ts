@@ -20,6 +20,7 @@ export class ImageWarper {
 	private nextMesh?: Vertex[][]
 	private subscribers: Subscriber[] = []
 	private changedVertices: Vertex[] = []
+	private splitPolygons: Polygon[] = []
 	
 	constructor(originalMesh: Vertex[][], polygons: Set<Polygon>) {
 		this.originalMesh = originalMesh
@@ -76,6 +77,7 @@ export class ImageWarper {
 			const chunkyBoy = movedPolygons[i];
 
 			const polygons = this.splitPolygon([chunkyBoy])
+			console.log(polygons)
 			for (let polygon of polygons) {
 				const bbox = this.getBoundingBox(this.currentMesh, polygon, this.canvas.dimension);
 				test.push(bbox)
@@ -121,58 +123,17 @@ export class ImageWarper {
 			let counter = 0
 			for (let j = 0; j < polygon.verticesIndices.length; j++) {
 				const meshIndex = polygon.verticesIndices.at(j)
-				if (polygon.toVertex(meshIndex!).isActive) {
+				if (polygon.toVertex(meshIndex!).referenceCounterIsPositive()) {
 					counter++
 				}
 			}
-			if (counter > 5) {
-				// Split the polygon in smaller ones with the code from split
-				const childEdgeLength = polygon.edgeLength / 2
-
-				for (let i = 0; i < polygon.verticesIndices.length; i += childEdgeLength) {
-					const vertex = polygon.mesh.vertices[polygon.verticesIndices[i].row][polygon.verticesIndices[i].col]
-					if (!vertex.isActive) {
-						vertex.isActive = true
-						const prevPointIndex = polygon.toVertex(polygon.verticesIndices[i - childEdgeLength])
-						const nextPointIndex = polygon.toVertex(polygon.verticesIndices[i + childEdgeLength])
-						vertex.coordinate = calculateCenter([prevPointIndex, nextPointIndex])
-						this.changedVertices.push(vertex)
-					}
-
-
-				}
-
-				const centerVertexRow = polygon.verticesIndices[0].row + childEdgeLength;
-				const centerVertexCol = polygon.verticesIndices[0].col + childEdgeLength;
-				const centerVertex = polygon.mesh.vertices[centerVertexRow][centerVertexCol];
-
-				if (!centerVertex.isActive) {
-					centerVertex.isActive = true
-
-					/*const ul = polygon.toVertex(polygon.verticesIndices[0])
-					const ur = polygon.toVertex(polygon.verticesIndices[polygon.edgeLength])
-					const lr = polygon.toVertex(polygon.verticesIndices[polygon.edgeLength * 2])
-					const ll = polygon.toVertex(polygon.verticesIndices[polygon.edgeLength * 3])
-					centerVertex.coordinate = calculateCenter([ul, ur, lr, ll])*/
-					let allVertices: Vertex[] = []
-					for (let j = 0; j < polygon.verticesIndices.length; j++) {
-						const meshIndex = polygon.verticesIndices.at(j)
-						allVertices.push(polygon.toVertex(meshIndex!))
-					}
-					centerVertex.coordinate = calculateCenter(allVertices)
-					this.changedVertices.push(centerVertex)
-				}
-
-				// Add the new polygons to the result array and remove the old one
-				result = result.filter((e) => e != polygon)
-				result.push(
-					new Polygon(polygon.mesh, {row: polygon.verticesIndices[0].row, col: polygon.verticesIndices[0].col}, childEdgeLength, true, "rgba(75,139,59,0.5)"),
-					new Polygon(polygon.mesh, {row: polygon.verticesIndices[childEdgeLength].row, col: polygon.verticesIndices[childEdgeLength].col}, childEdgeLength, true,"white"),
-					new Polygon(polygon.mesh, {row: centerVertexRow, col: centerVertexCol}, childEdgeLength, true, "rgba(75,139,59,0.5)"),
-					new Polygon(polygon.mesh, {row: polygon.verticesIndices[polygon.verticesIndices.length - childEdgeLength - 1].row, col: polygon.verticesIndices[polygon.verticesIndices.length - childEdgeLength - 1].col}, childEdgeLength, true, "white"),
-				);
-
-				// Call splitPolygon again
+			console.log(counter)
+			if (counter > 4) {
+				if (this.splitPolygons.includes(polygon)) this.splitPolygon(result)
+				this.splitPolygons.push(polygon)
+				polygon.split()
+				result = result.filter((p ) => p !== polygon)
+				result.push(...polygon.children)
 				this.splitPolygon(result)
 			}
 			else return result
@@ -182,10 +143,10 @@ export class ImageWarper {
 	}
 
 	private reverseSplit(): void {
-		while(this.changedVertices.length > 0) {
-			const vertex = this.changedVertices.pop()
-			vertex!.isActive = false
+		for (let polygon of this.splitPolygons) {
+			polygon.merge()
 		}
+		this.splitPolygons = []
 	}
 	
 	public setImage(image: HTMLImageElement): void {
@@ -206,7 +167,7 @@ export class ImageWarper {
 		
 		for (let i = 0; i < polygon.verticesIndices.length; i++) {
 			const vertex = mesh[polygon.verticesIndices[i].row][polygon.verticesIndices[i].col];
-			if (vertex.isActive) {
+			if (vertex.referenceCounterIsPositive()) {
 				minX = Math.min(minX, vertex.coordinate.x);
 				minY = Math.min(minY, vertex.coordinate.y);
 				maxX = Math.max(maxX, vertex.coordinate.x);

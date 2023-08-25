@@ -34,7 +34,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
 		{label: 'Right', value: 'Right'},
 	];
 	
-	const getItem = (label: React.ReactNode, key?: React.Key | null, icon?: React.ReactNode, children?: MenuItem[], type?: 'group',): MenuItem => {
+	const getItem = (label: React.ReactNode, key?: React.Key | null, icon?: React.ReactNode, children?: MenuItem[], type?: 'group'): MenuItem => {
 		return {
 			key,
 			icon,
@@ -52,17 +52,18 @@ const Sidebar: FC<SidebarProps> = (props) => {
 	const items: MenuItem[] = [
 		getItem('Menu', 'sub1', <FolderOutlined/>, [
 			getItem('Save', 'save', <SaveOutlined/>),
-			getItem(<Upload beforeUpload={props.handleLoad}><FolderOpenOutlined /> Load </Upload>, 'load'),
+			getItem(<Upload beforeUpload={props.handleLoad}> Load </Upload>, 'load', <FolderOpenOutlined/>),
+			//getItem('Load', 'load', <FolderOpenOutlined/>),
 			getItem('Print', 'print', <PrinterOutlined />),
 		]),
-		
+
 		getItem('Image', 'sub2', <FileImageOutlined/>, [
-			getItem(<Upload beforeUpload={props.handleImageUpload}><UploadOutlined/> Upload </Upload>, 'upload'),
+			getItem(<Upload beforeUpload={props.handleImageUpload}> Upload </Upload>, 'upload', <UploadOutlined/>),
 			/*getItem(<><span>Show image: </span><Switch /></>, '6'),*/
 		]),
-		
+
 		/*getItem('Print', 'print', <PrinterOutlined/>),*/
-		
+
 		getItem('Eye Toggle', 'eye', <EyeOutlined/>, [
 			getItem(<Radio.Group
 					options={options}
@@ -83,17 +84,20 @@ const Sidebar: FC<SidebarProps> = (props) => {
 		else if (e.key === 'save') {
 			props.handleSave()
 		}
+		else if (e.key === 'load') {
+
+		}
 		else if (e.key === 'print') {
 			props.printGrids()
 		}
 	}
-	
+
 	return (
-		<Sider style={{position: "fixed", height: "100vh"}} collapsible collapsed={collapsed} width={175}
+		<Sider style={{ position: "fixed", height: "100vh" }} collapsible collapsed={collapsed} width={175}
 			   collapsedWidth={60} onCollapse={(value) => setCollapsed(value)}>
 			<Menu
 				mode="vertical"
-				style={{height: '100%', borderRight: 0}}
+				style={{ height: '100%', borderRight: 0 }}
 				items={items}
 				onClick={handleClick}
 			/>
