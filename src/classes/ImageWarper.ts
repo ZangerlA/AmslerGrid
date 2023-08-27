@@ -3,7 +3,6 @@ import {Polygon} from "./Polygon";
 import {Point} from "../types/Coordinate";
 import {MeshCanvas} from "./MeshCanvas";
 import {Dimension} from "../customHooks/UseWindowDimensions";
-import {wait} from "@testing-library/user-event/dist/utils";
 import {calculateCenter} from "../helperMethods/calculateCenter";
 
 export type Unsubscribe = () => void;
@@ -19,8 +18,7 @@ export class ImageWarper {
 	private currentMesh?: Vertex[][]
 	private nextMesh?: Vertex[][]
 	private subscribers: Subscriber[] = []
-	private changedVertices: Vertex[] = []
-	private splitPolygons: Polygon[] = []
+	private temporaryPolygons: Polygon[] = []
 	
 	constructor(originalMesh: Vertex[][], polygons: Set<Polygon>) {
 		this.originalMesh = originalMesh
@@ -47,10 +45,7 @@ export class ImageWarper {
 	
 	warp(): void {
 		console.log("warp")
-		if (!this.canvas) return
-		if (!this.nextMesh) {
-			return
-		}
+		if (!this.canvas || !this.nextMesh) return
 
 		this.currentMesh = this.nextMesh
 		this.nextMesh = undefined
@@ -63,10 +58,13 @@ export class ImageWarper {
 		this.polygons.forEach((polygon) => {
 			activePolygons.push(...polygon.gatherChildren([]))
 		})
+
 		const movedPolygons = activePolygons.filter((polygon) => polygon.moved())
 		for (let i = 0; i < movedPolygons.length; i++) {
 			const polygon = movedPolygons[i];
 			const bbox = this.getBoundingBox(this.originalMesh, polygon, this.canvas.dimension);
+			//bbox.minX  += 1
+			//bbox.minY  += 1
 			this.canvas.clearCanvas({x: bbox.minX, y: bbox.minY}, bbox.maxX - bbox.minX, bbox.maxY - bbox.minY)
 		}
 		const imageData = this.canvas.getImageData()
@@ -83,7 +81,7 @@ export class ImageWarper {
 				test.push(bbox)
 				for (let y = bbox.minY; y <= bbox.maxY; y++) {
 					for (let x = bbox.minX; x <= bbox.maxX; x++) {
-						if (polygon.hasInside({x, y})) {
+						if (polygon.hasInside({x , y})) {
 							const index = ((y) * this.canvas.dimension.width + (x)) * 4;
 							const relPos = this.getRelativePosition(this.currentMesh, {x, y}, polygon);
 							const originalPos = this.interpolate(this.originalMesh, relPos, polygon);
@@ -129,11 +127,58 @@ export class ImageWarper {
 			}
 			console.log(counter)
 			if (counter > 4) {
-				if (this.splitPolygons.includes(polygon)) this.splitPolygon(result)
-				this.splitPolygons.push(polygon)
-				polygon.split()
+				// if (this.splitPolygons.includes(polygon)) this.splitPolygon(result)
+
+				//polygon.split()
+				//result = result.filter((p ) => p !== polygon)
+				//result.push(...polygon.children)
+
+
+				const childEdgeLength = polygon.edgeLength / 2
+
+				const centerVertexRow = polygon.verticesIndices[0].row + childEdgeLength
+				const centerVertexCol = polygon.verticesIndices[0].col + childEdgeLength
+				const centerVertex = polygon.mesh.vertices[centerVertexRow][centerVertexCol]
+
+				const ul = polygon.toVertex(polygon.verticesIndices[0])
+				const ur = polygon.toVertex(polygon.verticesIndices[polygon.edgeLength])
+				const lr = polygon.toVertex(polygon.verticesIndices[polygon.edgeLength * 2])
+				const ll = polygon.toVertex(polygon.verticesIndices[polygon.edgeLength * 3])
+				const cornervertices = [ul,ur,lr,ll]
+
+				const activeVertices = polygon.getOwnActiveVertices()
+				const filteredVertices = activeVertices.filter((vertex) => vertex.wasMoved || cornervertices.includes(vertex))
+
+				//Need moved active vertices for correct calculation
+				centerVertex.coordinate = calculateCenter(filteredVertices)
+
+				polygon.recalculateVertexPosition([ul,ur,lr,ll], childEdgeLength)
+
+				const polygon1 = new Polygon(polygon.mesh, {row: polygon.verticesIndices[0].row, col: polygon.verticesIndices[0].col}, childEdgeLength, "rgba(75,139,59,0.5)")
+				const polygon2 = new Polygon(polygon.mesh, {row: polygon.verticesIndices[childEdgeLength].row, col: polygon.verticesIndices[childEdgeLength].col}, childEdgeLength, "white")
+				const polygon3 = new Polygon(polygon.mesh, {row: centerVertexRow, col: centerVertexCol}, childEdgeLength, "rgba(75,139,59,0.5)")
+				const polygon4 = new Polygon(polygon.mesh, {row: polygon.verticesIndices[polygon.verticesIndices.length - childEdgeLength].row, col: polygon.verticesIndices[polygon.verticesIndices.length - childEdgeLength].col}, childEdgeLength, "white")
+				polygon1.initializeReferences()
+				polygon2.initializeReferences()
+				polygon3.initializeReferences()
+				polygon4.initializeReferences()
+
+				result.push(
+					polygon1,
+					polygon2,
+					polygon3,
+					polygon4
+				)
+
+				this.temporaryPolygons.push(
+					polygon1,
+					polygon2,
+					polygon3,
+					polygon4
+				)
+
 				result = result.filter((p ) => p !== polygon)
-				result.push(...polygon.children)
+
 				this.splitPolygon(result)
 			}
 			else return result
@@ -143,10 +188,10 @@ export class ImageWarper {
 	}
 
 	private reverseSplit(): void {
-		for (let polygon of this.splitPolygons) {
-			polygon.merge()
+		for (let polygon of this.temporaryPolygons) {
+			polygon.removeReferences()
 		}
-		this.splitPolygons = []
+		this.temporaryPolygons = []
 	}
 	
 	public setImage(image: HTMLImageElement): void {
@@ -167,17 +212,17 @@ export class ImageWarper {
 		
 		for (let i = 0; i < polygon.verticesIndices.length; i++) {
 			const vertex = mesh[polygon.verticesIndices[i].row][polygon.verticesIndices[i].col];
-			if (vertex.referenceCounterIsPositive()) {
+			//if (vertex.referenceCounterIsPositive()) {
 				minX = Math.min(minX, vertex.coordinate.x);
 				minY = Math.min(minY, vertex.coordinate.y);
 				maxX = Math.max(maxX, vertex.coordinate.x);
 				maxY = Math.max(maxY, vertex.coordinate.y);
-			}
+			//}
 		}
 		
 		return {
-			minX: Math.max(0, Math.floor(minX)),
-			minY: Math.max(0, Math.floor(minY)),
+			minX: Math.max(0, Math.floor(minX) + 1),
+			minY: Math.max(0, Math.floor(minY) + 1),
 			maxX: Math.min(dimension.width - 1, Math.ceil(maxX)),
 			maxY: Math.min(dimension.height - 1, Math.ceil(maxY)),
 		};

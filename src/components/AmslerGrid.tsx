@@ -82,6 +82,7 @@ const AmslerGrid: FC = () => {
 			
 			if (event.button === MouseButton.Right) {
 				console.log(activeMesh.polygons)
+				console.log(activeMesh.vertices)
 				const coordinate: Point = toCanvasCoord(event.clientX, event.clientY)
 				activeMesh.handleSelect(coordinate)
 				activeMesh.draw()
@@ -216,7 +217,15 @@ const AmslerGrid: FC = () => {
 		return false
 	}
 
-	const handleSave = (): void => {
+	const handleSaveToFile = (): void => {
+
+		const json = createSaveSnapshot()
+		const blob = new Blob([json], { type: 'application/json' })
+		const fs = new FileSaver()
+		fs.save(blob)
+	}
+
+	const createSaveSnapshot = (): string => {
 		const max = activeMesh!.vertices[activeMesh!.vertices.length-1][activeMesh!.vertices[0].length-1].coordinate
 		const data = {
 			version: CURRENT_VERSION,
@@ -226,10 +235,32 @@ const AmslerGrid: FC = () => {
 			rightEyeMesh: rightEyeMesh
 		}
 
-		const json = JSON.stringify(data, null)
-		const blob = new Blob([json], { type: 'application/json' })
-		const fs = new FileSaver()
-		fs.save(blob)
+		return  JSON.stringify(data, null)
+	}
+
+	const handleSave = (): void => {
+		const json = createSaveSnapshot()
+		const currentSaves = JSON.parse(localStorage.getItem('meshData') || '[]')
+
+		// add the new save to the start of the array
+		currentSaves.unshift(json)
+
+		// remove the oldest save if there are more than 5 saves
+		if (currentSaves.length > 5) {
+			currentSaves.pop()
+		}
+
+		localStorage.setItem('meshData', JSON.stringify(currentSaves))
+	}
+
+	const handleLoad = (): void => {
+		const currentSaves = JSON.parse(localStorage.getItem('meshData') || '[]')
+		const mostRecentSave = currentSaves[0]
+
+		if (mostRecentSave) {
+			const file = new File([mostRecentSave], "config.json", { type: 'application/json' })
+			setConfigurationFile(file)
+		}
 	}
 	
 	const printGrids = (): void => {
@@ -237,14 +268,24 @@ const AmslerGrid: FC = () => {
 		rightEyeMesh?.canvas.download()
 	}
 
-	const handleLoad = (file: File): boolean => {
+	const handleLoadFromFile = (file: File): boolean => {
 		setConfigurationFile(file)
 		return false
 	}
 
 	return (
 		<>
-			{activeMesh && (<Sidebar changeActiveMesh={changeActiveMesh} handleSave={handleSave} printGrids={printGrids} handleLoad={handleLoad} handleImageUpload={handleImageUpload}/>)}
+			{activeMesh && (
+				<Sidebar
+					changeActiveMesh={changeActiveMesh}
+					handleSaveToFile={handleSaveToFile}
+					handleSave={handleSave}
+					handleLoad={handleLoad}
+					printGrids={printGrids}
+					handleLoadFromFile={handleLoadFromFile}
+					handleImageUpload={handleImageUpload}
+				/>)}
+
 			<Content>
 				<canvas
 					tabIndex={0}

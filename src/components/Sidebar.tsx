@@ -1,12 +1,12 @@
 import React, {FC, useState} from "react";
 import type {MenuProps} from 'antd';
-import {Button, Layout, Menu, Popover, Radio, RadioChangeEvent, Switch, Upload} from "antd";
+import {Button, Layout, Menu, Popconfirm, Popover, Radio, RadioChangeEvent, Switch, Upload} from "antd";
 import {
 	EyeOutlined,
 	FileImageOutlined,
 	FolderOpenOutlined,
 	FolderOutlined, PrinterOutlined,
-	QuestionCircleOutlined,
+	QuestionCircleOutlined, ReloadOutlined,
 	SaveOutlined,
 	UploadOutlined,
 } from "@ant-design/icons";
@@ -16,9 +16,11 @@ import PopupWindow from "./PopupWindow";
 type MenuItem = Required<MenuProps>['items'][number];
 type SidebarProps = {
 	changeActiveMesh: () => void,
+	handleSaveToFile: () => void,
 	handleSave: () => void,
+	handleLoad: () => void,
 	printGrids: () => void,
-	handleLoad: (file: File) => boolean,
+	handleLoadFromFile: (file: File) => boolean,
 	handleImageUpload: (file: File) => boolean,
 }
 
@@ -51,8 +53,8 @@ const Sidebar: FC<SidebarProps> = (props) => {
 	
 	const items: MenuItem[] = [
 		getItem('Menu', 'sub1', <FolderOutlined/>, [
-			getItem('Save', 'save', <SaveOutlined/>),
-			getItem(<Upload beforeUpload={props.handleLoad}> Load </Upload>, 'load', <FolderOpenOutlined/>),
+			getItem('Save to file', 'save_file', <SaveOutlined/>),
+			getItem(<Upload beforeUpload={props.handleLoadFromFile}> Load from File </Upload>, 'load_file', <FolderOpenOutlined/>),
 			//getItem('Load', 'load', <FolderOpenOutlined/>),
 			getItem('Print', 'print', <PrinterOutlined />),
 		]),
@@ -74,6 +76,8 @@ const Sidebar: FC<SidebarProps> = (props) => {
 				/>
 				, 'leftRight')
 		]),
+		getItem('Quicksave', 'save',<SaveOutlined/>),
+		getItem('Restore', 'restore',<Popconfirm title={"Restore"} description={"Load most recent save?"} onConfirm={props.handleLoad}><ReloadOutlined/></Popconfirm>),
 		getItem('Help', 'help',<QuestionCircleOutlined/>),
 	];
 	
@@ -84,7 +88,16 @@ const Sidebar: FC<SidebarProps> = (props) => {
 		else if (e.key === 'save') {
 			props.handleSave()
 		}
-		else if (e.key === 'load') {
+		/*
+		else if (e.key === 'restore') {
+			props.handleLoad()
+		}
+
+		 */
+		else if (e.key === 'save_file') {
+			props.handleSaveToFile()
+		}
+		else if (e.key === 'load_file') {
 
 		}
 		else if (e.key === 'print') {

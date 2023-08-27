@@ -25,6 +25,12 @@ export class Polygon {
 			this.toVertex(this.verticesIndices[this.edgeLength * i]).increaseReferenceCounter()
 		}
 	}
+
+	public removeReferences(): void {
+		for (let i = 0; i < 4; i++) {
+			this.toVertex(this.verticesIndices[this.edgeLength * i]).decreaseReferenceCounter()
+		}
+	}
 	
 	public draw(painter: MeshCanvas): void {
 		if (this.hasChildren()) {
@@ -287,7 +293,7 @@ export class Polygon {
 		})
 	}
 
-	private getOwnActiveVertices(): Vertex[] {
+	public getOwnActiveVertices(): Vertex[] {
 		return this.verticesIndices
 			.filter((vertexIndex) => this.toVertex(vertexIndex).referenceCounterIsPositive())
 			.map((vertexIndex) => this.toVertex(vertexIndex))
