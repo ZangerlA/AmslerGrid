@@ -19,6 +19,5 @@ export type PolygonData = {
     verticesIndices: MeshIndex[];
     edgeLength: number;
     color: string;
-    shouldDraw: boolean;
     children: PolygonData[];
 }

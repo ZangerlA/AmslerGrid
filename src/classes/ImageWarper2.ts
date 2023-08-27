@@ -108,7 +108,7 @@ export class ImageWarper2 {
 		
 		for (let i = 0; i < polygon.verticesIndices.length; i++) {
 			const vertex = distortedMesh[polygon.verticesIndices[i].row][polygon.verticesIndices[i].col];
-			if (vertex.isActive) {
+			if (vertex.referenceCounterIsPositive()) {
 				minX = Math.min(minX, vertex.coordinate.x);
 				minY = Math.min(minY, vertex.coordinate.y);
 				maxX = Math.max(maxX, vertex.coordinate.x);

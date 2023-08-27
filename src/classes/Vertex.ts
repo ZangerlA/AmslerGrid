@@ -3,24 +3,24 @@ import {Point} from "../types/Coordinate";
 
 
 export class Vertex {
-	coordinate: Point = {x: 0, y: 0}
-	drawRadius: number = 6
-	color: string = "black"
-	isActive: boolean = false
-	wasMoved: boolean = false
+	public coordinate: Point = {x: 0, y: 0}
+	public drawRadius: number = 6
+	public color: string = "black"
+	public referenceCounter: number = 0
+	public wasMoved: boolean = false
 	
 	constructor(coordinate: Point) {
 		this.coordinate.x = coordinate.x
 		this.coordinate.y = coordinate.y
 	}
 	
-	move(vector: Vector): void {
+	public move(vector: Vector): void {
 		this.wasMoved = true
 		this.coordinate.x += vector.x
 		this.coordinate.y += vector.y
 	}
 	
-	rotateAround(point: Point, degree: number): void {
+	public rotateAround(point: Point, degree: number): void {
 		this.wasMoved = true
 		const angle = degree * Math.PI / 180.0
 		const dx = this.coordinate.x - point.x;
@@ -31,12 +31,24 @@ export class Vertex {
 		this.coordinate.y = newY;
 	}
 	
-	wasClicked(mouseClick: Point): boolean {
+	public wasClicked(mouseClick: Point): boolean {
 		const distance = Math.sqrt((this.coordinate.x - mouseClick.x) ** 2 + (this.coordinate.y - mouseClick.y) ** 2)
 		return distance <= this.drawRadius;
 	}
+
+	public increaseReferenceCounter(): void {
+		this.referenceCounter++
+	}
+
+	public decreaseReferenceCounter(): void {
+		this.referenceCounter--
+	}
+
+	public referenceCounterIsPositive(): boolean {
+		return this.referenceCounter > 0
+	}
 	
-	scale(scalingFactor: number, centerPoint: Point) {
+	public scale(scalingFactor: number, centerPoint: Point): void {
 		this.wasMoved = true
 		const displacementVector = {
 			x: this.coordinate.x - centerPoint.x,

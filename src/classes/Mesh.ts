@@ -75,9 +75,7 @@ export class Mesh {
 			y: (config.cellSizeHorizontal * i) + 50
 		}
 		const vertex = new Vertex(coordinate)
-		if (i % config.cellSizeOffset === 0 && j % config.cellSizeOffset === 0) {
-			vertex.isActive = true
-		}
+
 		return vertex
 	}
 
@@ -94,7 +92,9 @@ export class Mesh {
 	private createPolygon(i: number, j: number, offset: number, size: number): Polygon {
 		const isGreen = ((i ^ j) & 1) === 0
 		const color = isGreen ? "rgba(75,139,59,0.5)" : "white"
-		return new Polygon(this, {row: i * offset, col: j * offset}, size, true, color)
+		const polygon = new Polygon(this, {row: i * offset, col: j * offset}, size, color)
+		polygon.initializeReferences()
+		return polygon
 	}
 
 	private createEdges(config: InitialMeshConfig): ValueSet<Edge> {
@@ -137,7 +137,6 @@ export class Mesh {
 				this.warper.setImage(scaledLoadedImage)
 				this.warper.imagePosition = imagePosition
 			})
-			//.then(() => this.draw())
 	}
 
 	public initWarpingCanvas(): void {
@@ -165,7 +164,7 @@ export class Mesh {
 	public handleSingleVertex(mouseClick: Point): void {
 		this.vertices.forEach((row) => {
 			row.forEach((vertex) => {
-				if (vertex.isActive && vertex.wasClicked(mouseClick)) {
+				if (vertex.referenceCounterIsPositive() && vertex.wasClicked(mouseClick)) {
 					this.selectedVertex = vertex
 				}
 			})
@@ -201,10 +200,8 @@ export class Mesh {
 	}
 	
 	public handleMerge(mouseClick: Point): void {
-		console.log("merge")
 		this.polygons.forEach((shape) => {
 			if (shape.hasInside(mouseClick)) {
-				console.log(shape.getParentContainer(mouseClick, shape))
 				const polygon = shape.getParentContainer(mouseClick, shape)
 				polygon?.merge()
 			}
@@ -296,7 +293,7 @@ export class Mesh {
 		for (let i = 0; i < this.vertices.length; i++) {
 			for (let j = 0; j < this.vertices[i].length; j++) {
 				const vertex = this.vertices[i][j]
-				if (this.vertices[i][j].isActive) {
+				if (this.vertices[i][j].referenceCounterIsPositive()) {
 					painter.drawPoint(vertex.coordinate, vertex.drawRadius, vertex.color)
 				}
 			}
@@ -346,7 +343,7 @@ export class Mesh {
 				this.vertices[i][j].coordinate = data.vertices[i][j].coordinate
 				this.vertices[i][j].drawRadius = data.vertices[i][j].drawRadius
 				this.vertices[i][j].color = data.vertices[i][j].color
-				this.vertices[i][j].isActive = data.vertices[i][j].isActive
+				this.vertices[i][j].referenceCounter = data.vertices[i][j].referenceCounter
 				this.vertices[i][j].wasMoved = data.vertices[i][j].wasMoved
 			}
 		}

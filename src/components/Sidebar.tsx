@@ -1,12 +1,12 @@
 import React, {FC, useState} from "react";
 import type {MenuProps} from 'antd';
-import {Button, Layout, Menu, Popover, Radio, RadioChangeEvent, Switch, Upload} from "antd";
+import {Button, Layout, Menu, Popconfirm, Popover, Radio, RadioChangeEvent, Switch, Upload} from "antd";
 import {
 	EyeOutlined,
 	FileImageOutlined,
 	FolderOpenOutlined,
 	FolderOutlined, PrinterOutlined,
-	QuestionCircleOutlined,
+	QuestionCircleOutlined, ReloadOutlined,
 	SaveOutlined,
 	UploadOutlined,
 } from "@ant-design/icons";
@@ -16,9 +16,11 @@ import PopupWindow from "./PopupWindow";
 type MenuItem = Required<MenuProps>['items'][number];
 type SidebarProps = {
 	changeActiveMesh: () => void,
+	handleSaveToFile: () => void,
 	handleSave: () => void,
+	handleLoad: () => void,
 	printGrids: () => void,
-	handleLoad: (file: File) => boolean,
+	handleLoadFromFile: (file: File) => boolean,
 	handleImageUpload: (file: File) => boolean,
 }
 
@@ -34,7 +36,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
 		{label: 'Right', value: 'Right'},
 	];
 	
-	const getItem = (label: React.ReactNode, key?: React.Key | null, icon?: React.ReactNode, children?: MenuItem[], type?: 'group',): MenuItem => {
+	const getItem = (label: React.ReactNode, key?: React.Key | null, icon?: React.ReactNode, children?: MenuItem[], type?: 'group'): MenuItem => {
 		return {
 			key,
 			icon,
@@ -51,18 +53,19 @@ const Sidebar: FC<SidebarProps> = (props) => {
 	
 	const items: MenuItem[] = [
 		getItem('Menu', 'sub1', <FolderOutlined/>, [
-			getItem('Save', 'save', <SaveOutlined/>),
-			getItem(<Upload beforeUpload={props.handleLoad}><FolderOpenOutlined /> Load </Upload>, 'load'),
+			getItem('Save to file', 'save_file', <SaveOutlined/>),
+			getItem(<Upload beforeUpload={props.handleLoadFromFile}> Load from File </Upload>, 'load_file', <FolderOpenOutlined/>),
+			//getItem('Load', 'load', <FolderOpenOutlined/>),
 			getItem('Print', 'print', <PrinterOutlined />),
 		]),
-		
+
 		getItem('Image', 'sub2', <FileImageOutlined/>, [
-			getItem(<Upload beforeUpload={props.handleImageUpload}><UploadOutlined/> Upload </Upload>, 'upload'),
+			getItem(<Upload beforeUpload={props.handleImageUpload}> Upload </Upload>, 'upload', <UploadOutlined/>),
 			/*getItem(<><span>Show image: </span><Switch /></>, '6'),*/
 		]),
-		
+
 		/*getItem('Print', 'print', <PrinterOutlined/>),*/
-		
+
 		getItem('Eye Toggle', 'eye', <EyeOutlined/>, [
 			getItem(<Radio.Group
 					options={options}
@@ -73,6 +76,8 @@ const Sidebar: FC<SidebarProps> = (props) => {
 				/>
 				, 'leftRight')
 		]),
+		getItem('Quicksave', 'save',<SaveOutlined/>),
+		getItem('Restore', 'restore',<Popconfirm title={"Restore"} description={"Load most recent save?"} onConfirm={props.handleLoad}><ReloadOutlined/></Popconfirm>),
 		getItem('Help', 'help',<QuestionCircleOutlined/>),
 	];
 	
@@ -83,17 +88,29 @@ const Sidebar: FC<SidebarProps> = (props) => {
 		else if (e.key === 'save') {
 			props.handleSave()
 		}
+		/*
+		else if (e.key === 'restore') {
+			props.handleLoad()
+		}
+
+		 */
+		else if (e.key === 'save_file') {
+			props.handleSaveToFile()
+		}
+		else if (e.key === 'load_file') {
+
+		}
 		else if (e.key === 'print') {
 			props.printGrids()
 		}
 	}
-	
+
 	return (
-		<Sider style={{position: "fixed", height: "100vh"}} collapsible collapsed={collapsed} width={175}
+		<Sider style={{ position: "fixed", height: "100vh" }} collapsible collapsed={collapsed} width={175}
 			   collapsedWidth={60} onCollapse={(value) => setCollapsed(value)}>
 			<Menu
 				mode="vertical"
-				style={{height: '100%', borderRight: 0}}
+				style={{ height: '100%', borderRight: 0 }}
 				items={items}
 				onClick={handleClick}
 			/>

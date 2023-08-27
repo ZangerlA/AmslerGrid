@@ -7,19 +7,29 @@ import {MeshCanvas} from "./MeshCanvas";
 import {PolygonData} from "../types/SaveFile";
 
 export class Polygon {
-	mesh: Mesh
-	verticesIndices: MeshIndex[] = []
-	children: Polygon[] = []
-	edgeLength: number
-	color: string
-	shouldDraw: boolean = false
+	public mesh: Mesh
+	public verticesIndices: MeshIndex[] = []
+	public edgeLength: number
+	public  children: Polygon[] = []
+	private color: string
 	
-	public constructor(mesh: Mesh, meshIndex: MeshIndex, edgeLength: number, shouldDraw: boolean, color: string) {
+	public constructor(mesh: Mesh, meshIndex: MeshIndex, edgeLength: number, color: string) {
 		this.mesh = mesh
-		this.shouldDraw = shouldDraw
 		this.color = color
 		this.edgeLength = edgeLength
 		this.setPolygonVertices(meshIndex.row, meshIndex.col)
+	}
+
+	public initializeReferences(): void {
+		for (let i = 0; i < 4; i++) {
+			this.toVertex(this.verticesIndices[this.edgeLength * i]).increaseReferenceCounter()
+		}
+	}
+
+	public removeReferences(): void {
+		for (let i = 0; i < 4; i++) {
+			this.toVertex(this.verticesIndices[this.edgeLength * i]).decreaseReferenceCounter()
+		}
 	}
 	
 	public draw(painter: MeshCanvas): void {
@@ -47,7 +57,7 @@ export class Polygon {
 	
 	public hasInside(mouseClick: Point): boolean {
 		for (const child of this.children) {
-			if (child.shouldDraw && child.hasInside(mouseClick)) {
+			if (child.hasInside(mouseClick)) {
 				return true
 			}
 		}
@@ -78,6 +88,10 @@ export class Polygon {
 				}
 			}
 		}
+		for (let child of parent.children) {
+			if (child.hasChildren()) return undefined
+		}
+
 		return parent
 	}
 	
@@ -85,49 +99,41 @@ export class Polygon {
 		if (this.edgeLength === 1) {
 			return
 		}
-		
-		let wasDeleted = this.mesh.selectedPolygons.delete(this)
-		
+		const wasDeleted = this.mesh.selectedPolygons.delete(this)
 		const childEdgeLength = this.edgeLength / 2
-		
-		for (let i = 0; i < this.verticesIndices.length; i += childEdgeLength) {
-			const vertex = this.mesh.vertices[this.verticesIndices[i].row][this.verticesIndices[i].col]
-			if (!vertex.isActive) {
-				vertex.isActive = true
-				vertex.wasMoved = this.moved()
-				const prevPointIndex = this.toVertex(this.verticesIndices[i - childEdgeLength])
-				const nextPointIndex = this.toVertex(this.verticesIndices[i + childEdgeLength])
-				vertex.coordinate = calculateCenter([prevPointIndex, nextPointIndex])
-			}
-		}
-		
+
 		const centerVertexRow = this.verticesIndices[0].row + childEdgeLength
 		const centerVertexCol = this.verticesIndices[0].col + childEdgeLength
 		const centerVertex = this.mesh.vertices[centerVertexRow][centerVertexCol]
-		if (!centerVertex.isActive) {
-			centerVertex.isActive = true
 
-			const ul = this.toVertex(this.verticesIndices[0])
-			const ur = this.toVertex(this.verticesIndices[this.edgeLength])
-			const lr = this.toVertex(this.verticesIndices[this.edgeLength * 2])
-			const ll = this.toVertex(this.verticesIndices[this.edgeLength * 3])
+		const ul = this.toVertex(this.verticesIndices[0])
+		const ur = this.toVertex(this.verticesIndices[this.edgeLength])
+		const lr = this.toVertex(this.verticesIndices[this.edgeLength * 2])
+		const ll = this.toVertex(this.verticesIndices[this.edgeLength * 3])
+		const cornervertices = [ul,ur,lr,ll]
 
-			centerVertex.coordinate = calculateCenter([ul, ur, lr, ll])
-			/* Need to calculate Center for all active Vertices not only for corners!!!
-			let allVertices: Vertex[] = []
-			for (let j = 0; j < this.verticesIndices.length; j++) {
-				const meshIndex = this.verticesIndices.at(j)
-				allVertices.push(this.toVertex(meshIndex!))
-			}
-			centerVertex.coordinate = calculateCenter(allVertices)*/
-			centerVertex.wasMoved = this.moved()
-		}
+		const activeVertices = this.getOwnActiveVertices()
+		const filteredVertices = activeVertices.filter((vertex) => vertex.wasMoved || cornervertices.includes(vertex))
+		
+		//Need moved active vertices for correct calculation
+		centerVertex.coordinate = calculateCenter(filteredVertices)
+
+		this.recalculateVertexPosition([ul,ur,lr,ll], childEdgeLength)
+
+		const polygon1 = new Polygon(this.mesh, {row: this.verticesIndices[0].row, col: this.verticesIndices[0].col}, childEdgeLength, "rgba(75,139,59,0.5)")
+		const polygon2 = new Polygon(this.mesh, {row: this.verticesIndices[childEdgeLength].row, col: this.verticesIndices[childEdgeLength].col}, childEdgeLength, "white")
+		const polygon3 = new Polygon(this.mesh, {row: centerVertexRow, col: centerVertexCol}, childEdgeLength, "rgba(75,139,59,0.5)")
+		const polygon4 = new Polygon(this.mesh, {row: this.verticesIndices[this.verticesIndices.length - childEdgeLength].row, col: this.verticesIndices[this.verticesIndices.length - childEdgeLength].col}, childEdgeLength, "white")
+		polygon1.initializeReferences()
+		polygon2.initializeReferences()
+		polygon3.initializeReferences()
+		polygon4.initializeReferences()
 
         this.children.push(
-            new Polygon(this.mesh, {row: this.verticesIndices[0].row, col: this.verticesIndices[0].col}, childEdgeLength, true, "rgba(75,139,59,0.5)"),
-            new Polygon(this.mesh, {row: this.verticesIndices[childEdgeLength].row, col: this.verticesIndices[childEdgeLength].col}, childEdgeLength, true,"white"),
-            new Polygon(this.mesh, {row: centerVertexRow, col: centerVertexCol}, childEdgeLength, true, "rgba(75,139,59,0.5)"),
-            new Polygon(this.mesh, {row: this.verticesIndices[this.verticesIndices.length - childEdgeLength - 1].row, col: this.verticesIndices[this.verticesIndices.length - childEdgeLength - 1].col}, childEdgeLength, true, "white"),
+            polygon1,
+			polygon2,
+			polygon3,
+			polygon4
         );
 
 		this.removeOwnEdges()
@@ -135,9 +141,24 @@ export class Polygon {
 			if (wasDeleted) {
 				this.mesh.selectedPolygons.add(childPolygon)
 			}
-			childPolygon.shouldDraw = true
 			childPolygon.addOwnEdges()
 		})
+	}
+
+	//Recalculates the Coordinates of the new active Vertices to center of edges
+	public recalculateVertexPosition(corners: Vertex[],childEdgeLength: number): void {
+		if (!this.toVertex(this.verticesIndices[childEdgeLength]).referenceCounterIsPositive()){
+			this.toVertex(this.verticesIndices[childEdgeLength]).coordinate = calculateCenter([corners[0], corners[1]])
+		}
+		if (!this.toVertex(this.verticesIndices[childEdgeLength * 3]).referenceCounterIsPositive()){
+			this.toVertex(this.verticesIndices[childEdgeLength * 3]).coordinate = calculateCenter([corners[1], corners[2]])
+		}
+		if (!this.toVertex(this.verticesIndices[childEdgeLength * 5]).referenceCounterIsPositive()){
+			this.toVertex(this.verticesIndices[childEdgeLength * 5]).coordinate = calculateCenter([corners[2], corners[3]])
+		}
+		if (!this.toVertex(this.verticesIndices[childEdgeLength * 7]).referenceCounterIsPositive()){
+			this.toVertex(this.verticesIndices[childEdgeLength * 7]).coordinate = calculateCenter([corners[3], corners[0]])
+		}
 	}
 	
 	public merge(): void {
@@ -146,25 +167,22 @@ export class Polygon {
 		}
 		for (let child of this.children) {
 			child.getOwnActiveVertices().forEach(vertex => {
-				vertex.isActive = false
-				vertex.wasMoved = false
+				vertex.decreaseReferenceCounter()
+				console.log(vertex)
 			})
 			child.removeOwnEdges()
 		}
-		
+
 		const ul = this.toVertex(this.verticesIndices[0])
 		const ur = this.toVertex(this.verticesIndices[this.edgeLength])
 		const lr = this.toVertex(this.verticesIndices[this.edgeLength * 2])
 		const ll = this.toVertex(this.verticesIndices[this.edgeLength * 3])
-		ul.isActive = true
-		ur.isActive = true
-		lr.isActive = true
-		ll.isActive = true
+
 		ul.wasMoved = true
 		ur.wasMoved = true
 		lr.wasMoved = true
 		ll.wasMoved = true
-		
+
 		this.children = []
 		this.addOwnEdges()
 	}
@@ -180,11 +198,45 @@ export class Polygon {
 		return result
 	}
 
-	moved(): boolean {
-		return this.verticesIndices.some((vertexIndex) => this.toVertex(vertexIndex).isActive && this.toVertex(vertexIndex).wasMoved)
+	public moved(): boolean {
+		return this.verticesIndices.some((vertexIndex) => this.toVertex(vertexIndex).referenceCounterIsPositive() && this.toVertex(vertexIndex).wasMoved)
 	}
-	
-	private setPolygonVertices(row: number, col: number) {
+
+	public toVertex(meshIndex: MeshIndex): Vertex {
+		return this.mesh.vertices[meshIndex.row][meshIndex.col]
+	}
+
+	public hasChildren(): boolean {
+		return !(this.children.length === 0)
+	}
+
+	public toJSON(): any {
+		return {
+			verticesIndices: this.verticesIndices,
+			children: this.children,
+			edgeLength: this.edgeLength,
+			color: this.color,
+		};
+	}
+
+	public restoreFromFile(data: PolygonData): void {
+		console.log(data)
+		this.verticesIndices = data.verticesIndices
+		this.edgeLength = data.edgeLength
+		this.color = data.color
+
+		if (data.children) {
+			for (let i = 0; i < data.children.length; i++) {
+				const childData = data.children.at(i)
+				if (!childData) throw new Error("Error reading polygon data from file. Child polygon not found")
+				const childPolygon = new Polygon(this.mesh, childData.verticesIndices[0], childData.edgeLength, childData.color)
+				this.children.push(childPolygon)
+				childPolygon.restoreFromFile(childData)
+			}
+		}
+	}
+
+	private setPolygonVertices(row: number, col: number): void {
 		for (let i = col; i <= col + this.edgeLength; i++) {
 			this.verticesIndices.push({row: row, col: i})
 		}
@@ -194,42 +246,59 @@ export class Polygon {
 		for (let i = col + this.edgeLength - 1; i >= col; i--) {
 			this.verticesIndices.push({row: row + this.edgeLength, col: i})
 		}
-		for (let i = row + this.edgeLength - 1; i >= row; i--) {
+		for (let i = row + this.edgeLength - 1; i >= row + 1; i--) {
 			this.verticesIndices.push({row: i, col: col})
 		}
 	}
-	
+
 	private addOwnEdges(): void {
-		for (let i = 0; i < 4; i++) {
+		for (let i = 0; i < 3; i++) {
 			const edge = {
 				a: this.verticesIndices[this.edgeLength * i],
 				b: this.verticesIndices[this.edgeLength * (i + 1)]
 			}
+
 			const halfEdge = {
 				a: this.verticesIndices[this.edgeLength * i],
 				b: this.verticesIndices[this.edgeLength * (i + 1) - this.edgeLength / 2]
 			}
+
 			if (this.edgeLength === 1 || !this.mesh.edges.has(halfEdge)) {
 				this.mesh.edges.add(edge)
 			}
 		}
+		const edge = {
+			a: this.verticesIndices[this.edgeLength * 3],
+			b: this.verticesIndices[0]
+		}
+		const halfEdge = {
+			a: this.verticesIndices[this.edgeLength * 3],
+			b: this.verticesIndices[this.verticesIndices.length - this.edgeLength / 2]
+		}
+		if (this.edgeLength === 1 || !this.mesh.edges.has(halfEdge)) {
+			this.mesh.edges.add(edge)
+		}
 	}
-	
+
 	private removeOwnEdges(): void {
-		for (let i = 0; i < 4; i++) {
+		for (let i = 0; i < 3; i++) {
 			this.mesh.edges.delete({
 				a: this.verticesIndices[this.edgeLength * i],
 				b: this.verticesIndices[this.edgeLength * (i + 1)]
 			})
 		}
+		this.mesh.edges.delete({
+			a: this.verticesIndices[this.edgeLength * 3],
+			b: this.verticesIndices[0]
+		})
 	}
-	
-	private getOwnActiveVertices(): Vertex[] {
+
+	public getOwnActiveVertices(): Vertex[] {
 		return this.verticesIndices
-			.filter((vertexIndex) => this.toVertex(vertexIndex).isActive)
+			.filter((vertexIndex) => this.toVertex(vertexIndex).referenceCounterIsPositive())
 			.map((vertexIndex) => this.toVertex(vertexIndex))
 	}
-	
+
 	private inside(x: number, y: number, vertices: Vertex[]): boolean {
 		// ray-casting algorithm based on
 		// https://en.wikipedia.org/wiki/Point_in_polygon
@@ -244,41 +313,4 @@ export class Polygon {
 		}
 		return result === 1
 	}
-	
-	public toVertex(meshIndex: MeshIndex): Vertex {
-		return this.mesh.vertices[meshIndex.row][meshIndex.col]
-	}
-
-    public hasChildren(): boolean {
-        return !(this.children.length === 0)
-    }
-
-	public toJSON(): any {
-		return {
-			verticesIndices: this.verticesIndices,
-			children: this.children,
-			edgeLength: this.edgeLength,
-			color: this.color,
-			shouldDraw: this.shouldDraw
-		};
-	}
-
-	public restoreFromFile(data: PolygonData): void {
-		console.log(data)
-		this.verticesIndices = data.verticesIndices
-		this.edgeLength = data.edgeLength
-		this.color = data.color
-		this.shouldDraw = data.shouldDraw
-		
-		if (data.children) {
-			for (let i = 0; i < data.children.length; i++) {
-				const childData = data.children.at(i)
-				if (!childData) throw new Error("Error reading polygon data from file. Child polygon not found")
-				const childPolygon = new Polygon(this.mesh, childData.verticesIndices[0], childData.edgeLength, childData.shouldDraw, childData.color)
-				this.children.push(childPolygon)
-				childPolygon.restoreFromFile(childData)
-			}
-		}
-	}
-
 }

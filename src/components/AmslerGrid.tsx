@@ -1,4 +1,4 @@
-import React, {FC, useEffect, useState} from "react";
+import React, {FC, useEffect, useRef, useState} from "react";
 import Sidebar from "./Sidebar";
 import {Layout, Spin} from "antd";
 import {Mesh} from "../classes/Mesh";
@@ -21,6 +21,7 @@ const AmslerGrid: FC = () => {
 	const [leftEyeMesh, setLeftEyeMesh] = useState<Mesh>()
 	const [rightEyeMesh, setRightEyeMesh] = useState<Mesh>()
 	const [isLeftEyeMesh, setIsLeftEyeMesh ] = useState<boolean>(true)
+	const [configurationFile, setConfigurationFile ] = useState<File>()
 	const changeActiveMesh = () => setIsLeftEyeMesh(b => !b)
 	const [activeMesh] = isLeftEyeMesh ? [leftEyeMesh, setLeftEyeMesh] : [rightEyeMesh, setRightEyeMesh]
 
@@ -80,6 +81,8 @@ const AmslerGrid: FC = () => {
 			event.preventDefault()
 			
 			if (event.button === MouseButton.Right) {
+				console.log(activeMesh.polygons)
+				console.log(activeMesh.vertices)
 				const coordinate: Point = toCanvasCoord(event.clientX, event.clientY)
 				activeMesh.handleSelect(coordinate)
 				activeMesh.draw()
@@ -167,7 +170,45 @@ const AmslerGrid: FC = () => {
 		})
 		
 	},[activeMesh, canvas, isDragging, leftEyeMesh, rightEyeMesh])
-	
+
+	useEffect(() => {
+		if (!configurationFile) return
+		if (!canvas) return
+		const meshCanvas = new MeshCanvas(canvas)
+		const canvasDimension = {width: canvas.width, height: canvas.height}
+		const leftMesh = new Mesh(meshCanvas, canvasDimension)
+		const rightMesh = new Mesh(meshCanvas, canvasDimension)
+
+		setLeftEyeMesh(leftMesh)
+		setRightEyeMesh(rightMesh)
+
+	}, [configurationFile]);
+
+	useEffect(() => {
+		if (!configurationFile) return
+		const reader = new FileReader()
+		let stale = false
+		reader.onload = (e) => {
+			if (stale) return
+			const content = e.target?.result
+			if (typeof content === 'string') {
+				try {
+					const data: SaveFile = JSON.parse(content)
+					leftEyeMesh?.restoreFromFile(data.leftEyeMesh)
+					rightEyeMesh?.restoreFromFile(data.rightEyeMesh)
+					activeMesh?.draw()
+					setConfigurationFile(undefined)
+				} catch (error) {
+					console.error("Failed to parse JSON:", error)
+				}
+			}
+		}
+		reader.readAsText(configurationFile)
+
+		return () => {stale = true}
+
+	}, [leftEyeMesh, rightEyeMesh]);
+
 	const handleImageUpload = (file: File): boolean => {
 		if(!leftEyeMesh || !rightEyeMesh || !canvas) throw new Error("meshes should be initialized")
 		const url = URL.createObjectURL(file)
@@ -176,7 +217,15 @@ const AmslerGrid: FC = () => {
 		return false
 	}
 
-	const handleSave = (): void => {
+	const handleSaveToFile = (): void => {
+
+		const json = createSaveSnapshot()
+		const blob = new Blob([json], { type: 'application/json' })
+		const fs = new FileSaver()
+		fs.save(blob)
+	}
+
+	const createSaveSnapshot = (): string => {
 		const max = activeMesh!.vertices[activeMesh!.vertices.length-1][activeMesh!.vertices[0].length-1].coordinate
 		const data = {
 			version: CURRENT_VERSION,
@@ -186,43 +235,57 @@ const AmslerGrid: FC = () => {
 			rightEyeMesh: rightEyeMesh
 		}
 
-		const json = JSON.stringify(data, null, 2)
-		const blob = new Blob([json], { type: 'application/json' })
-		const fs = new FileSaver()
-		fs.save(blob)
+		return  JSON.stringify(data, null)
+	}
+
+	const handleSave = (): void => {
+		const json = createSaveSnapshot()
+		const currentSaves = JSON.parse(localStorage.getItem('meshData') || '[]')
+
+		// add the new save to the start of the array
+		currentSaves.unshift(json)
+
+		// remove the oldest save if there are more than 5 saves
+		if (currentSaves.length > 5) {
+			currentSaves.pop()
+		}
+
+		localStorage.setItem('meshData', JSON.stringify(currentSaves))
+	}
+
+	const handleLoad = (): void => {
+		const currentSaves = JSON.parse(localStorage.getItem('meshData') || '[]')
+		const mostRecentSave = currentSaves[0]
+
+		if (mostRecentSave) {
+			const file = new File([mostRecentSave], "config.json", { type: 'application/json' })
+			setConfigurationFile(file)
+		}
 	}
 	
 	const printGrids = (): void => {
-		console.log("print")
 		leftEyeMesh?.canvas.download()
 		rightEyeMesh?.canvas.download()
 	}
 
-	const handleLoad = (file: File): boolean => {
-		const reader = new FileReader()
-
-		reader.onload = (e) => {
-			const content = e.target?.result
-			if (typeof content === 'string') {
-				try {
-					const data: SaveFile = JSON.parse(content)
-					console.log(data)
-					leftEyeMesh?.restoreFromFile(data.leftEyeMesh)
-					rightEyeMesh?.restoreFromFile(data.rightEyeMesh)
-					activeMesh?.draw()
-				} catch (error) {
-					console.error("Failed to parse JSON:", error)
-				}
-			}
-		}
-		reader.readAsText(file)
-
+	const handleLoadFromFile = (file: File): boolean => {
+		setConfigurationFile(file)
 		return false
 	}
 
 	return (
 		<>
-			{activeMesh && (<Sidebar changeActiveMesh={changeActiveMesh} handleSave={handleSave} printGrids={printGrids} handleLoad={handleLoad} handleImageUpload={handleImageUpload}/>)}
+			{activeMesh && (
+				<Sidebar
+					changeActiveMesh={changeActiveMesh}
+					handleSaveToFile={handleSaveToFile}
+					handleSave={handleSave}
+					handleLoad={handleLoad}
+					printGrids={printGrids}
+					handleLoadFromFile={handleLoadFromFile}
+					handleImageUpload={handleImageUpload}
+				/>)}
+
 			<Content>
 				<canvas
 					tabIndex={0}
