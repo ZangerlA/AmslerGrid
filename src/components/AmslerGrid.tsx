@@ -10,6 +10,7 @@ import {Key} from "../types/Key";
 import useWindowDimensions from "../customHooks/UseWindowDimensions";
 import {FileSaver} from "../classes/FileSaver";
 import {SaveFile} from "../types/SaveFile";
+import Navbar from "./Navbar";
 
 const {Content} = Layout
 
@@ -275,7 +276,7 @@ const AmslerGrid: FC = () => {
 
 	return (
 		<>
-			{activeMesh && (
+			{/*activeMesh && (
 				<Sidebar
 					changeActiveMesh={changeActiveMesh}
 					handleSaveToFile={handleSaveToFile}
@@ -284,15 +285,24 @@ const AmslerGrid: FC = () => {
 					printGrids={printGrids}
 					handleLoadFromFile={handleLoadFromFile}
 					handleImageUpload={handleImageUpload}
-				/>)}
-
+				/>)*/}
+			{ activeMesh &&
+				(<Navbar
+                       changeActiveMesh={changeActiveMesh}
+                       handleSaveToFile={handleSaveToFile}
+                                   handleSave={handleSave}
+                                   handleLoad={handleLoad}
+                                   printGrids={printGrids}
+				   handleLoadFromFile={handleLoadFromFile}
+                     handleImageUpload={handleImageUpload}
+				 />)}
 			<Content>
 				<canvas
 					tabIndex={0}
 					ref={setCanvas}
-					width={windowDimension[0].width - 60}
-					height={windowDimension[0].height}
-					style={{marginLeft: 60}}
+					width={windowDimension[0].width}
+					height={windowDimension[0].height - 30}
+					style={{marginTop: -10}}
 				>
 				</canvas>
 			</Content>
