@@ -218,12 +218,19 @@ const AmslerGrid: FC = () => {
 		return false
 	}
 
-	const handleSaveToFile = (): void => {
-
+	const handleSaveToFile = (username: string): void => {
+		const now = new Date();
+		const day = String(now.getDate()).padStart(2, '0');
+		const month = String(now.getMonth() + 1).padStart(2, '0');
+		const year = now.getFullYear();
+		const hours = String(now.getHours()).padStart(2, '0');
+		const minutes = String(now.getMinutes()).padStart(2, '0');
+		username = username === null ? "" : "_" + username
+		const filename = `Amsler_${day}.${month}.${year}_${hours}.${minutes}${username}`;
 		const json = createSaveSnapshot()
 		const blob = new Blob([json], { type: 'application/json' })
 		const fs = new FileSaver()
-		fs.save(blob)
+		fs.save(blob, filename)
 	}
 
 	const createSaveSnapshot = (): string => {
@@ -265,8 +272,8 @@ const AmslerGrid: FC = () => {
 	}
 	
 	const printGrids = (): void => {
-		leftEyeMesh?.canvas.download()
-		rightEyeMesh?.canvas.download()
+		leftEyeMesh?.canvas.download("left_eye")
+		rightEyeMesh?.canvas.download("right_eye")
 	}
 
 	const handleLoadFromFile = (file: File): boolean => {
