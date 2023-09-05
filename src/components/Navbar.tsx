@@ -19,26 +19,30 @@ import {
 	QuestionCircleOutlined,
 	QuestionOutlined, ReloadOutlined,
 	SaveOutlined, UploadOutlined
-} from "@ant-design/icons";
-import CustomDropdown from "./CustomDropdown";
-import HelpWindow from "./HelpWindow";
-import { useTranslation, Trans } from 'react-i18next';
-import {SaveFile} from "../types/SaveFile";
-import {toReadableDate} from "../helperMethods/toReadableDate";
-import Title from "antd/lib/typography/Title";
+} from "@ant-design/icons"
+import CustomDropdown from "./CustomDropdown"
+import HelpWindow from "./HelpWindow"
+import { useTranslation, Trans } from 'react-i18next'
+import {SaveFile} from "../types/SaveFile"
+import {toReadableDate} from "../helperMethods/toReadableDate"
+import Title from "antd/lib/typography/Title"
+import PDF from "./PDF"
+import ReactPDF from "@react-pdf/renderer"
+import PDFViewer = ReactPDF.PDFViewer
+import ReactDOM from "react-dom"
 
 type LanguageMap = {
 	[key: string]: {
-		nativeName: string;
-	};
-};
+		nativeName: string
+	}
+}
 
 type NavbarProps = {
 	changeActiveMesh: () => void,
 	handleSaveToFile: (username: string) => void,
 	handleSave: () => [],
 	handleLoad: (data: SaveFile) => void,
-	printGrids: () => void,
+	printGrids: () => {},
 	handleLoadFromFile: (file: File) => boolean,
 	handleImageUpload: (file: File) => boolean,
 }
@@ -47,9 +51,9 @@ const Navbar: FC<NavbarProps> = (props) => {
 	const [isHelpModalOpen, setIsHelpModalOpen] = useState<boolean>(false)
 	const [isFileSaveModalOpen, setIsFileSaveModalOpen] = useState<boolean>(false)
 	const [savedMeshData, setSavedMeshData] = useState(() => {
-		const storedMeshData = localStorage.getItem('meshData');
-		return storedMeshData ? JSON.parse(storedMeshData) : [];
-	});
+		const storedMeshData = localStorage.getItem('meshData')
+		return storedMeshData ? JSON.parse(storedMeshData) : []
+	})
 	const [selectedEye, setSelectedEye] = useState<string>('leftEye')
 	const [isRestoreModalOpen, setIsRestoreModalOpen] = useState<boolean>(false)
 	const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState<boolean>(false)
@@ -76,6 +80,16 @@ const Navbar: FC<NavbarProps> = (props) => {
 		setIsFileSaveModalOpen(false)
 		localStorage.setItem("name", form.getFieldValue("name"))
 		props.handleSaveToFile(form.getFieldValue("name"))
+	}
+
+	const openPDFNewWindow = () => {
+		const newWindow = window.open("", "_blank")
+		const images: any = props.printGrids()
+		if (newWindow) {
+			newWindow.document.write('<div id="pdf-root"></div>')
+			const rootElement = newWindow.document.getElementById("pdf-root")
+			ReactDOM.render(<PDF canvas1ImageSrc={images["leftEye"]} canvas2ImageSrc={images["rightEye"]}/>, rootElement)
+		}
 	}
 
 	const navbarStyle = {
@@ -122,7 +136,7 @@ const Navbar: FC<NavbarProps> = (props) => {
 							{t("fileSave.dropdown.loadFromFile")}
 						</Button>
 					</Upload>
-					<Button type="text" style={dropdownButtonStyle} icon={<PrinterOutlined />} onClick={props.printGrids}>{t("fileSave.dropdown.printPDF")}</Button>
+					<Button type="text" style={dropdownButtonStyle} icon={<PrinterOutlined />} onClick={openPDFNewWindow}>{t("fileSave.dropdown.printPDF")}</Button>
 					<Upload beforeUpload={props.handleImageUpload} showUploadList={false}>
 						<Button type="text" style={dropdownButtonStyle} icon={<UploadOutlined />}>
 							{t("fileSave.dropdown.uploadImage")}
@@ -195,20 +209,19 @@ const Navbar: FC<NavbarProps> = (props) => {
 				okText={t("restore.okText")}
 				open={isRestoreModalOpen}
 				onOk={() => {
-					if (selectedSaveData) props.handleLoad(selectedSaveData);
-					setIsRestoreModalOpen(false);
-					setSelectedSaveData(null);
+					if (selectedSaveData) props.handleLoad(selectedSaveData)
+					setIsRestoreModalOpen(false)
+					setSelectedSaveData(null)
 				}}
 				onCancel={() => {
-					setIsRestoreModalOpen(false);
-					setSelectedSaveData(null);
+					setIsRestoreModalOpen(false)
+					setSelectedSaveData(null)
 				}}
 			>
 				<div style={{marginTop: "30px", marginBottom: "30px"}}>
 					{t("restore.confirmationMessage")} <br/> {selectedSaveData ? toReadableDate(selectedSaveData.date) : ""} ?
 				</div>
 			</Modal>
-
 			<Modal title={t("fileSave.saveToFile")} cancelText={t("fileSave.cancelButton")} okText={t("fileSave.saveButton")} open={isFileSaveModalOpen} onOk={handleFileSaveOk} onCancel={() => setIsFileSaveModalOpen(false)}>
 				<Form form={form} style={{marginTop: "30px"}}>
 					<span>{t("fileSave.enterName")}</span>

@@ -93,6 +93,11 @@ export class MeshCanvas {
 		link.download = filename;
 		link.click();
 	}
+
+	public getDataURL(filename = 'distorted-image.png') {
+		const link = document.createElement('a');
+		return this.canvas.toDataURL('image/png');
+	}
 	
 	public toDataURL(): string {
 		return this.canvas.toDataURL()
