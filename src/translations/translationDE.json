@@ -1,9 +1,24 @@
 {
   "navbar": {
     "fileButton": "Datei",
+    "quicksaveButton": "Zwischenspeichern",
+    "restoreButton": "Wiederherstellen",
     "leftEye": "Linkes Auge",
     "rightEye": "Rechtes Auge",
     "language": "Sprache:"
+  },
+  "restore": {
+    "save": "Speicherpunkt",
+    "confirmationTitle": "Wiederherstellen",
+    "confirmationMessage": "Möchten Sie den Zustand des Gitters wirklich zurücksetzen auf:",
+    "cancelText": "Abbrechen",
+    "okText": "Wiederherstellen",
+    "deleteAll": "Alle löschen",
+    "deleteAllTitle": "Alle Speicherpunkte löschen",
+    "deleteAllMessage": "Sind Sie sicher, dass Sie alle Ihre gespeicherten Daten dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleteAllOkText": "Löschen bestätigen",
+    "noData": "Keine Einträge.",
+    "useQuickSave": "Benutzen Sie den \"Zwischenspeichern\" Knopf um zu speichern."
   },
   "fileSave": {
     "saveToFile": "Speichern als Datei",

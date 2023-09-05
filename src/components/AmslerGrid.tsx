@@ -237,6 +237,7 @@ const AmslerGrid: FC = () => {
 		const max = activeMesh!.vertices[activeMesh!.vertices.length-1][activeMesh!.vertices[0].length-1].coordinate
 		const data = {
 			version: CURRENT_VERSION,
+			date: Date.now(),
 			meshWidth: max.x,
 			meshHeight: max.y,
 			leftEyeMesh: leftEyeMesh,
@@ -246,29 +247,28 @@ const AmslerGrid: FC = () => {
 		return  JSON.stringify(data, null)
 	}
 
-	const handleSave = (): void => {
-		const json = createSaveSnapshot()
-		const currentSaves = JSON.parse(localStorage.getItem('meshData') || '[]')
+	const handleSave = (): [] => {
+		const jsonData = createSaveSnapshot();
+		const dataObject = JSON.parse(jsonData);
+		const currentSaves = JSON.parse(localStorage.getItem('meshData') || '[]');
 
-		// add the new save to the start of the array
-		currentSaves.unshift(json)
+		currentSaves.unshift(dataObject);
 
 		// remove the oldest save if there are more than 5 saves
 		if (currentSaves.length > 5) {
 			currentSaves.pop()
 		}
 
-		localStorage.setItem('meshData', JSON.stringify(currentSaves))
+		localStorage.setItem('meshData', JSON.stringify(currentSaves));
+		return currentSaves;
 	}
 
-	const handleLoad = (): void => {
-		const currentSaves = JSON.parse(localStorage.getItem('meshData') || '[]')
-		const mostRecentSave = currentSaves[0]
+	const handleLoad = (data: SaveFile): void => {
+		const jsonData = JSON.stringify(data);
+		const blob = new Blob([jsonData], { type: 'application/json' });
+		const file = new File([blob], "config.json");
 
-		if (mostRecentSave) {
-			const file = new File([mostRecentSave], "config.json", { type: 'application/json' })
-			setConfigurationFile(file)
-		}
+		setConfigurationFile(file);
 	}
 	
 	const printGrids = (): void => {

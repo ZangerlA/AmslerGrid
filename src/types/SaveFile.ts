@@ -4,6 +4,7 @@ import {Edge} from "./Edge";
 
 export type SaveFile = {
     version: string,
+    date: number,
     leftEyeMesh: MeshData,
     rightEyeMesh: MeshData,
 }

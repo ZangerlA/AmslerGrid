@@ -1,33 +1,48 @@
 {
   "navbar": {
     "fileButton": "File",
-    "leftEye": "Left eye",
-    "rightEye": "Right eye",
+    "quicksaveButton": "Quick Save",
+    "restoreButton": "Restore",
+    "leftEye": "Left Eye",
+    "rightEye": "Right Eye",
     "language": "Language:"
   },
+  "restore": {
+    "save": "Save",
+    "confirmationTitle": "Restore",
+    "confirmationMessage": "Do you wish to restore the mesh to the state of:",
+    "cancelText": "Cancel",
+    "okText": "Restore",
+    "deleteAll": "Delete All",
+    "deleteAllTitle": "Clear All Saves",
+    "deleteAllMessage": "Are you sure you want to permanently delete all your saved data? This action cannot be undone.",
+    "deleteAllOkText": "Confirm Delete",
+    "noData": "No entries yet.",
+    "useQuickSave": "Press the \"Quick Save\" Button to save."
+  },
   "fileSave": {
-    "saveToFile": "Save to file",
-    "enterName": "Please enter your name:",
+    "saveToFile": "Export to File",
+    "enterName": "Enter your name:",
     "saveButton": "Save",
     "cancelButton": "Cancel",
     "dropdown": {
-      "saveToFile": "Save as file",
-      "loadFromFile": "Load from file",
-      "printPDF": "Print PDF",
-      "uploadImage": "Upload image"
+      "saveToFile": "Export to File",
+      "loadFromFile": "Import from File",
+      "printPDF": "Export as PDF",
+      "uploadImage": "Upload Image"
     }
   },
   "help": {
     "action": {
-      "movePoint": "Move point",
-      "moveField": "Move field",
-      "selectField": "Select/Deselect field",
-      "splitField": "Split field",
-      "mergeFields": "Merge fields",
-      "rotateField": "Rotate field",
-      "scaleField": "Scale field",
-      "deselectFields": "Deselect all fields",
-      "toggleImage": "View image"
+      "movePoint": "Move Point",
+      "moveField": "Move Field",
+      "selectField": "Select/Deselect Field",
+      "splitField": "Split Field",
+      "mergeFields": "Merge Fields",
+      "rotateField": "Rotate Field",
+      "scaleField": "Scale Field",
+      "deselectFields": "Deselect All Fields",
+      "toggleImage": "View Image"
     },
     "condition": {
       "fieldSelected": "Field selected"
@@ -35,7 +50,7 @@
     "header": {
       "action": "Action",
       "condition": "Condition",
-      "input": "Input"
+      "input": "Input Method"
     },
     "footer": {
       "close": "Close"
@@ -44,7 +59,7 @@
   "input": {
     "leftClick": "LEFT CLICK",
     "rightClick": "RIGHT CLICK",
-    "wheel": "MOUSEWHEEL",
+    "wheel": "MOUSE WHEEL",
     "esc": "ESC",
     "spacebar": "SPACEBAR",
     "shift": "SHIFT",

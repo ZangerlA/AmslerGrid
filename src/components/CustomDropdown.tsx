@@ -35,6 +35,7 @@ export const Dropdown: FC<DropdownProps> = ({ trigger, children }) => {
 		marginLeft: '10px',
 		paddingTop: '10px',
 		borderRadius: '5px',
+		border: '1px solid #ddd',
 	}
 
 	return (
