@@ -1,5 +1,17 @@
 import React, {FC, useRef, useState} from "react";
-import {Button, Dropdown, Form, Input, MenuProps, Modal, Radio, RadioChangeEvent, Segmented, Upload} from "antd";
+import {
+	Button,
+	Dropdown,
+	Form,
+	Input,
+	MenuProps,
+	Modal,
+	Radio,
+	RadioChangeEvent,
+	Segmented,
+	Select,
+	Upload
+} from "antd";
 import Icon from "antd/es/icon";
 import {
 	FileOutlined,
@@ -9,7 +21,14 @@ import {
 	SaveOutlined, UploadOutlined
 } from "@ant-design/icons";
 import CustomDropdown from "./CustomDropdown";
-import PopupWindow from "./PopupWindow";
+import HelpWindow from "./HelpWindow";
+import { useTranslation, Trans } from 'react-i18next';
+
+type LanguageMap = {
+	[key: string]: {
+		nativeName: string;
+	};
+};
 
 type NavbarProps = {
 	changeActiveMesh: () => void,
@@ -26,10 +45,16 @@ const Navbar: FC<NavbarProps> = (props) => {
 	const [isFileSaveModalOpen, setIsFileSaveModalOpen] = useState<boolean>(false)
 	const [selectedEye, setSelectedEye] = useState<string>('leftEye')
 	const [form] = Form.useForm();
+	const { t, i18n } = useTranslation();
+
+	const languages: LanguageMap = {
+		en: { nativeName: 'English' },
+		de: { nativeName: 'Deutsch' }
+	};
 
 	const eyeOptions = [
-		{label: 'Left eye', value: 'leftEye'},
-		{label: 'Right eye', value: 'rightEye'},
+		{label: t("navbar.leftEye"), value: 'leftEye'},
+		{label: t("navbar.rightEye"), value: 'rightEye'},
 	]
 
 	const onEyeChange = ({target: {value}}: RadioChangeEvent) => {
@@ -52,6 +77,15 @@ const Navbar: FC<NavbarProps> = (props) => {
 		borderBottom: '1px solid #ddd',
 	}
 
+	const navbarLeftStyle = {
+		display: 'flex',
+	}
+
+	const navbarRightStyle = {
+		display: 'flex',
+		margin: '10px 10px 10px auto',
+	}
+
 	const buttonStyle: React.CSSProperties = {
 		margin: '10px',
 	}
@@ -63,22 +97,25 @@ const Navbar: FC<NavbarProps> = (props) => {
 	}
 
 	const helpStyle: React.CSSProperties = {
-		margin: '10px 10px 10px auto',
+		marginLeft: '20px'
 	}
+
+	const currentLanguageName = languages[i18n.resolvedLanguage!].nativeName
 
 	return (
 		<div style={navbarStyle}>
-			<CustomDropdown trigger={<Button style={{margin: '10px 10px 0px 10px'}}><FileOutlined /> File</Button>}>
-				<Button type="text" style={dropdownButtonStyle} icon={<SaveOutlined />} onClick={() => setIsFileSaveModalOpen(true)}>Save to file</Button>
+			<div style={navbarLeftStyle}>
+			<CustomDropdown trigger={<Button style={{margin: '10px 10px 0px 10px'}}><FileOutlined />{t("navbar.fileButton")}</Button>}>
+				<Button type="text" style={dropdownButtonStyle} icon={<SaveOutlined />} onClick={() => setIsFileSaveModalOpen(true)}>{t("fileSave.dropdown.saveToFile")}</Button>
 				<Upload beforeUpload={props.handleLoadFromFile} showUploadList={false}>
 					<Button type="text" style={dropdownButtonStyle} icon={<FolderOpenOutlined />}>
-						Load from file
+						{t("fileSave.dropdown.loadFromFile")}
 					</Button>
 				</Upload>
-				<Button type="text" style={dropdownButtonStyle} icon={<PrinterOutlined />} onClick={props.printGrids}>Print to PDF</Button>
+				<Button type="text" style={dropdownButtonStyle} icon={<PrinterOutlined />} onClick={props.printGrids}>{t("fileSave.dropdown.printPDF")}</Button>
 				<Upload beforeUpload={props.handleImageUpload} showUploadList={false}>
 					<Button type="text" style={dropdownButtonStyle} icon={<UploadOutlined />}>
-						Upload image
+						{t("fileSave.dropdown.uploadImage")}
 					</Button>
 				</Upload>
 			</CustomDropdown>
@@ -90,16 +127,30 @@ const Navbar: FC<NavbarProps> = (props) => {
 				optionType="button"
 				buttonStyle="solid"
 			/>
+			</div>
+			<div style={navbarRightStyle}>
+			<span style={{display: "flex",  color: "black", alignItems: 'center', paddingRight: "5px"}}>{t("navbar.language")}</span>
+			<Select
+				defaultValue={currentLanguageName || 'English'}
+				onChange={(lng) => i18n.changeLanguage(lng)}
+			>
+				{Object.keys(languages).map((lng) => (
+					<Select.Option key={lng} value={lng}>
+						{languages[lng].nativeName}
+					</Select.Option>
+				))}
+			</Select>
 			<Button style={helpStyle} icon={<QuestionOutlined />} shape={"circle"} onClick={() => setIsHelpModalOpen(true)}></Button>
-			<Modal title="Save to file" okText="Save" open={isFileSaveModalOpen} onOk={handleFileSaveOk} onCancel={() => setIsFileSaveModalOpen(false)}>
+			</div>
+			<Modal title={t("fileSave.saveToFile")} cancelText={t("fileSave.cancelButton")} okText={t("fileSave.saveButton")} open={isFileSaveModalOpen} onOk={handleFileSaveOk} onCancel={() => setIsFileSaveModalOpen(false)}>
 				<Form form={form} style={{marginTop: "30px"}}>
-					<span>Please enter your name:</span>
+					<span>{t("fileSave.enterName")}</span>
 					<Form.Item initialValue={localStorage.getItem("name")} required={false} style={{marginTop: '15px'}} name="name" label="Name" rules={[{ required: true }]}>
 						<Input />
 					</Form.Item>
 				</Form>
 			</Modal>
-			<PopupWindow title={''} open={isHelpModalOpen} setOpen={setIsHelpModalOpen}></PopupWindow>
+			<HelpWindow title={''} open={isHelpModalOpen} setOpen={setIsHelpModalOpen}></HelpWindow>
 		</div>
 	)
 }

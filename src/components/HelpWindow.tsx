@@ -3,6 +3,7 @@ import React, {FC} from "react";
 import {Table, Tag} from "antd";
 import type {ColumnsType} from "antd/es/table";
 import {PlusOutlined} from "@ant-design/icons";
+import {useTranslation} from "react-i18next";
 
 type PopupWindowProps = {
 	title: string
@@ -17,77 +18,79 @@ interface DataType {
 	tags: String[];
 }
 
-const PopupWindow: FC<PopupWindowProps> = (props) => {
+const HelpWindow: FC<PopupWindowProps> = (props) => {
+	const { t } = useTranslation();
+
 	const dataSource: DataType[] = [
 		{
 			key: 'movepoint',
-			action: 'Drag Point',
+			action: t("help.action.movePoint"),
 			condition: '',
-			tags: ['Left Click'],
+			tags: [t("input.leftClick")],
 		},
 		{
 			key: 'movefield',
-			action: 'Drag Field',
-			condition: 'Field selected',
-			tags: ['Left Click'],
+			action: t("help.action.moveField"),
+			condition: t("help.condition.fieldSelected"),
+			tags: [t("input.leftClick")],
 		},
 		{
 			key: 'select',
-			action: 'Select Field',
+			action: t("help.action.selectField"),
 			condition: '',
-			tags: ['Right Click'],
+			tags: [t("input.rightClick")],
 		},
 		{
 			key: 'split',
-			action: 'Split Field',
+			action: t("help.action.splitField"),
 			condition: '',
-			tags: ['CTRL', '+', 'Left Click'],
+			tags: [t("input.ctrl"), '+', t("input.leftClick")],
 		},
 		{
 			key: 'merge',
-			action: 'Merge Fields',
+			action: t("help.action.mergeFields"),
 			condition: '',
-			tags: ['ALT', '+', 'Left Click'],
+			tags: [t("input.alt"), '+', t("input.leftClick")],
 		},
 		{
 			key: 'rotate',
-			action: 'Rotate selected field',
-			condition: 'Field selected',
-			tags: ['Wheel Up/Down'],
+			action: t("help.action.rotateField"),
+			condition: t("help.condition.fieldSelected"),
+			tags: [t("input.wheel")],
 		},
 		{
 			key: 'scale',
-			action: 'Scale selected field',
-			condition: 'Field selected',
-			tags: ['SHIFT', '+', 'Wheel Up/Down'],
+			action: t("help.action.scaleField"),
+			condition: t("help.condition.fieldSelected"),
+			tags: [t("input.shift"), '+', t("input.wheel")],
 		},
 		{
 			key: 'deselect',
-			action: 'Deselect all fields',
-			condition: 'Field selected',
-			tags: ['ESC'],
+			action: t("help.action.deselectFields"),
+			condition: t("help.condition.fieldSelected"),
+			tags: [t("input.esc")],
 		},
 		{
 			key: 'showImage',
-			action: 'Toggle warped image',
+			action: t("help.action.toggleImage"),
 			condition: '',
-			tags: ['SPACEBAR'],
+			tags: [t("input.spacebar")],
 		},
 	];
 
 	const columns : ColumnsType<DataType> = [
 		{
-			title: 'Action',
+			title: t("help.header.action"),
 			dataIndex: 'action',
 			key: 'action',
 		},
 		{
-			title: 'Condition',
+			title: t("help.header.condition"),
 			dataIndex: 'condition',
 			key: 'condition',
 		},
 		{
-			title: 'Inputs',
+			title: t("help.header.input"),
 			dataIndex: 'tags',
 			key: 'tags',
 			render: (tags: string[]) => (
@@ -97,13 +100,13 @@ const PopupWindow: FC<PopupWindowProps> = (props) => {
 						if (tag === '+'){
 							return <span style={{marginRight: 2.5}}>+  </span>
 						}
-						if (tag === 'Left Click' || tag === 'Right Click'){
+						if (tag === t("input.leftClick") || tag === t("input.rightClick")){
 							color = 'blue'
 						}
-						if (tag === 'Wheel Up/Down'){
+						if (tag === t("input.wheel")){
 							color = 'purple'
 						}
-						if (tag === 'CTRL' || tag === 'SHIFT' || tag === 'ALT'){
+						if (tag === t("input.ctrl") || tag === t("input.shift") || tag === t("input.alt") || tag === t("input.esc") || tag === t("input.spacebar")){
 							color = 'green'
 						}
 						return (
@@ -129,14 +132,15 @@ const PopupWindow: FC<PopupWindowProps> = (props) => {
 			closable={false}
 			footer={false}
 			maskClosable={true}
+			width="700px"
 			onCancel={() => props.setOpen(false)}
 		>
 			{content}
 			<div style={{display: "flex", justifyContent: "center", alignItems: "center"}}>
-				<Button type='primary' style={{marginTop: 20}} onClick={() => props.setOpen(false)}>Close</Button>
+				<Button type='primary' style={{marginTop: 20}} onClick={() => props.setOpen(false)}>{t("help.footer.close")}</Button>
 			</div>
 		</Modal>
 	)
 }
 
-export default PopupWindow;
+export default HelpWindow;

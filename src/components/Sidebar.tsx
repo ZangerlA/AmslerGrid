@@ -11,7 +11,7 @@ import {
 	UploadOutlined,
 } from "@ant-design/icons";
 import {MenuClickEventHandler} from 'rc-menu/lib/interface'
-import PopupWindow from "./PopupWindow";
+import HelpWindow from "./HelpWindow";
 
 type MenuItem = Required<MenuProps>['items'][number];
 type SidebarProps = {
@@ -114,7 +114,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
 				items={items}
 				onClick={handleClick}
 			/>
-			<PopupWindow title={''} open={modalOpen} setOpen={setModalOpen}></PopupWindow>
+			<HelpWindow title={''} open={modalOpen} setOpen={setModalOpen}></HelpWindow>
 		</Sider>
 	)
 }
