@@ -1,0 +1,54 @@
+{
+  "navbar": {
+    "fileButton": "Datei",
+    "leftEye": "Linkes Auge",
+    "rightEye": "Rechtes Auge",
+    "language": "Sprache:"
+  },
+  "fileSave": {
+    "saveToFile": "Speichern als Datei",
+    "enterName": "Bitte geben Sie Ihren Namen ein:",
+    "saveButton": "Speichern",
+    "cancelButton": "Abbrechen",
+    "dropdown": {
+      "saveToFile": "Speichern als Datei",
+      "loadFromFile": "Datei laden",
+      "printPDF": "PDF drucken",
+      "uploadImage": "Bild hochladen"
+    }
+  },
+  "help": {
+    "action": {
+      "movePoint": "Punkt bewegen",
+      "moveField": "Feld bewegen",
+      "selectField": "Feld auswählen/abwählen",
+      "splitField": "Feld teilen",
+      "mergeFields": "Felder zusammenfügen",
+      "rotateField": "Feld rotieren",
+      "scaleField": "Feld skalieren",
+      "deselectFields": "Alle Felder abwählen",
+      "toggleImage": "Bild anzeigen"
+    },
+    "condition": {
+      "fieldSelected": "Feld(er) ausgewählt"
+    },
+    "header": {
+      "action": "Aktion",
+      "condition": "Bedingung",
+      "input": "Eingabe"
+    },
+    "footer": {
+      "close": "Schließen"
+    }
+  },
+  "input": {
+    "leftClick": "LINKE MAUSTASTE",
+    "rightClick": "RECHTE MAUSTASTE",
+    "wheel": "MAUSRAD",
+    "esc": "ESC",
+    "spacebar": "LEERTASTE",
+    "shift": "SHIFT",
+    "ctrl": "STRG",
+    "alt": "ALT"
+  }
+}

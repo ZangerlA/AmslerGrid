@@ -1,0 +1,54 @@
+{
+  "navbar": {
+    "fileButton": "File",
+    "leftEye": "Left eye",
+    "rightEye": "Right eye",
+    "language": "Language:"
+  },
+  "fileSave": {
+    "saveToFile": "Save to file",
+    "enterName": "Please enter your name:",
+    "saveButton": "Save",
+    "cancelButton": "Cancel",
+    "dropdown": {
+      "saveToFile": "Save as file",
+      "loadFromFile": "Load from file",
+      "printPDF": "Print PDF",
+      "uploadImage": "Upload image"
+    }
+  },
+  "help": {
+    "action": {
+      "movePoint": "Move point",
+      "moveField": "Move field",
+      "selectField": "Select/Deselect field",
+      "splitField": "Split field",
+      "mergeFields": "Merge fields",
+      "rotateField": "Rotate field",
+      "scaleField": "Scale field",
+      "deselectFields": "Deselect all fields",
+      "toggleImage": "View image"
+    },
+    "condition": {
+      "fieldSelected": "Field selected"
+    },
+    "header": {
+      "action": "Action",
+      "condition": "Condition",
+      "input": "Input"
+    },
+    "footer": {
+      "close": "Close"
+    }
+  },
+  "input": {
+    "leftClick": "LEFT CLICK",
+    "rightClick": "RIGHT CLICK",
+    "wheel": "MOUSEWHEEL",
+    "esc": "ESC",
+    "spacebar": "SPACEBAR",
+    "shift": "SHIFT",
+    "ctrl": "CTRL",
+    "alt": "ALT"
+  }
+}
