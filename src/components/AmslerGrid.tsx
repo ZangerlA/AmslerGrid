@@ -11,6 +11,8 @@ import useWindowDimensions from "../customHooks/UseWindowDimensions";
 import {FileSaver} from "../classes/FileSaver";
 import {SaveFile} from "../types/SaveFile";
 import Navbar from "./Navbar";
+import PDF from "./PDF";
+import ReactPDF from "@react-pdf/renderer";
 
 const {Content} = Layout
 
@@ -271,9 +273,11 @@ const AmslerGrid: FC = () => {
 		setConfigurationFile(file);
 	}
 	
-	const printGrids = (): void => {
-		leftEyeMesh?.canvas.download("left_eye")
-		rightEyeMesh?.canvas.download("right_eye")
+	const printGrids = (): {} => {
+		return {
+			leftEye: leftEyeMesh?.canvas.getDataURL("left_eye"),
+			rightEye: rightEyeMesh?.canvas.getDataURL("right_eye"),
+		}
 	}
 
 	const handleLoadFromFile = (file: File): boolean => {
