@@ -88,7 +88,13 @@ const Navbar: FC<NavbarProps> = (props) => {
 		if (newWindow) {
 			newWindow.document.write('<div id="pdf-root"></div>')
 			const rootElement = newWindow.document.getElementById("pdf-root")
-			ReactDOM.render(<PDF canvas1ImageSrc={images["leftEye"]} canvas2ImageSrc={images["rightEye"]}/>, rootElement)
+			ReactDOM.render(
+				<PDF
+					dimensionCanvas1={images["dimensionLeft"]}
+					dimensionCanvas2={images["dimensionLeft"]}
+					canvas1ImageSrc={images["leftEye"]}
+					canvas2ImageSrc={images["rightEye"]}
+				/>, rootElement)
 		}
 	}
 

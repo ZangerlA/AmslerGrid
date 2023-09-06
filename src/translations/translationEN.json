@@ -8,7 +8,7 @@
     "language": "Language:"
   },
   "restore": {
-    "save": "Save",
+    "save": "Restore Point",
     "confirmationTitle": "Restore",
     "confirmationMessage": "Do you wish to restore the mesh to the state of:",
     "cancelText": "Cancel",

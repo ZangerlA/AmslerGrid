@@ -102,5 +102,52 @@ export class MeshCanvas {
 	public toDataURL(): string {
 		return this.canvas.toDataURL()
 	}
-	
+
+	public getMeshBoundingBox(vertices: Vertex[][]): { upperLeft: Point, lowerRight: Point } {
+		let minX = Infinity;
+		let minY = Infinity;
+		let maxX = -Infinity;
+		let maxY = -Infinity;
+
+		vertices.forEach(row => {
+			row.forEach(vertex => {
+				minX = Math.min(minX, vertex.coordinate.x);
+				minY = Math.min(minY, vertex.coordinate.y);
+				maxX = Math.max(maxX, vertex.coordinate.x);
+				maxY = Math.max(maxY, vertex.coordinate.y);
+			});
+		});
+
+		return {
+			upperLeft: { x: minX, y: minY },
+			lowerRight: { x: maxX, y: maxY }
+		};
+	}
+
+	public getMeshImageData(vertices: Vertex[][]): ImageData {
+		const boundingBox = this.getMeshBoundingBox(vertices);
+		console.log(boundingBox)
+		const width = boundingBox.lowerRight.x - boundingBox.upperLeft.x;
+		const height = boundingBox.lowerRight.y - boundingBox.upperLeft.y;
+		console.log(width)
+		return this.ctx.getImageData(boundingBox.upperLeft.x - 50, boundingBox.upperLeft.y - 50, width + 100, height + 100);
+	}
+
+	public getMeshDataURL(vertices: Vertex[][]): string {
+		// Step 1: Get the ImageData of the mesh area
+		const imageData = this.getMeshImageData(vertices);
+
+		// Step 2: Draw that ImageData on another (temporary) canvas
+		const tempCanvas = document.createElement('canvas');
+		tempCanvas.width = imageData.width;
+		tempCanvas.height = imageData.height;
+
+		const tempCtx = tempCanvas.getContext('2d');
+		if (tempCtx) {
+			tempCtx.putImageData(imageData, 0, 0);
+		}
+
+		// Step 3: Return the Base64 encoded image
+		return tempCanvas.toDataURL();
+	}
 }

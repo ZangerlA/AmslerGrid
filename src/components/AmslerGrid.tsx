@@ -7,7 +7,7 @@ import {MouseButton} from "../types/MouseButton";
 import {Point} from "../types/Coordinate";
 import {Vector} from "../types/Vector";
 import {Key} from "../types/Key";
-import useWindowDimensions from "../customHooks/UseWindowDimensions";
+import useWindowDimensions, {Dimension} from "../customHooks/UseWindowDimensions";
 import {FileSaver} from "../classes/FileSaver";
 import {SaveFile} from "../types/SaveFile";
 import Navbar from "./Navbar";
@@ -27,6 +27,7 @@ const AmslerGrid: FC = () => {
 	const [configurationFile, setConfigurationFile ] = useState<File>()
 	const changeActiveMesh = () => setIsLeftEyeMesh(b => !b)
 	const [activeMesh] = isLeftEyeMesh ? [leftEyeMesh, setLeftEyeMesh] : [rightEyeMesh, setRightEyeMesh]
+	const [canvasSize, setCanvasSize] = useState<Dimension>({width: windowDimension[0].width, height: windowDimension[0].height - 30})
 
 	useEffect(() => {
 		if (!canvas) return
@@ -212,6 +213,10 @@ const AmslerGrid: FC = () => {
 
 	}, [leftEyeMesh, rightEyeMesh]);
 
+	useEffect(() => {
+		setCanvasSize(windowDimension[0])
+	}, []);
+
 	const handleImageUpload = (file: File): boolean => {
 		if(!leftEyeMesh || !rightEyeMesh || !canvas) throw new Error("meshes should be initialized")
 		const url = URL.createObjectURL(file)
@@ -274,9 +279,13 @@ const AmslerGrid: FC = () => {
 	}
 	
 	const printGrids = (): {} => {
+		const maxLeft = leftEyeMesh!.vertices[leftEyeMesh!.vertices.length-1][leftEyeMesh!.vertices[0].length-1].coordinate
+		const maxRight = rightEyeMesh!.vertices[rightEyeMesh!.vertices.length-1][rightEyeMesh!.vertices[0].length-1].coordinate
 		return {
-			leftEye: leftEyeMesh?.canvas.getDataURL("left_eye"),
-			rightEye: rightEyeMesh?.canvas.getDataURL("right_eye"),
+			leftEye: leftEyeMesh?.canvas.getMeshDataURL(leftEyeMesh?.vertices),
+			dimensionLeft: {width: maxLeft.x, height: maxLeft.y},
+			rightEye: rightEyeMesh?.canvas.getMeshDataURL(rightEyeMesh?.vertices),
+			dimensionRight: {width: maxRight.x, height: maxRight.y},
 		}
 	}
 
@@ -307,12 +316,14 @@ const AmslerGrid: FC = () => {
 				   handleLoadFromFile={handleLoadFromFile}
                      handleImageUpload={handleImageUpload}
 				 />)}
+			{console.log(canvasSize.width)}
 			<Content>
+
 				<canvas
 					tabIndex={0}
 					ref={setCanvas}
-					width={windowDimension[0].width}
-					height={windowDimension[0].height - 30}
+					width={canvasSize.width}
+					height={canvasSize.height - 30}
 					style={{marginTop: -10}}
 				>
 				</canvas>
