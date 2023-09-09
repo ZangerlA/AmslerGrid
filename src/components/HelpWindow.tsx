@@ -1,8 +1,6 @@
-import {Button, Modal} from 'antd';
+import {Button, Modal, Table, Tag} from 'antd';
 import React, {FC} from "react";
-import {Table, Tag} from "antd";
 import type {ColumnsType} from "antd/es/table";
-import {PlusOutlined} from "@ant-design/icons";
 import {useTranslation} from "react-i18next";
 
 type PopupWindowProps = {

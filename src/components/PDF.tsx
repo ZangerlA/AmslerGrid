@@ -1,5 +1,5 @@
-import React, { FC } from 'react';
-import { Page, Text, View, Document, StyleSheet, PDFViewer, Image } from '@react-pdf/renderer';
+import React, {FC} from 'react';
+import {Document, Image, Page, PDFViewer, StyleSheet, Text, View} from '@react-pdf/renderer';
 import {t} from "i18next";
 import {Dimension} from "../customHooks/UseWindowDimensions";
 
@@ -54,7 +54,6 @@ const PDF: FC<PDFProps> = ({dimensionCanvas1, dimensionCanvas2, canvas1ImageSrc,
             height: window.innerHeight,
         },
     })
-    console.log(dimensionCanvas1)
     return (
         <PDFViewer style={styles.viewer}>
             <Document>

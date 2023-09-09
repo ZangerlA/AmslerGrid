@@ -1,7 +1,6 @@
 import {Dimension} from "../customHooks/UseWindowDimensions";
 import {Point} from "../types/Coordinate";
 import {Vertex} from "./Vertex";
-import {ImageWarper} from "./ImageWarper";
 
 export class MeshCanvas {
 	public dimension: Dimension
@@ -126,10 +125,8 @@ export class MeshCanvas {
 
 	public getMeshImageData(vertices: Vertex[][]): ImageData {
 		const boundingBox = this.getMeshBoundingBox(vertices);
-		console.log(boundingBox)
 		const width = boundingBox.lowerRight.x - boundingBox.upperLeft.x;
 		const height = boundingBox.lowerRight.y - boundingBox.upperLeft.y;
-		console.log(width)
 		return this.ctx.getImageData(boundingBox.upperLeft.x - 50, boundingBox.upperLeft.y - 50, width + 100, height + 100);
 	}
 

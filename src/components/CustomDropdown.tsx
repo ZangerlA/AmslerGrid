@@ -1,4 +1,4 @@
-import React, { FC, ReactNode, useState, useRef } from 'react'
+import React, {FC, ReactNode, useRef, useState} from 'react'
 
 type DropdownProps = {
 	trigger: ReactNode

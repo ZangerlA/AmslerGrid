@@ -1,6 +1,5 @@
-import React, {FC, useEffect, useRef, useState} from "react";
-import Sidebar from "./Sidebar";
-import {Layout, Spin} from "antd";
+import React, {FC, useEffect, useState} from "react";
+import {Layout} from "antd";
 import {Mesh} from "../classes/Mesh";
 import {MeshCanvas} from "../classes/MeshCanvas";
 import {MouseButton} from "../types/MouseButton";
@@ -11,8 +10,7 @@ import useWindowDimensions, {Dimension} from "../customHooks/UseWindowDimensions
 import {FileSaver} from "../classes/FileSaver";
 import {SaveFile} from "../types/SaveFile";
 import Navbar from "./Navbar";
-import PDF from "./PDF";
-import ReactPDF from "@react-pdf/renderer";
+import {toReadableDate} from "../helperMethods/toReadableDate";
 
 const {Content} = Layout
 
@@ -85,8 +83,6 @@ const AmslerGrid: FC = () => {
 			event.preventDefault()
 			
 			if (event.button === MouseButton.Right) {
-				console.log(activeMesh.polygons)
-				console.log(activeMesh.vertices)
 				const coordinate: Point = toCanvasCoord(event.clientX, event.clientY)
 				activeMesh.handleSelect(coordinate)
 				activeMesh.draw()
@@ -226,14 +222,9 @@ const AmslerGrid: FC = () => {
 	}
 
 	const handleSaveToFile = (username: string): void => {
-		const now = new Date();
-		const day = String(now.getDate()).padStart(2, '0');
-		const month = String(now.getMonth() + 1).padStart(2, '0');
-		const year = now.getFullYear();
-		const hours = String(now.getHours()).padStart(2, '0');
-		const minutes = String(now.getMinutes()).padStart(2, '0');
+		const now = Date.now();
 		username = username === null ? "" : "_" + username
-		const filename = `Amsler_${day}.${month}.${year}_${hours}.${minutes}${username}`;
+		const filename = "Amsler_" + toReadableDate(now);
 		const json = createSaveSnapshot()
 		const blob = new Blob([json], { type: 'application/json' })
 		const fs = new FileSaver()
@@ -296,27 +287,16 @@ const AmslerGrid: FC = () => {
 
 	return (
 		<>
-			{/*activeMesh && (
-				<Sidebar
+			{ activeMesh &&
+				(<Navbar
 					changeActiveMesh={changeActiveMesh}
 					handleSaveToFile={handleSaveToFile}
 					handleSave={handleSave}
 					handleLoad={handleLoad}
 					printGrids={printGrids}
-					handleLoadFromFile={handleLoadFromFile}
+				    handleLoadFromFile={handleLoadFromFile}
 					handleImageUpload={handleImageUpload}
-				/>)*/}
-			{ activeMesh &&
-				(<Navbar
-                       changeActiveMesh={changeActiveMesh}
-                       handleSaveToFile={handleSaveToFile}
-                                   handleSave={handleSave}
-                                   handleLoad={handleLoad}
-                                   printGrids={printGrids}
-				   handleLoadFromFile={handleLoadFromFile}
-                     handleImageUpload={handleImageUpload}
 				 />)}
-			{console.log(canvasSize.width)}
 			<Content>
 
 				<canvas

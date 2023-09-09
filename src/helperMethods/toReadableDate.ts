@@ -5,6 +5,6 @@ export const toReadableDate = (date: number): string => {
     const HH = String(dateObj.getHours()).padStart(2, '0')
     const DD = String(dateObj.getDate()).padStart(2, '0')
     const MMth = String(dateObj.getMonth() + 1).padStart(2, '0')
-    const YY = String(dateObj.getFullYear()).slice(-2)
-    return `${HH}:${MM}:${SS} - ${DD}.${MMth}.${YY}`
+    const YYYY = String(dateObj.getFullYear()).slice(0)
+    return `${YYYY}.${MMth}.${DD} - ${HH}:${MM}:${SS}`
 }

@@ -1,34 +1,21 @@
-import React, {FC, useEffect, useRef, useState} from "react";
-import {
-	Button,
-	Dropdown, Empty,
-	Form,
-	Input,
-	MenuProps,
-	Modal, Popconfirm,
-	Radio,
-	RadioChangeEvent,
-	Segmented,
-	Select,
-	Upload
-} from "antd";
-import Icon from "antd/es/icon";
+import React, {FC, useState} from "react";
+import {Button, Empty, Form, Input, Modal, Radio, RadioChangeEvent, Select, Upload} from "antd";
 import {
 	FileOutlined,
-	FolderOpenOutlined, PrinterOutlined,
-	QuestionCircleOutlined,
-	QuestionOutlined, ReloadOutlined,
-	SaveOutlined, UploadOutlined
+	FolderOpenOutlined,
+	PrinterOutlined,
+	QuestionOutlined,
+	ReloadOutlined,
+	SaveOutlined,
+	UploadOutlined
 } from "@ant-design/icons"
 import CustomDropdown from "./CustomDropdown"
 import HelpWindow from "./HelpWindow"
-import { useTranslation, Trans } from 'react-i18next'
+import {useTranslation} from 'react-i18next'
 import {SaveFile} from "../types/SaveFile"
 import {toReadableDate} from "../helperMethods/toReadableDate"
-import Title from "antd/lib/typography/Title"
 import PDF from "./PDF"
 import ReactPDF from "@react-pdf/renderer"
-import PDFViewer = ReactPDF.PDFViewer
 import ReactDOM from "react-dom"
 
 type LanguageMap = {
@@ -91,7 +78,7 @@ const Navbar: FC<NavbarProps> = (props) => {
 			ReactDOM.render(
 				<PDF
 					dimensionCanvas1={images["dimensionLeft"]}
-					dimensionCanvas2={images["dimensionLeft"]}
+					dimensionCanvas2={images["dimensionRight"]}
 					canvas1ImageSrc={images["leftEye"]}
 					canvas2ImageSrc={images["rightEye"]}
 				/>, rootElement)

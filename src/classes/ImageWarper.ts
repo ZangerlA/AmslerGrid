@@ -44,7 +44,6 @@ export class ImageWarper {
 	}
 	
 	warp(): void {
-		console.log("warp")
 		if (!this.canvas || !this.nextMesh) return
 
 		this.currentMesh = this.nextMesh
@@ -75,7 +74,6 @@ export class ImageWarper {
 			const chunkyBoy = movedPolygons[i];
 
 			const polygons = this.splitPolygon([chunkyBoy])
-			console.log(polygons)
 			for (let polygon of polygons) {
 				const bbox = this.getBoundingBox(this.currentMesh, polygon, this.canvas.dimension);
 				test.push(bbox)
@@ -125,7 +123,6 @@ export class ImageWarper {
 					counter++
 				}
 			}
-			console.log(counter)
 			if (counter > 4) {
 				// if (this.splitPolygons.includes(polygon)) this.splitPolygon(result)
 
@@ -151,6 +148,7 @@ export class ImageWarper {
 
 				//Need moved active vertices for correct calculation
 				centerVertex.coordinate = calculateCenter(filteredVertices)
+				centerVertex.wasMoved = true
 
 				polygon.recalculateVertexPosition([ul,ur,lr,ll], childEdgeLength)
 

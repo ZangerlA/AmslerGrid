@@ -19,7 +19,7 @@ export class Mesh {
 	public vertices: Vertex[][] = []
 	public selectedPolygons: Set<Polygon> = new Set<Polygon>()
 	public selectedVertex?: Vertex
-	public edges: ValueSet<Edge> = new ValueSet<Edge>()
+	public edges: ValueSet<Edge> = new ValueSet<Edge>(undirectedGraphHash)
 	public polygons: Set<Polygon> = new Set<Polygon>()
 	public canvas: MeshCanvas
 	public warper: ImageWarper
@@ -334,7 +334,7 @@ export class Mesh {
 	}
 
 	public restoreFromFile(data: MeshData): void {
-		this.edges = new ValueSet<Edge>()
+		this.edges = new ValueSet<Edge>(undirectedGraphHash)
 		for (let edge of data.edges) {
 			this.edges.add(edge)
 		}

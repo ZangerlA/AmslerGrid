@@ -1,12 +1,14 @@
 import React, {FC, useState} from "react";
 import type {MenuProps} from 'antd';
-import {Button, Layout, Menu, Popconfirm, Popover, Radio, RadioChangeEvent, Switch, Upload} from "antd";
+import {Layout, Menu, Popconfirm, Radio, RadioChangeEvent, Upload} from "antd";
 import {
 	EyeOutlined,
 	FileImageOutlined,
 	FolderOpenOutlined,
-	FolderOutlined, PrinterOutlined,
-	QuestionCircleOutlined, ReloadOutlined,
+	FolderOutlined,
+	PrinterOutlined,
+	QuestionCircleOutlined,
+	ReloadOutlined,
 	SaveOutlined,
 	UploadOutlined,
 } from "@ant-design/icons";
