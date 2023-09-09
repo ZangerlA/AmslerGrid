@@ -117,6 +117,7 @@ export class Polygon {
 		
 		//Need moved active vertices for correct calculation
 		centerVertex.coordinate = calculateCenter(filteredVertices)
+		centerVertex.wasMoved = true
 
 		this.recalculateVertexPosition([ul,ur,lr,ll], childEdgeLength)
 
@@ -135,7 +136,6 @@ export class Polygon {
 			polygon3,
 			polygon4
         );
-
 		this.removeOwnEdges()
 		this.children.forEach((childPolygon) => {
 			if (wasDeleted) {
@@ -168,7 +168,6 @@ export class Polygon {
 		for (let child of this.children) {
 			child.getOwnActiveVertices().forEach(vertex => {
 				vertex.decreaseReferenceCounter()
-				console.log(vertex)
 			})
 			child.removeOwnEdges()
 		}
@@ -220,7 +219,6 @@ export class Polygon {
 	}
 
 	public restoreFromFile(data: PolygonData): void {
-		console.log(data)
 		this.verticesIndices = data.verticesIndices
 		this.edgeLength = data.edgeLength
 		this.color = data.color
@@ -252,32 +250,23 @@ export class Polygon {
 	}
 
 	private addOwnEdges(): void {
-		for (let i = 0; i < 3; i++) {
-			const edge = {
-				a: this.verticesIndices[this.edgeLength * i],
-				b: this.verticesIndices[this.edgeLength * (i + 1)]
-			}
+		let lastReferencedVertex = 0
 
-			const halfEdge = {
-				a: this.verticesIndices[this.edgeLength * i],
-				b: this.verticesIndices[this.edgeLength * (i + 1) - this.edgeLength / 2]
-			}
-
-			if (this.edgeLength === 1 || !this.mesh.edges.has(halfEdge)) {
+		for (let i = 1; i < this.verticesIndices.length; i++) {
+			if (this.toVertex(this.verticesIndices[i]).referenceCounterIsPositive()){
+				const edge = {
+					a: this.verticesIndices[lastReferencedVertex],
+					b: this.verticesIndices[i]
+				}
+				lastReferencedVertex = i
 				this.mesh.edges.add(edge)
 			}
 		}
-		const edge = {
-			a: this.verticesIndices[this.edgeLength * 3],
+		const lastEdge = {
+			a: this.verticesIndices[lastReferencedVertex],
 			b: this.verticesIndices[0]
 		}
-		const halfEdge = {
-			a: this.verticesIndices[this.edgeLength * 3],
-			b: this.verticesIndices[this.verticesIndices.length - this.edgeLength / 2]
-		}
-		if (this.edgeLength === 1 || !this.mesh.edges.has(halfEdge)) {
-			this.mesh.edges.add(edge)
-		}
+		this.mesh.edges.add(lastEdge)
 	}
 
 	private removeOwnEdges(): void {
