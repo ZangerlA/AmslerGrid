@@ -133,20 +133,23 @@ export class Mesh {
 		})
 	}
 
-	public draw(): void {
-		this.canvas.clearCanvas()
+	public draw(canvas?: MeshCanvas): void {
+		if ( !canvas ) {
+			canvas = this.canvas
+		}
+		canvas.clearCanvas()
 
 		if ( this.shouldDrawImage && this.warper.imagePosition ) {
 			const tmp = this.imageData ?? this.warper.getImageAsData()
 			if ( tmp ) {
-				this.canvas.drawImage(tmp, this.warper.imagePosition)
+				canvas.drawImage(tmp, this.warper.imagePosition)
 			}
 		} else {
-			this.drawShapeFill(this.canvas)
-			this.drawHelpLines(this.canvas)
-			this.drawHelpPoints(this.canvas)
+			this.drawShapeFill(canvas)
+			this.drawHelpLines(canvas)
+			this.drawHelpPoints(canvas)
 		}
-		this.canvas.drawCanvasCenter(10, "rgba(215,0,25,1)")
+		canvas.drawCanvasCenter(10, "rgba(215,0,25,1)")
 	}
 
 	public warpImage(): void {

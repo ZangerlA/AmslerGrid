@@ -274,12 +274,22 @@ const AmslerGrid: FC = () => {
 	}
 
 	const printGrids = (): {} => {
+		const offscreenLeftEyeCanvas = document.createElement("canvas")
+		const offscreenRightEyeCanvas = document.createElement("canvas")
+		offscreenLeftEyeCanvas.width = canvasSize.width
+		offscreenRightEyeCanvas.width = canvasSize.width
+		offscreenLeftEyeCanvas.height = canvasSize.height
+		offscreenRightEyeCanvas.height = canvasSize.height
+		const offscreenLeftEyeMeshCanvas = new MeshCanvas(offscreenLeftEyeCanvas)
+		const offscreenRightEyeMeshCanvas = new MeshCanvas(offscreenRightEyeCanvas)
+		leftEyeMesh?.draw(offscreenLeftEyeMeshCanvas)
+		rightEyeMesh?.draw(offscreenRightEyeMeshCanvas)
 		const maxLeft = leftEyeMesh!.vertices[leftEyeMesh!.vertices.length - 1][leftEyeMesh!.vertices[0].length - 1].coordinate
 		const maxRight = rightEyeMesh!.vertices[rightEyeMesh!.vertices.length - 1][rightEyeMesh!.vertices[0].length - 1].coordinate
 		return {
-			leftEye: leftEyeMesh?.canvas.getMeshDataURL(leftEyeMesh?.vertices),
+			leftEye: offscreenLeftEyeMeshCanvas.getMeshDataURL(leftEyeMesh!.vertices),
 			dimensionLeft: { width: maxLeft.x, height: maxLeft.y },
-			rightEye: rightEyeMesh?.canvas.getMeshDataURL(rightEyeMesh?.vertices),
+			rightEye: offscreenRightEyeMeshCanvas.getMeshDataURL(rightEyeMesh!.vertices),
 			dimensionRight: { width: maxRight.x, height: maxRight.y },
 		}
 	}
