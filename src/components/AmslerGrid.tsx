@@ -25,7 +25,7 @@ const AmslerGrid: FC = () => {
 	const [configurationFile, setConfigurationFile ] = useState<File>()
 	const changeActiveMesh = () => setIsLeftEyeMesh(b => !b)
 	const [activeMesh] = isLeftEyeMesh ? [leftEyeMesh, setLeftEyeMesh] : [rightEyeMesh, setRightEyeMesh]
-	const [canvasSize, setCanvasSize] = useState<Dimension>({width: windowDimension[0].width, height: windowDimension[0].height - 30})
+	const [canvasSize, setCanvasSize] = useState<Dimension>({width: windowDimension[0].width, height: windowDimension[0].height})
 
 	useEffect(() => {
 		if (!canvas) return
