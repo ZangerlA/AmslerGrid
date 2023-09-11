@@ -149,7 +149,8 @@ export class Mesh {
 			this.drawHelpLines(canvas)
 			this.drawHelpPoints(canvas)
 		}
-		canvas.drawCanvasCenter(10, "rgba(215,0,25,1)")
+		const max = this.vertices[this.vertices.length - 1][this.vertices[0].length - 1].coordinate
+		canvas.drawCanvasCenter({ width: max.x + 50, height: max.y + 50 }, 10, "rgba(215,0,25,1)")
 	}
 
 	public warpImage(): void {

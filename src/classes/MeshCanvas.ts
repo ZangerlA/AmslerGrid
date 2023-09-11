@@ -21,10 +21,10 @@ export class MeshCanvas {
 		} else return this.ctx.getImageData(0, 0, this.dimension.width, this.dimension.height)
 	}
 
-	public drawCanvasCenter(radius: number, color: string): void {
+	public drawCanvasCenter(dimension: Dimension, radius: number, color: string): void {
 		const centerPoint: Point = {
-			x: this.dimension.width / 2,
-			y: this.dimension.height / 2,
+			x: dimension.width / 2,
+			y: dimension.height / 2,
 		}
 		this.drawPoint(centerPoint, radius, color)
 	}

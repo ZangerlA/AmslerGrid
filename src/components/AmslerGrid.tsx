@@ -34,7 +34,7 @@ const AmslerGrid: FC = () => {
 		if ( !canvas ) return
 
 		const meshCanvas = new MeshCanvas(canvas)
-		const canvasDimension = { width: canvas.width, height: canvas.height }
+		const canvasDimension = { width: canvas.width, height: canvas.height - 30 }
 
 		const leftMesh = new Mesh(meshCanvas, canvasDimension)
 		const rightMesh = new Mesh(meshCanvas, canvasDimension)
@@ -174,20 +174,12 @@ const AmslerGrid: FC = () => {
 	}, [activeMesh, canvas, isDragging, leftEyeMesh, rightEyeMesh])
 
 	useEffect(() => {
-		if ( !configurationFile ) return
-		if ( !canvas ) return
-		const meshCanvas = new MeshCanvas(canvas)
-		const canvasDimension = { width: canvas.width, height: canvas.height }
-		const leftMesh = new Mesh(meshCanvas, canvasDimension)
-		const rightMesh = new Mesh(meshCanvas, canvasDimension)
-
-		setLeftEyeMesh(leftMesh)
-		setRightEyeMesh(rightMesh)
-
-	}, [configurationFile])
+		activeMesh?.draw()
+	}, [rightEyeMesh, leftEyeMesh])
 
 	useEffect(() => {
 		if ( !configurationFile ) return
+		if ( !canvas ) return
 		const reader = new FileReader()
 		let stale = false
 		reader.onload = (e) => {
@@ -195,10 +187,25 @@ const AmslerGrid: FC = () => {
 			const content = e.target?.result
 			if ( typeof content === "string" ) {
 				try {
+					let width = canvas.width
+					let height = canvas.height
 					const data: SaveFile = JSON.parse(content)
-					leftEyeMesh?.restoreFromFile(data.leftEyeMesh)
-					rightEyeMesh?.restoreFromFile(data.rightEyeMesh)
-					activeMesh?.draw()
+					if ( data.canvasSize ) {
+						width = canvas.width < data.canvasSize.width ? data.canvasSize.width : canvas.width
+						height = canvas.height < data.canvasSize.height ? data.canvasSize.height : canvas.height
+					}
+					canvas.width = width
+					canvas.height = height
+					const meshCanvas = new MeshCanvas(canvas)
+					
+					setCanvasSize({ width: width, height: height })
+					const leftMesh = new Mesh(meshCanvas, { width: width, height: height })
+					const rightMesh = new Mesh(meshCanvas, { width: width, height: height })
+					leftMesh.restoreFromFile(data.leftEyeMesh)
+					rightMesh.restoreFromFile(data.rightEyeMesh)
+					setLeftEyeMesh(leftMesh)
+					setRightEyeMesh(rightMesh)
+
 					setConfigurationFile(undefined)
 				} catch ( error ) {
 					console.error("Failed to parse JSON:", error)
@@ -211,7 +218,7 @@ const AmslerGrid: FC = () => {
 			stale = true
 		}
 
-	}, [leftEyeMesh, rightEyeMesh])
+	}, [configurationFile])
 
 	useEffect(() => {
 		setCanvasSize(windowDimension[0])
@@ -242,6 +249,7 @@ const AmslerGrid: FC = () => {
 			date: Date.now(),
 			meshWidth: max.x,
 			meshHeight: max.y,
+			canvasSize: canvasSize,
 			leftEyeMesh: leftEyeMesh,
 			rightEyeMesh: rightEyeMesh,
 		}
@@ -317,7 +325,7 @@ const AmslerGrid: FC = () => {
 					tabIndex={0}
 					ref={setCanvas}
 					width={canvasSize.width}
-					height={canvasSize.height - 30}
+					height={canvasSize.height}
 					style={{ marginTop: -10 }}
 				>
 				</canvas>

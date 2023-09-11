@@ -1,10 +1,14 @@
 import { Vertex } from "../classes/Vertex"
+import { Dimension } from "../customHooks/UseWindowDimensions"
 import { Edge } from "./Edge"
 import { MeshIndex } from "./MeshIndex"
 
 export type SaveFile = {
 	version: string,
 	date: number,
+	meshWidth: number,
+	meshHeight: number,
+	canvasSize: Dimension,
 	leftEyeMesh: MeshData,
 	rightEyeMesh: MeshData,
 }
