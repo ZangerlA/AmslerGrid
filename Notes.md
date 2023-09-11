@@ -16,19 +16,20 @@
 * ~~spliting 2 shapes that are one shape vertical/horizontal apart splits the shape between~~
 * ~~fix split additional lines~~
 * ~~refactor mesh and canvas~~
+* ~~implement sidebar~~
+* ~~implement save feature to allow the user to save the current grid and download the config~~
+* ~~distort image from vectors~~
+* ~~print vectors and lines to PDF~~
+* ~~use setTransform instead of custom warp?~~ (did not work out)
+* ~~submenues shouldn´t close after toggle/switch is triggered~~
+* ~~warp doesn´t work -> getrelativpoint doesn´t take full polygon; only cornervertices~~
+* ~~async subscribe task implementation for ImageWarper~~ (done but not needed)
+* ~~https://stackoverflow.com/questions/74101155/chrome-warning-willreadfrequently-attribute-set-to-true~~
+
 * Graph coloring problem
 * Chrome performance problems (Ok on Firefox)
-* implement sidebar
 * hover effect on nodes, make the nodes small and let them pop up when hovered
 * make a history for ctrl z, maybe with localstorage
-* implement save feature to allow the user to save the current grid and download the config
-* distort image from vectors
-* print vectors and lines to
-* use setTransform instead of custom warp?
-* submenues shouldn´t close after toggle/switch is triggered
-* warp doesn´t work -> getrelativpoint doesn´t take full polygon; only cornervertices
-* async subscribe task implementation for ImageWarper
-* https://stackoverflow.com/questions/74101155/chrome-warning-willreadfrequently-attribute-set-to-true
 
 * (?) hasInside could first build an inner rectangle from the coordinates that is inside, then we would not have to check with raycasting for each pixel
 * (?) polygons shouldn´t be able to overlap
