@@ -1,16 +1,16 @@
 {
   "files": {
     "main.css": "/AmslerGrid/static/css/main.e00f1a1b.css",
-    "main.js": "/AmslerGrid/static/js/main.476bb8ca.js",
+    "main.js": "/AmslerGrid/static/js/main.f5676aa9.js",
     "static/js/787.bc9a193f.chunk.js": "/AmslerGrid/static/js/787.bc9a193f.chunk.js",
     "static/media/testimage.jpg": "/AmslerGrid/static/media/testimage.5b37c502dab8a3c69139.jpg",
     "index.html": "/AmslerGrid/index.html",
     "main.e00f1a1b.css.map": "/AmslerGrid/static/css/main.e00f1a1b.css.map",
-    "main.476bb8ca.js.map": "/AmslerGrid/static/js/main.476bb8ca.js.map",
+    "main.f5676aa9.js.map": "/AmslerGrid/static/js/main.f5676aa9.js.map",
     "787.bc9a193f.chunk.js.map": "/AmslerGrid/static/js/787.bc9a193f.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.e00f1a1b.css",
-    "static/js/main.476bb8ca.js"
+    "static/js/main.f5676aa9.js"
   ]
 }
