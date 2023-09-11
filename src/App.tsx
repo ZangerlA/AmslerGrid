@@ -1,16 +1,16 @@
-import React from 'react';
-import './App.css';
-import {Layout} from "antd";
-import AmslerGrid from "./components/AmslerGrid";
+import { Layout } from "antd"
+import React from "react"
+import "./App.css"
+import AmslerGrid from "./components/AmslerGrid"
 
-const {Content} = Layout
+const { Content } = Layout
 
 function App() {
 	return (
 		<Layout>
 			<AmslerGrid/>
 		</Layout>
-	);
+	)
 }
 
-export default App;
+export default App

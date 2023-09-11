@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from "react"
 
 export type Dimension = {
 	width: number,
@@ -6,26 +6,26 @@ export type Dimension = {
 }
 
 function getWindowDimensions() {
-	const {innerWidth: width, innerHeight: height} = window
+	const { innerWidth: width, innerHeight: height } = window
 	return {
 		width,
 		height,
-	};
+	}
 }
 
 export default function useWindowDimensions(): Dimension[] {
-	const [windowDimensions, setWindowDimensions] = useState(getWindowDimensions());
+	const [windowDimensions, setWindowDimensions] = useState(getWindowDimensions())
 	const [previousWindowDimensions, setPreviousWindowDimensions] = useState(getWindowDimensions())
-	
+
 	useEffect(() => {
 		function handleResize() {
 			setPreviousWindowDimensions(windowDimensions)
-			setWindowDimensions(getWindowDimensions());
+			setWindowDimensions(getWindowDimensions())
 		}
-		
-		window.addEventListener('resize', handleResize);
-		return () => window.removeEventListener('resize', handleResize);
-	}, []);
-	
-	return [windowDimensions, previousWindowDimensions];
+
+		window.addEventListener("resize", handleResize)
+		return () => window.removeEventListener("resize", handleResize)
+	}, [])
+
+	return [windowDimensions, previousWindowDimensions]
 }

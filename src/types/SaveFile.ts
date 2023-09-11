@@ -1,24 +1,24 @@
-import {MeshIndex} from "./MeshIndex";
-import {Vertex} from "../classes/Vertex";
-import {Edge} from "./Edge";
+import { Vertex } from "../classes/Vertex"
+import { Edge } from "./Edge"
+import { MeshIndex } from "./MeshIndex"
 
 export type SaveFile = {
-    version: string,
-    date: number,
-    leftEyeMesh: MeshData,
-    rightEyeMesh: MeshData,
+	version: string,
+	date: number,
+	leftEyeMesh: MeshData,
+	rightEyeMesh: MeshData,
 }
 
 export type MeshData = {
-    vertices: Vertex[][];
-    edges: Edge[]
-    polygons: PolygonData[];
-    shouldDrawImage: boolean;
+	vertices: Vertex[][];
+	edges: Edge[]
+	polygons: PolygonData[];
+	shouldDrawImage: boolean;
 }
 
 export type PolygonData = {
-    verticesIndices: MeshIndex[];
-    edgeLength: number;
-    color: string;
-    children: PolygonData[];
+	verticesIndices: MeshIndex[];
+	edgeLength: number;
+	color: string;
+	children: PolygonData[];
 }

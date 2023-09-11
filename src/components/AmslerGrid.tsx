@@ -1,18 +1,18 @@
-import React, {FC, useEffect, useState} from "react";
-import {Layout} from "antd";
-import {Mesh} from "../classes/Mesh";
-import {MeshCanvas} from "../classes/MeshCanvas";
-import {MouseButton} from "../types/MouseButton";
-import {Point} from "../types/Coordinate";
-import {Vector} from "../types/Vector";
-import {Key} from "../types/Key";
-import useWindowDimensions, {Dimension} from "../customHooks/UseWindowDimensions";
-import {FileSaver} from "../classes/FileSaver";
-import {SaveFile} from "../types/SaveFile";
-import Navbar from "./Navbar";
-import {toReadableDate} from "../helperMethods/toReadableDate";
+import { Layout } from "antd"
+import React, { FC, useEffect, useState } from "react"
+import { FileSaver } from "../classes/FileSaver"
+import { Mesh } from "../classes/Mesh"
+import { MeshCanvas } from "../classes/MeshCanvas"
+import useWindowDimensions, { Dimension } from "../customHooks/UseWindowDimensions"
+import { toReadableDate } from "../helperMethods/toReadableDate"
+import { Point } from "../types/Coordinate"
+import { Key } from "../types/Key"
+import { MouseButton } from "../types/MouseButton"
+import { SaveFile } from "../types/SaveFile"
+import { Vector } from "../types/Vector"
+import Navbar from "./Navbar"
 
-const {Content} = Layout
+const { Content } = Layout
 
 const AmslerGrid: FC = () => {
 	const CURRENT_VERSION = "1.0"
@@ -21,124 +21,126 @@ const AmslerGrid: FC = () => {
 	const [isDragging, setIsDragging] = useState<boolean>(false)
 	const [leftEyeMesh, setLeftEyeMesh] = useState<Mesh>()
 	const [rightEyeMesh, setRightEyeMesh] = useState<Mesh>()
-	const [isLeftEyeMesh, setIsLeftEyeMesh ] = useState<boolean>(true)
-	const [configurationFile, setConfigurationFile ] = useState<File>()
+	const [isLeftEyeMesh, setIsLeftEyeMesh] = useState<boolean>(true)
+	const [configurationFile, setConfigurationFile] = useState<File>()
 	const changeActiveMesh = () => setIsLeftEyeMesh(b => !b)
 	const [activeMesh] = isLeftEyeMesh ? [leftEyeMesh, setLeftEyeMesh] : [rightEyeMesh, setRightEyeMesh]
-	const [canvasSize, setCanvasSize] = useState<Dimension>({width: windowDimension[0].width, height: windowDimension[0].height})
+	const [canvasSize, setCanvasSize] = useState<Dimension>({
+		width: windowDimension[0].width,
+		height: windowDimension[0].height,
+	})
 
 	useEffect(() => {
-		if (!canvas) return
-		
+		if ( !canvas ) return
+
 		const meshCanvas = new MeshCanvas(canvas)
-		const canvasDimension = {width: canvas.width, height: canvas.height}
-		
+		const canvasDimension = { width: canvas.width, height: canvas.height }
+
 		const leftMesh = new Mesh(meshCanvas, canvasDimension)
 		const rightMesh = new Mesh(meshCanvas, canvasDimension)
-		
+
 		setLeftEyeMesh(leftMesh)
 		setRightEyeMesh(rightMesh)
-		
+
 		const leftEyeUnsub = leftMesh.subscribe()
 		const rightEyeUnsub = rightMesh.subscribe()
-		
+
 		return (() => {
 			leftEyeUnsub()
 			rightEyeUnsub()
 		})
 	}, [canvas])
-	
+
 	useEffect(() => {
-		if (!canvas || !activeMesh) return
+		if ( !canvas || !activeMesh ) return
 		activeMesh.draw()
 	}, [canvas, activeMesh])
-	
+
 	useEffect(() => {
-		if (!canvas || !activeMesh || !leftEyeMesh || !rightEyeMesh) return
-		
+		if ( !canvas || !activeMesh || !leftEyeMesh || !rightEyeMesh ) return
+
 		const canvasBounds = canvas.getBoundingClientRect()
-		
+
 		const toCanvasCoord = (clientX: number, clientY: number): Point => {
-			return {x: clientX - canvasBounds!.left, y: clientY - canvasBounds!.top}
+			return { x: clientX - canvasBounds!.left, y: clientY - canvasBounds!.top }
 		}
-		
+
 		const getScaleFactor = (deltaY: number): number => {
-			if (deltaY < 0) {
+			if ( deltaY < 0 ) {
 				return 0.995
 			} else return 1.0051
 		}
-		
+
 		const handleClick = (event: MouseEvent) => {
 			event.preventDefault()
-			if (event.ctrlKey && event.button === MouseButton.Left) {
+			if ( event.ctrlKey && event.button === MouseButton.Left ) {
 				activeMesh.handleSplit(toCanvasCoord(event.clientX, event.clientY))
-			}
-			else if (event.altKey && event.button === MouseButton.Left) {
+			} else if ( event.altKey && event.button === MouseButton.Left ) {
 				activeMesh.handleMerge(toCanvasCoord(event.clientX, event.clientY))
 			}
 			activeMesh.draw()
 		}
-		
+
 		const handleContextMenu = (event: MouseEvent): void => {
 			event.preventDefault()
-			
-			if (event.button === MouseButton.Right) {
+
+			if ( event.button === MouseButton.Right ) {
 				const coordinate: Point = toCanvasCoord(event.clientX, event.clientY)
 				activeMesh.handleSelect(coordinate)
 				activeMesh.draw()
 			}
 		}
-		
+
 		const handleMouseDown = (event: MouseEvent): void => {
 			event.preventDefault()
-			
-			if (event.button === MouseButton.Left) {
+
+			if ( event.button === MouseButton.Left ) {
 				setIsDragging(true)
 				activeMesh.handleSingleVertex(toCanvasCoord(event.clientX, event.clientY))
 			}
 		}
-		
+
 		const handleMouseMove = (event: MouseEvent): void => {
 			event.preventDefault()
-			if (event.button === MouseButton.Left && isDragging) {
-				const vector: Vector = {x: event.movementX, y: event.movementY}
+			if ( event.button === MouseButton.Left && isDragging ) {
+				const vector: Vector = { x: event.movementX, y: event.movementY }
 				activeMesh.handleDrag(vector)
 				activeMesh.draw()
 			}
 		}
-		
+
 		const handleWheel = (event: WheelEvent): void => {
 			const degree = event.deltaY * 0.007
 			let scaleFactor = getScaleFactor(event.deltaY)
-			if (event.shiftKey) {
+			if ( event.shiftKey ) {
 				activeMesh.handleScale(scaleFactor)
 			} else {
 				activeMesh.handleRotate(degree)
 			}
 			activeMesh.draw()
 		}
-		
+
 		const handleMouseUp = (event: MouseEvent): void => {
-			if (event.button === MouseButton.Left) {
+			if ( event.button === MouseButton.Left ) {
 				activeMesh.handleRelease()
 				setIsDragging(false)
 				activeMesh.draw()
 			}
 		}
-		
+
 		const handleMouseOut = (event: MouseEvent): void => {
-			if (event.button === MouseButton.Left) {
+			if ( event.button === MouseButton.Left ) {
 				activeMesh.handleRelease()
-				setIsDragging(false);
+				setIsDragging(false)
 			}
 		}
-		
+
 		const handleKeyboardPress = (event: KeyboardEvent) => {
-			if (event.key === Key.Escape) {
+			if ( event.key === Key.Escape ) {
 				activeMesh.clearSelected()
 				activeMesh.draw()
 			}
-			if (event.key === Key.SpaceBar) {
+			if ( event.key === Key.SpaceBar ) {
 				activeMesh.toggleImage()
 			}
 		}
@@ -156,7 +158,7 @@ const AmslerGrid: FC = () => {
 		canvas.addEventListener("contextmenu", handleContextMenu)
 		window.addEventListener("keydown", handleKeyboardPress)
 		window.addEventListener("resize", handleResize)
-		
+
 		return (() => {
 			canvas.removeEventListener("click", handleClick)
 			canvas.removeEventListener("mousedown", handleMouseDown)
@@ -168,53 +170,55 @@ const AmslerGrid: FC = () => {
 			window.removeEventListener("keydown", handleKeyboardPress)
 			window.removeEventListener("resize", handleResize)
 		})
-		
-	},[activeMesh, canvas, isDragging, leftEyeMesh, rightEyeMesh])
+
+	}, [activeMesh, canvas, isDragging, leftEyeMesh, rightEyeMesh])
 
 	useEffect(() => {
-		if (!configurationFile) return
-		if (!canvas) return
+		if ( !configurationFile ) return
+		if ( !canvas ) return
 		const meshCanvas = new MeshCanvas(canvas)
-		const canvasDimension = {width: canvas.width, height: canvas.height}
+		const canvasDimension = { width: canvas.width, height: canvas.height }
 		const leftMesh = new Mesh(meshCanvas, canvasDimension)
 		const rightMesh = new Mesh(meshCanvas, canvasDimension)
 
 		setLeftEyeMesh(leftMesh)
 		setRightEyeMesh(rightMesh)
 
-	}, [configurationFile]);
+	}, [configurationFile])
 
 	useEffect(() => {
-		if (!configurationFile) return
+		if ( !configurationFile ) return
 		const reader = new FileReader()
 		let stale = false
 		reader.onload = (e) => {
-			if (stale) return
+			if ( stale ) return
 			const content = e.target?.result
-			if (typeof content === 'string') {
+			if ( typeof content === "string" ) {
 				try {
 					const data: SaveFile = JSON.parse(content)
 					leftEyeMesh?.restoreFromFile(data.leftEyeMesh)
 					rightEyeMesh?.restoreFromFile(data.rightEyeMesh)
 					activeMesh?.draw()
 					setConfigurationFile(undefined)
-				} catch (error) {
+				} catch ( error ) {
 					console.error("Failed to parse JSON:", error)
 				}
 			}
 		}
 		reader.readAsText(configurationFile)
 
-		return () => {stale = true}
+		return () => {
+			stale = true
+		}
 
-	}, [leftEyeMesh, rightEyeMesh]);
+	}, [leftEyeMesh, rightEyeMesh])
 
 	useEffect(() => {
 		setCanvasSize(windowDimension[0])
-	}, []);
+	}, [])
 
 	const handleImageUpload = (file: File): boolean => {
-		if(!leftEyeMesh || !rightEyeMesh || !canvas) throw new Error("meshes should be initialized")
+		if ( !leftEyeMesh || !rightEyeMesh || !canvas ) throw new Error("meshes should be initialized")
 		const url = URL.createObjectURL(file)
 		leftEyeMesh.setScaledImage(url)
 		rightEyeMesh.setScaledImage(url)
@@ -222,61 +226,61 @@ const AmslerGrid: FC = () => {
 	}
 
 	const handleSaveToFile = (username: string): void => {
-		const now = Date.now();
+		const now = Date.now()
 		username = username === null ? "" : "_" + username
-		const filename = "Amsler_" + toReadableDate(now);
+		const filename = "Amsler_" + toReadableDate(now)
 		const json = createSaveSnapshot()
-		const blob = new Blob([json], { type: 'application/json' })
+		const blob = new Blob([json], { type: "application/json" })
 		const fs = new FileSaver()
 		fs.save(blob, filename)
 	}
 
 	const createSaveSnapshot = (): string => {
-		const max = activeMesh!.vertices[activeMesh!.vertices.length-1][activeMesh!.vertices[0].length-1].coordinate
+		const max = activeMesh!.vertices[activeMesh!.vertices.length - 1][activeMesh!.vertices[0].length - 1].coordinate
 		const data = {
 			version: CURRENT_VERSION,
 			date: Date.now(),
 			meshWidth: max.x,
 			meshHeight: max.y,
 			leftEyeMesh: leftEyeMesh,
-			rightEyeMesh: rightEyeMesh
+			rightEyeMesh: rightEyeMesh,
 		}
 
-		return  JSON.stringify(data, null)
+		return JSON.stringify(data, null)
 	}
 
 	const handleSave = (): [] => {
-		const jsonData = createSaveSnapshot();
-		const dataObject = JSON.parse(jsonData);
-		const currentSaves = JSON.parse(localStorage.getItem('meshData') || '[]');
+		const jsonData = createSaveSnapshot()
+		const dataObject = JSON.parse(jsonData)
+		const currentSaves = JSON.parse(localStorage.getItem("meshData") || "[]")
 
-		currentSaves.unshift(dataObject);
+		currentSaves.unshift(dataObject)
 
 		// remove the oldest save if there are more than 5 saves
-		if (currentSaves.length > 5) {
+		if ( currentSaves.length > 5 ) {
 			currentSaves.pop()
 		}
 
-		localStorage.setItem('meshData', JSON.stringify(currentSaves));
-		return currentSaves;
+		localStorage.setItem("meshData", JSON.stringify(currentSaves))
+		return currentSaves
 	}
 
 	const handleLoad = (data: SaveFile): void => {
-		const jsonData = JSON.stringify(data);
-		const blob = new Blob([jsonData], { type: 'application/json' });
-		const file = new File([blob], "config.json");
+		const jsonData = JSON.stringify(data)
+		const blob = new Blob([jsonData], { type: "application/json" })
+		const file = new File([blob], "config.json")
 
-		setConfigurationFile(file);
+		setConfigurationFile(file)
 	}
-	
+
 	const printGrids = (): {} => {
-		const maxLeft = leftEyeMesh!.vertices[leftEyeMesh!.vertices.length-1][leftEyeMesh!.vertices[0].length-1].coordinate
-		const maxRight = rightEyeMesh!.vertices[rightEyeMesh!.vertices.length-1][rightEyeMesh!.vertices[0].length-1].coordinate
+		const maxLeft = leftEyeMesh!.vertices[leftEyeMesh!.vertices.length - 1][leftEyeMesh!.vertices[0].length - 1].coordinate
+		const maxRight = rightEyeMesh!.vertices[rightEyeMesh!.vertices.length - 1][rightEyeMesh!.vertices[0].length - 1].coordinate
 		return {
 			leftEye: leftEyeMesh?.canvas.getMeshDataURL(leftEyeMesh?.vertices),
-			dimensionLeft: {width: maxLeft.x, height: maxLeft.y},
+			dimensionLeft: { width: maxLeft.x, height: maxLeft.y },
 			rightEye: rightEyeMesh?.canvas.getMeshDataURL(rightEyeMesh?.vertices),
-			dimensionRight: {width: maxRight.x, height: maxRight.y},
+			dimensionRight: { width: maxRight.x, height: maxRight.y },
 		}
 	}
 
@@ -287,16 +291,16 @@ const AmslerGrid: FC = () => {
 
 	return (
 		<>
-			{ activeMesh &&
+			{activeMesh &&
 				(<Navbar
 					changeActiveMesh={changeActiveMesh}
 					handleSaveToFile={handleSaveToFile}
 					handleSave={handleSave}
 					handleLoad={handleLoad}
 					printGrids={printGrids}
-				    handleLoadFromFile={handleLoadFromFile}
+					handleLoadFromFile={handleLoadFromFile}
 					handleImageUpload={handleImageUpload}
-				 />)}
+				/>)}
 			<Content>
 
 				<canvas
@@ -304,7 +308,7 @@ const AmslerGrid: FC = () => {
 					ref={setCanvas}
 					width={canvasSize.width}
 					height={canvasSize.height - 30}
-					style={{marginTop: -10}}
+					style={{ marginTop: -10 }}
 				>
 				</canvas>
 			</Content>

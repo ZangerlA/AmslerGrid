@@ -31,6 +31,7 @@
 * hover effect on nodes, make the nodes small and let them pop up when hovered
 * make a history for ctrl z, maybe with localstorage
 
-* (?) hasInside could first build an inner rectangle from the coordinates that is inside, then we would not have to check with raycasting for each pixel
+* (?) hasInside could first build an inner rectangle from the coordinates that is inside, then we would not have to
+  check with raycasting for each pixel
 * (?) polygons shouldn´t be able to overlap
 * (?) scaling/rotation only for one polygon or for multiple (problem neighbor/ not neighbor)

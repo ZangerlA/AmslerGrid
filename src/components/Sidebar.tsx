@@ -1,6 +1,3 @@
-import React, {FC, useState} from "react";
-import type {MenuProps} from 'antd';
-import {Layout, Menu, Popconfirm, Radio, RadioChangeEvent, Upload} from "antd";
 import {
 	EyeOutlined,
 	FileImageOutlined,
@@ -11,11 +8,14 @@ import {
 	ReloadOutlined,
 	SaveOutlined,
 	UploadOutlined,
-} from "@ant-design/icons";
-import {MenuClickEventHandler} from 'rc-menu/lib/interface'
-import HelpWindow from "./HelpWindow";
+} from "@ant-design/icons"
+import type { MenuProps } from "antd"
+import { Layout, Menu, Popconfirm, Radio, RadioChangeEvent, Upload } from "antd"
+import { MenuClickEventHandler } from "rc-menu/lib/interface"
+import React, { FC, useState } from "react"
+import HelpWindow from "./HelpWindow"
 
-type MenuItem = Required<MenuProps>['items'][number];
+type MenuItem = Required<MenuProps>["items"][number];
 type SidebarProps = {
 	changeActiveMesh: () => void,
 	handleSaveToFile: () => void,
@@ -26,49 +26,50 @@ type SidebarProps = {
 	handleImageUpload: (file: File) => boolean,
 }
 
-const {Sider} = Layout
+const { Sider } = Layout
 const Sidebar: FC<SidebarProps> = (props) => {
-	
+
 	const [collapsed, setCollapsed] = useState(true)
-	const [value, setValue] = useState('Left')
-	const [modalOpen, setModalOpen] = useState(false);
-	
+	const [value, setValue] = useState("Left")
+	const [modalOpen, setModalOpen] = useState(false)
+
 	const options = [
-		{label: 'Left', value: 'Left'},
-		{label: 'Right', value: 'Right'},
-	];
-	
-	const getItem = (label: React.ReactNode, key?: React.Key | null, icon?: React.ReactNode, children?: MenuItem[], type?: 'group'): MenuItem => {
+		{ label: "Left", value: "Left" },
+		{ label: "Right", value: "Right" },
+	]
+
+	const getItem = (label: React.ReactNode, key?: React.Key | null, icon?: React.ReactNode, children?: MenuItem[], type?: "group"): MenuItem => {
 		return {
 			key,
 			icon,
 			children,
 			label,
 			type,
-		} as MenuItem;
+		} as MenuItem
 	}
-	
-	const onChange = ({target: {value}}: RadioChangeEvent) => {
+
+	const onChange = ({ target: { value } }: RadioChangeEvent) => {
 		props.changeActiveMesh()
 		setValue(value)
 	}
-	
+
 	const items: MenuItem[] = [
-		getItem('Menu', 'sub1', <FolderOutlined/>, [
-			getItem('Save to file', 'save_file', <SaveOutlined/>),
-			getItem(<Upload beforeUpload={props.handleLoadFromFile}> Load from File </Upload>, 'load_file', <FolderOpenOutlined/>),
+		getItem("Menu", "sub1", <FolderOutlined/>, [
+			getItem("Save to file", "save_file", <SaveOutlined/>),
+			getItem(<Upload beforeUpload={props.handleLoadFromFile}> Load from File </Upload>, "load_file",
+				<FolderOpenOutlined/>),
 			//getItem('Load', 'load', <FolderOpenOutlined/>),
-			getItem('Print', 'print', <PrinterOutlined />),
+			getItem("Print", "print", <PrinterOutlined/>),
 		]),
 
-		getItem('Image', 'sub2', <FileImageOutlined/>, [
-			getItem(<Upload beforeUpload={props.handleImageUpload}> Upload </Upload>, 'upload', <UploadOutlined/>),
+		getItem("Image", "sub2", <FileImageOutlined/>, [
+			getItem(<Upload beforeUpload={props.handleImageUpload}> Upload </Upload>, "upload", <UploadOutlined/>),
 			/*getItem(<><span>Show image: </span><Switch /></>, '6'),*/
 		]),
 
 		/*getItem('Print', 'print', <PrinterOutlined/>),*/
 
-		getItem('Eye Toggle', 'eye', <EyeOutlined/>, [
+		getItem("Eye Toggle", "eye", <EyeOutlined/>, [
 			getItem(<Radio.Group
 					options={options}
 					onChange={onChange}
@@ -76,18 +77,18 @@ const Sidebar: FC<SidebarProps> = (props) => {
 					optionType="button"
 					buttonStyle="solid"
 				/>
-				, 'leftRight')
+				, "leftRight"),
 		]),
-		getItem('Quicksave', 'save',<SaveOutlined/>),
-		getItem('Restore', 'restore',<Popconfirm title={"Restore"} description={"Load most recent save?"} onConfirm={props.handleLoad}><ReloadOutlined/></Popconfirm>),
-		getItem('Help', 'help',<QuestionCircleOutlined/>),
-	];
-	
+		getItem("Quicksave", "save", <SaveOutlined/>),
+		getItem("Restore", "restore", <Popconfirm title={"Restore"} description={"Load most recent save?"}
+												  onConfirm={props.handleLoad}><ReloadOutlined/></Popconfirm>),
+		getItem("Help", "help", <QuestionCircleOutlined/>),
+	]
+
 	const handleClick: MenuClickEventHandler = (e) => {
-		if (e.key === 'help') {
+		if ( e.key === "help" ) {
 			setModalOpen(true)
-		}
-		else if (e.key === 'save') {
+		} else if ( e.key === "save" ) {
 			props.handleSave()
 		}
 		/*
@@ -96,13 +97,11 @@ const Sidebar: FC<SidebarProps> = (props) => {
 		}
 
 		 */
-		else if (e.key === 'save_file') {
+		else if ( e.key === "save_file" ) {
 			props.handleSaveToFile()
-		}
-		else if (e.key === 'load_file') {
+		} else if ( e.key === "load_file" ) {
 
-		}
-		else if (e.key === 'print') {
+		} else if ( e.key === "print" ) {
 			props.printGrids()
 		}
 	}
@@ -112,13 +111,13 @@ const Sidebar: FC<SidebarProps> = (props) => {
 			   collapsedWidth={60} onCollapse={(value) => setCollapsed(value)}>
 			<Menu
 				mode="vertical"
-				style={{ height: '100%', borderRight: 0 }}
+				style={{ height: "100%", borderRight: 0 }}
 				items={items}
 				onClick={handleClick}
 			/>
-			<HelpWindow title={''} open={modalOpen} setOpen={setModalOpen}></HelpWindow>
+			<HelpWindow title={""} open={modalOpen} setOpen={setModalOpen}></HelpWindow>
 		</Sider>
 	)
 }
 
-export default Sidebar;
+export default Sidebar

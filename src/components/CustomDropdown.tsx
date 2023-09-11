@@ -1,4 +1,4 @@
-import React, {FC, ReactNode, useRef, useState} from 'react'
+import React, { FC, ReactNode, useRef, useState } from "react"
 
 type DropdownProps = {
 	trigger: ReactNode
@@ -14,28 +14,28 @@ export const Dropdown: FC<DropdownProps> = ({ trigger, children }) => {
 	}
 
 	const handleMouseLeave = (event: React.MouseEvent) => {
-		if (event.relatedTarget instanceof Node && ref.current && !ref.current.contains(event.relatedTarget)) {
+		if ( event.relatedTarget instanceof Node && ref.current && !ref.current.contains(event.relatedTarget) ) {
 			setIsOpen(false)
 		}
 	}
 
 	const handleMouseOut = (event: React.MouseEvent) => {
-		if (!event.relatedTarget || (event.relatedTarget instanceof Node && ref.current && !ref.current.contains(event.relatedTarget))) {
+		if ( !event.relatedTarget || (event.relatedTarget instanceof Node && ref.current && !ref.current.contains(event.relatedTarget)) ) {
 			setIsOpen(false)
 		}
 	}
 
 	const dropdownStyle: React.CSSProperties = {
-		display: 'flex',
-		flexDirection: 'column',
-		gap: '2px',
-		justifyContent: 'flex-start',
-		background: 'white',
-		position: 'absolute',
-		marginLeft: '10px',
-		paddingTop: '10px',
-		borderRadius: '5px',
-		border: '1px solid #ddd',
+		display: "flex",
+		flexDirection: "column",
+		gap: "2px",
+		justifyContent: "flex-start",
+		background: "white",
+		position: "absolute",
+		marginLeft: "10px",
+		paddingTop: "10px",
+		borderRadius: "5px",
+		border: "1px solid #ddd",
 	}
 
 	return (

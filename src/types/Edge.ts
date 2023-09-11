@@ -1,4 +1,4 @@
-import {MeshIndex} from "./MeshIndex";
+import { MeshIndex } from "./MeshIndex"
 
 export type Edge = {
 	a: MeshIndex,
