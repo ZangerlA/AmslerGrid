@@ -26,7 +26,7 @@ export const Dropdown: FC<DropdownProps> = ({ trigger, children }) => {
 	}
 
 	const dropdownStyle: React.CSSProperties = {
-		display: "flex",
+		display: isOpen ? "flex" : "none",
 		flexDirection: "column",
 		gap: "2px",
 		justifyContent: "flex-start",
@@ -41,10 +41,9 @@ export const Dropdown: FC<DropdownProps> = ({ trigger, children }) => {
 	return (
 		<div ref={ref} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onMouseOut={handleMouseOut}>
 			<div>{trigger}</div>
-			{isOpen &&
-                <div style={dropdownStyle}>
-					{children}
-                </div>}
+			<div style={dropdownStyle}>
+				{children}
+			</div>
 		</div>
 	)
 }

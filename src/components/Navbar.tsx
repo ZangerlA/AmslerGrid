@@ -9,7 +9,7 @@ import {
 } from "@ant-design/icons"
 import { Button, Empty, Form, Input, Modal, Radio, RadioChangeEvent, Select, Upload } from "antd"
 import React, { FC, useState } from "react"
-import ReactDOM from "react-dom"
+import ReactDOM from "react-dom/client"
 import { useTranslation } from "react-i18next"
 import { toReadableDate } from "../helperMethods/toReadableDate"
 import { SaveFile } from "../types/SaveFile"
@@ -70,17 +70,20 @@ const Navbar: FC<NavbarProps> = (props) => {
 
 	const openPDFNewWindow = () => {
 		const newWindow = window.open("", "_blank")
+		if ( !newWindow ) return
 		const images: any = props.printGrids()
-		if ( newWindow ) {
-			newWindow.document.write("<div id=\"pdf-root\"></div>")
-			const rootElement = newWindow.document.getElementById("pdf-root")
-			ReactDOM.render(
+		newWindow.document.write("<div id=\"pdf-root\"></div>")
+		const rootElement = newWindow.document.getElementById("pdf-root")
+		if ( rootElement ) {
+			const root = ReactDOM.createRoot(rootElement)
+			root.render(
 				<PDF
 					dimensionCanvas1={images["dimensionLeft"]}
 					dimensionCanvas2={images["dimensionRight"]}
 					canvas1ImageSrc={images["leftEye"]}
 					canvas2ImageSrc={images["rightEye"]}
-				/>, rootElement)
+				/>,
+			)
 		}
 	}
 
@@ -126,14 +129,18 @@ const Navbar: FC<NavbarProps> = (props) => {
 					</Button>}>
 					<Button type="text" style={dropdownButtonStyle} icon={<SaveOutlined/>}
 							onClick={() => setIsFileSaveModalOpen(true)}>{t("fileSave.dropdown.saveToFile")}</Button>
-					<Upload beforeUpload={props.handleLoadFromFile} showUploadList={false}>
+					<Upload accept={".json"} beforeUpload={(file) => {
+						props.handleLoadFromFile(file)
+					}} showUploadList={false}>
 						<Button type="text" style={dropdownButtonStyle} icon={<FolderOpenOutlined/>}>
 							{t("fileSave.dropdown.loadFromFile")}
 						</Button>
 					</Upload>
 					<Button type="text" style={dropdownButtonStyle} icon={<PrinterOutlined/>}
 							onClick={openPDFNewWindow}>{t("fileSave.dropdown.printPDF")}</Button>
-					<Upload beforeUpload={props.handleImageUpload} showUploadList={false}>
+					<Upload beforeUpload={(file) => {
+						props.handleImageUpload(file)
+					}} showUploadList={false}>
 						<Button type="text" style={dropdownButtonStyle} icon={<UploadOutlined/>}>
 							{t("fileSave.dropdown.uploadImage")}
 						</Button>
