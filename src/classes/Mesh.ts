@@ -17,14 +17,14 @@ import { Vertex } from "./Vertex"
 
 export class Mesh {
 	public vertices: Vertex[][] = []
-	public selectedPolygons: Set<Polygon> = new Set<Polygon>()
-	public selectedVertex?: Vertex
 	public edges: ValueSet<Edge> = new ValueSet<Edge>(undirectedGraphHash)
-	public polygons: Set<Polygon> = new Set<Polygon>()
-	public canvas: MeshCanvas
-	public warper: ImageWarper
-	public shouldDrawImage = false
+	public selectedPolygons: Set<Polygon> = new Set<Polygon>()
+	private polygons: Set<Polygon> = new Set<Polygon>()
+	private selectedVertex?: Vertex
+	private warper: ImageWarper
+	private canvas: MeshCanvas
 	private imageData?: ImageData
+	private shouldDrawImage = false
 
 	constructor(canvas: MeshCanvas, dimension: Dimension) {
 		this.canvas = canvas
@@ -313,7 +313,7 @@ export class Mesh {
 
 	private scaleVertices(vertices: Vertex[], centerPoint: Point, scalingFactor: number): void {
 		vertices.forEach((vertex) => {
-			vertex.scale(scalingFactor, centerPoint)
+			vertex.scale(centerPoint, scalingFactor)
 		})
 	}
 

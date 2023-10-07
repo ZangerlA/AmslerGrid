@@ -47,21 +47,21 @@ export class Vertex {
 		return this.referenceCounter > 0
 	}
 
-	public scale(scalingFactor: number, centerPoint: Point): void {
+	public scale(point: Point, factor: number): void {
 		this.wasMoved = true
 		const displacementVector = {
-			x: this.coordinate.x - centerPoint.x,
-			y: this.coordinate.y - centerPoint.y,
+			x: this.coordinate.x - point.x,
+			y: this.coordinate.y - point.y,
 		}
 
 		const scaledDisplacementVector = {
-			x: displacementVector.x * scalingFactor,
-			y: displacementVector.y * scalingFactor,
+			x: displacementVector.x * factor,
+			y: displacementVector.y * factor,
 		}
 
 		const newCoordinate: Point = {
-			x: centerPoint.x + scaledDisplacementVector.x,
-			y: centerPoint.y + scaledDisplacementVector.y,
+			x: point.x + scaledDisplacementVector.x,
+			y: point.y + scaledDisplacementVector.y,
 		}
 
 		this.coordinate = newCoordinate

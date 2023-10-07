@@ -1,4 +1,5 @@
 import { calculateCenter } from "../helperMethods/calculateCenter"
+import { inside } from "../helperMethods/inside"
 import { Point } from "../types/Coordinate"
 import { MeshIndex } from "../types/MeshIndex"
 import { PolygonData } from "../types/SaveFile"
@@ -10,7 +11,7 @@ export class Polygon {
 	public mesh: Mesh
 	public verticesIndices: MeshIndex[] = []
 	public edgeLength: number
-	public children: Polygon[] = []
+	private children: Polygon[] = []
 	private color: string
 
 	public constructor(mesh: Mesh, meshIndex: MeshIndex, edgeLength: number, color: string) {
@@ -55,13 +56,13 @@ export class Polygon {
 		return vertexIndices
 	}
 
-	public hasInside(mouseClick: Point): boolean {
+	public hasInside(point: Point): boolean {
 		for ( const child of this.children ) {
-			if ( child.hasInside(mouseClick) ) {
+			if ( child.hasInside(point) ) {
 				return true
 			}
 		}
-		return this.inside(mouseClick.x, mouseClick.y, this.getOwnActiveVertices())
+		return inside(point, this.getOwnActiveVertices())
 	}
 
 	public getContainer(mouseClick: Point): Polygon | undefined {
@@ -298,20 +299,5 @@ export class Polygon {
 			a: this.verticesIndices[this.edgeLength * 3],
 			b: this.verticesIndices[0],
 		})
-	}
-
-	private inside(x: number, y: number, vertices: Vertex[]): boolean {
-		// ray-casting algorithm based on
-		// https://en.wikipedia.org/wiki/Point_in_polygon
-		// found on
-		// https://stackoverflow.com/questions/22521982/check-if-point-is-inside-a-polygon
-		let result = 0
-		for ( let k = 0, l = vertices.length - 1; k < vertices.length; l = k++ ) {
-			const xi = vertices[k].coordinate.x, yi = vertices[k].coordinate.y
-			const xj = vertices[l].coordinate.x, yj = vertices[l].coordinate.y
-			const intersect: any = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
-			result = intersect ^ result
-		}
-		return result === 1
 	}
 }

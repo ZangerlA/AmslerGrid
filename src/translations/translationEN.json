@@ -54,7 +54,9 @@
     },
     "footer": {
       "close": "Close"
-    }
+    },
+    "aboutName": "This app was created as part of a bachelor's thesis by Maximilian Grossmann and Alexander Zangerl.",
+    "aboutLink": "The project can be found on "
   },
   "input": {
     "leftClick": "LEFT CLICK",

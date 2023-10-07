@@ -1,4 +1,4 @@
-import { Button, Modal, Table, Tag } from "antd"
+import { Button, Divider, Modal, Table, Tag } from "antd"
 import type { ColumnsType } from "antd/es/table"
 import React, { FC } from "react"
 import { useTranslation } from "react-i18next"
@@ -134,6 +134,16 @@ const HelpWindow: FC<PopupWindowProps> = (props) => {
 			onCancel={() => props.setOpen(false)}
 		>
 			{content}
+			<div style={{ textAlign: "center", fontSize: 11, marginTop: 30 }}>
+				<p style={{ margin: 0 }}>
+					{t("help.aboutName")}
+				</p>
+				<p style={{ margin: 0 }}>
+					{t("help.aboutLink")} <a href="https://github.com/ZangerlA/AmslerGrid" target="_blank"
+											 rel="noopener noreferrer">GitHub</a>.
+				</p>
+			</div>
+			<Divider style={{ marginTop: 8, marginBottom: 20 }}/>
 			<div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
 				<Button type="primary" style={{ marginTop: 20 }}
 						onClick={() => props.setOpen(false)}>{t("help.footer.close")}</Button>

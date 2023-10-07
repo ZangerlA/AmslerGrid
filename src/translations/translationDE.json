@@ -54,7 +54,9 @@
     },
     "footer": {
       "close": "Schließen"
-    }
+    },
+    "aboutName": "Diese App wurde als Teil einer Bachelorarbeit von Maximilian Grossmann und Alexander Zangerl erstellt.",
+    "aboutLink": "Das Projekt kann auf Github gefunden werden "
   },
   "input": {
     "leftClick": "LINKE MAUSTASTE",
